@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pinput/pinput.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/widgets/background_scaffold.dart';
-import 'package:skin_chat_app/widgets/custom_button.dart';
+import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
+import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 
 class OtpScreen extends StatelessWidget {
   const OtpScreen({super.key});
@@ -23,49 +23,52 @@ class OtpScreen extends StatelessWidget {
       ),
     );
 
-    return BackgroundScaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Check Your Email for OTP",
-              style: TextStyle(
-                fontSize: AppStyles.heading,
-                fontWeight: FontWeight.bold,
+    return PopScope(
+      canPop: false,
+      child: BackgroundScaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Check Your Email for OTP",
+                style: TextStyle(
+                  fontSize: AppStyles.heading,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(
-              height: 0.1.sh,
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppStyles.margin),
-              child: Pinput(
-                defaultPinTheme: defaultPinTheme,
+              SizedBox(
+                height: 0.1.sh,
               ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {},
-                child: Text(
-                  "Resend OTP?",
-                  style: TextStyle(
-                    fontSize: AppStyles.bodyText,
-                    color: AppStyles.tertiary,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppStyles.margin),
+                child: Pinput(
+                  defaultPinTheme: defaultPinTheme,
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    "Resend OTP?",
+                    style: TextStyle(
+                      fontSize: AppStyles.bodyText,
+                      color: AppStyles.tertiary,
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(
-              height: 0.02.sh,
-            ),
-            CustomButton(
-              text: "Continue",
-              onPressed: () {},
-            ),
-          ],
+              SizedBox(
+                height: 0.02.sh,
+              ),
+              CustomButton(
+                text: "Continue",
+                onPressed: () {},
+              ),
+            ],
+          ),
         ),
       ),
     );

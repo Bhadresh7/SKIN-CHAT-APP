@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/widgets/background_scaffold.dart';
-import 'package:skin_chat_app/widgets/custom_button.dart';
-import 'package:skin_chat_app/widgets/custom_input_field.dart';
+import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
+import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
+import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
+import 'package:skin_chat_app/widgets/inputs/date_input_field.dart';
 
 class BasicDetailsScreen extends StatelessWidget {
   const BasicDetailsScreen({super.key});
@@ -48,31 +47,7 @@ class BasicDetailsScreen extends StatelessWidget {
                       errorText: "Enter a valid 10-digit mobile number"),
                 ],
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppStyles.margin),
-                child: FormBuilderDateTimePicker(
-                  name: "DOB",
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(1900),
-                  lastDate: DateTime.now(),
-                  inputType: InputType.date,
-                  format: DateFormat("dd/MM/yyyy"),
-                  decoration: InputDecoration(
-                    hintText: "D.O.B",
-                    hintStyle: TextStyle(color: AppStyles.tertiary),
-                    border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppStyles.borderRadius),
-                    ),
-                    suffixIcon: Icon(Icons.calendar_today),
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16.sp, vertical: 14.sp),
-                  ),
-                  validator: FormBuilderValidators.required(
-                    errorText: "Date of Birth is required",
-                  ),
-                ),
-              ),
+              DateInputField(),
               CustomButton(text: "submit", onPressed: () {}),
               InkWell(
                 onTap: () {},

@@ -17,4 +17,5 @@ class AppStyles {
   static const Color primary = Color(0xff734FDB);
   static final Color tertiary = const Color(0xff707073);
   static final Color links = Colors.blue;
+  static final Color danger = Colors.red;
 }

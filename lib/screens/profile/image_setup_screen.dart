@@ -3,8 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/widgets/background_scaffold.dart';
-import 'package:skin_chat_app/widgets/custom_button.dart';
+import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
+import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 
 class ImageSetupScreen extends StatelessWidget {
   const ImageSetupScreen({super.key});

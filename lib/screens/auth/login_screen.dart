@@ -6,11 +6,11 @@ import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/screens/auth/register_screen.dart';
 import 'package:skin_chat_app/services/my_navigation.dart';
-import 'package:skin_chat_app/widgets/background_scaffold.dart';
-import 'package:skin_chat_app/widgets/custom_button.dart';
-import 'package:skin_chat_app/widgets/custom_input_field.dart';
-import 'package:skin_chat_app/widgets/oauth_button.dart';
-import 'package:skin_chat_app/widgets/or_bar.dart';
+import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
+import 'package:skin_chat_app/widgets/buttons/oauth_button.dart';
+import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
+import 'package:skin_chat_app/widgets/common/or_bar.dart';
+import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,9 +20,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  bool state = false;
   @override
   Widget build(BuildContext context) {
     return BackgroundScaffold(
+      loading: state,
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Column(
@@ -55,7 +57,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             CustomButton(
               text: "Login",
-              onPressed: () => {},
+              onPressed: () => {
+                setState(() {
+                  state = true;
+                })
+              },
             ),
             ORBar(),
             OAuthButton(
@@ -67,11 +73,12 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Text("Not a member ? "),
                 InkWell(
-                    onTap: () => MyNavigation.to(context, RegisterScreen()),
-                    child: Text(
-                      "Register",
-                      style: TextStyle(color: AppStyles.links),
-                    ))
+                  onTap: () => MyNavigation.to(context, RegisterScreen()),
+                  child: Text(
+                    "Register",
+                    style: TextStyle(color: AppStyles.links),
+                  ),
+                )
               ],
             ),
           ],

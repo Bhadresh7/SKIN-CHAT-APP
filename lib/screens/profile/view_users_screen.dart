@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class ViewUsersScreen extends StatelessWidget {
+  const ViewUsersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BackgroundScaffold(
-      showDrawer: true,
       appBar: AppBar(),
-      body: Column(
-        children: [
-          Text("data"),
-        ],
-      ),
+      showDrawer: true,
+      body: Text("View users screen"),
     );
   }
 }

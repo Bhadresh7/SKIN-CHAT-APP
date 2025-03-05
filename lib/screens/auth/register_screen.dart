@@ -5,11 +5,11 @@ import 'package:lottie/lottie.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/services/my_navigation.dart';
-import 'package:skin_chat_app/widgets/background_scaffold.dart';
-import 'package:skin_chat_app/widgets/custom_button.dart';
-import 'package:skin_chat_app/widgets/custom_input_field.dart';
-import 'package:skin_chat_app/widgets/oauth_button.dart';
-import 'package:skin_chat_app/widgets/or_bar.dart';
+import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
+import 'package:skin_chat_app/widgets/buttons/oauth_button.dart';
+import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
+import 'package:skin_chat_app/widgets/common/or_bar.dart';
+import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});

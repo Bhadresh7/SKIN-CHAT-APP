@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/screens/auth/login_screen.dart';
+import 'package:skin_chat_app/screens/profile/edit_profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,6 +41,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return LoginScreen();
+    return EditProfileScreen();
   }
 }

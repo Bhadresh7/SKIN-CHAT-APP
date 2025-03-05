@@ -59,6 +59,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
         obscureText: widget.isPassword ? _obscureText : false,
         keyboardType: widget.keyboardType,
         decoration: InputDecoration(
+          counterText: "",
           contentPadding:
               EdgeInsets.symmetric(horizontal: 16.sp, vertical: 14.sp),
           fillColor: Colors.white,
