@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/providers/internet_provider.dart';
 import 'package:skin_chat_app/screens/auth/register_screen.dart';
 import 'package:skin_chat_app/services/my_navigation.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
@@ -20,9 +22,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool state = false;
   @override
   Widget build(BuildContext context) {
+    bool state = false;
+    final internetProvider = Provider.of<InternetProvider>(context);
+    print(internetProvider.connectionStatus);
     return BackgroundScaffold(
       loading: state,
       body: SingleChildScrollView(
@@ -66,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ORBar(),
             OAuthButton(
               text: "Continue with google",
-              onPressed: () => print("Printing......."),
+              onPressed: () => print("hello there"),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -76,7 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: () => MyNavigation.to(context, RegisterScreen()),
                   child: Text(
                     "Register",
-                    style: TextStyle(color: AppStyles.links),
+                    style: TextStyle(
+                        color: AppStyles.links, fontSize: AppStyles.subTitle),
                   ),
                 )
               ],

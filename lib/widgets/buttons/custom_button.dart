@@ -6,27 +6,33 @@ class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final Color? color;
-  final String? prefixImage;
+  final Widget? prefixWidget;
+  final IconData? suffixIcon;
   final bool isLoading;
   final double? width;
+  final double? height;
+  final EdgeInsetsGeometry? padding;
 
   const CustomButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.color,
-    this.prefixImage,
+    this.prefixWidget,
+    this.suffixIcon,
     this.isLoading = false,
     this.width,
+    this.height,
+    this.padding,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppStyles.margin),
+      padding: padding ?? EdgeInsets.symmetric(horizontal: AppStyles.margin),
       child: SizedBox(
         width: width ?? double.infinity,
-        height: 0.06.sh,
+        height: height ?? 0.06.sh,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: color ?? AppStyles.primary,
@@ -48,15 +54,10 @@ class CustomButton extends StatelessWidget {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (prefixImage != null)
+                    if (prefixWidget != null)
                       Padding(
                         padding: EdgeInsets.only(right: 8.w),
-                        child: Image.asset(
-                          prefixImage!,
-                          width: 20.w,
-                          height: 20.w,
-                          fit: BoxFit.contain,
-                        ),
+                        child: prefixWidget!,
                       ),
                     Text(
                       text,
@@ -64,6 +65,15 @@ class CustomButton extends StatelessWidget {
                         fontSize: AppStyles.subTitle,
                       ),
                     ),
+                    if (suffixIcon != null)
+                      Padding(
+                        padding: EdgeInsets.only(left: 8.w),
+                        child: Icon(
+                          suffixIcon,
+                          size: 20.w,
+                          color: Colors.white,
+                        ),
+                      ),
                   ],
                 ),
         ),

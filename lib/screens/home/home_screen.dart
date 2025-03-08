@@ -6,13 +6,16 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BackgroundScaffold(
-      showDrawer: true,
-      appBar: AppBar(),
-      body: Column(
-        children: [
-          Text("data"),
-        ],
+    return PopScope(
+      canPop: false,
+      child: BackgroundScaffold(
+        showDrawer: true,
+        appBar: AppBar(),
+        body: Column(
+          children: [
+            Text("This is chat screen"),
+          ],
+        ),
       ),
     );
   }

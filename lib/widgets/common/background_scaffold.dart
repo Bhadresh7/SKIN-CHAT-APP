@@ -1,13 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
-import 'package:lottie/lottie.dart';
-import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/helpers/internet_checker_helper.dart';
 import 'package:skin_chat_app/screens/about/about_us_screen.dart';
+import 'package:skin_chat_app/screens/home/home_screen.dart';
 import 'package:skin_chat_app/screens/profile/edit_profile_screen.dart';
 import 'package:skin_chat_app/screens/profile/view_users_screen.dart';
 import 'package:skin_chat_app/services/my_navigation.dart';
@@ -32,53 +28,53 @@ class BackgroundScaffold extends StatefulWidget {
 }
 
 class _BackgroundScaffoldState extends State<BackgroundScaffold> {
-  late InternetConnectionHelper _internetHelper;
-  bool _isConnected = true;
+  // late InternetConnectionHelper _internetHelper;
+  // bool _isConnected = true;
+  //
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _internetHelper = InternetConnectionHelper();
+  //   _internetHelper.startListening();
+  //   _internetHelper.connectionStatusStream.listen(
+  //     (status) {
+  //       if (mounted) {
+  //         setState(() {
+  //           _isConnected = status == InternetConnectionStatus.connected;
+  //         });
+  //       }
+  //     },
+  //   );
+  // }
 
-  @override
-  void initState() {
-    super.initState();
-    _internetHelper = InternetConnectionHelper();
-    _internetHelper.startListening();
-    _internetHelper.connectionStatusStream.listen(
-      (status) {
-        if (mounted) {
-          setState(() {
-            _isConnected = status == InternetConnectionStatus.connected;
-          });
-        }
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _internetHelper.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   super.dispose();
+  //   _internetHelper.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isConnected) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Lottie.asset(
-                AppAssets.noInternet,
-                width: 300.sp,
-              ),
-              SizedBox(height: 10.sp),
-              Text(
-                "No Internet connection",
-                style: TextStyle(fontSize: AppStyles.heading),
-              )
-            ],
-          ),
-        ),
-      );
-    }
+    // if (!_isConnected) {
+    //   return Scaffold(
+    //     body: Center(
+    //       child: Column(
+    //         mainAxisAlignment: MainAxisAlignment.center,
+    //         children: [
+    //           Lottie.asset(
+    //             AppAssets.noInternet,
+    //             width: 300.sp,
+    //           ),
+    //           SizedBox(height: 10.sp),
+    //           Text(
+    //             "No Internet connection",
+    //             style: TextStyle(fontSize: AppStyles.heading),
+    //           )
+    //         ],
+    //       ),
+    //     ),
+    //   );
+    // }
 
     return SafeArea(
       child: Scaffold(
@@ -93,8 +89,16 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                     ),
                     ListTile(
                       trailing: Icon(Icons.arrow_forward_ios),
+                      title: const Text(' Chat '),
+                      onTap: () {
+                        MyNavigation.to(context, HomeScreen());
+                      },
+                    ),
+                    ListTile(
+                      trailing: Icon(Icons.arrow_forward_ios),
                       title: const Text(' About '),
                       onTap: () {
+                        MyNavigation.back(context);
                         MyNavigation.to(context, AboutUsScreen());
                       },
                     ),
@@ -102,6 +106,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                       trailing: Icon(Icons.arrow_forward_ios),
                       title: const Text(' Edit Profile '),
                       onTap: () {
+                        MyNavigation.back(context);
                         MyNavigation.to(context, EditProfileScreen());
                       },
                     ),
@@ -109,6 +114,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                       trailing: Icon(Icons.arrow_forward_ios),
                       title: const Text(' View User '),
                       onTap: () {
+                        MyNavigation.back(context);
                         MyNavigation.to(context, ViewUsersScreen());
                       },
                     ),
@@ -174,13 +180,13 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
               child: widget.body,
             ),
             if (widget.loading)
-              Positioned.fill(
+              Positioned(
                 child: Stack(
                   children: [
                     BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                       child: Container(
-                        color: Colors.black.withValues(alpha: 0.2),
+                        color: Colors.black.withValues(alpha: 0.4),
                       ),
                     ),
                     Center(child: CircularProgressIndicator()),

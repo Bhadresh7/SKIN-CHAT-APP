@@ -3,4 +3,5 @@ class AppAssets {
   static final String login = "assets/lottie/login.json";
   static final String googleIcon = "assets/icons/google.png";
   static final String profile = "assets/svgs/profile.svg";
+  static final String crown = "assets/svgs/crown.svg";
 }

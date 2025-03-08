@@ -22,8 +22,7 @@ class InternetConnectionHelper {
             print("Internet is disconnected");
             break;
           case InternetConnectionStatus.slow:
-            print("Internet connection is slow");
-            break;
+            print("Slow");
         }
       },
     );
