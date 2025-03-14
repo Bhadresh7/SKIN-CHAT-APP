@@ -1,12 +1,17 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/providers/auth/user_role_provider.dart';
+import 'package:skin_chat_app/router/my_navigation.dart';
 import 'package:skin_chat_app/screens/about/about_us_screen.dart';
-import 'package:skin_chat_app/screens/home/home_screen.dart';
+import 'package:skin_chat_app/screens/auth/login_screen.dart';
 import 'package:skin_chat_app/screens/profile/edit_profile_screen.dart';
 import 'package:skin_chat_app/screens/profile/view_users_screen.dart';
-import 'package:skin_chat_app/services/my_navigation.dart';
+import 'package:skin_chat_app/screens/settings/terms_and_conditions_screen.dart';
 
 class BackgroundScaffold extends StatefulWidget {
   const BackgroundScaffold({
@@ -28,6 +33,13 @@ class BackgroundScaffold extends StatefulWidget {
 }
 
 class _BackgroundScaffoldState extends State<BackgroundScaffold> {
+  // @override
+  // void initState() {
+  //   // TODO: implement initState
+  //   super.initState();
+  //   final role = Provider.of<UserRoleProvider>(context, listen: false);
+  //   role.loadUserRole();
+  // }
   // late InternetConnectionHelper _internetHelper;
   // bool _isConnected = true;
   //
@@ -55,6 +67,9 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<MyAuthProvider>(context);
+    final userRoleProvider = Provider.of<UserRoleProvider>(context);
+
     // if (!_isConnected) {
     //   return Scaffold(
     //     body: Center(
@@ -84,15 +99,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                 child: ListView(
                   children: [
                     UserAccountsDrawerHeader(
-                      accountEmail: Text("This is email"),
-                      accountName: Text("This is account name"),
-                    ),
-                    ListTile(
-                      trailing: Icon(Icons.arrow_forward_ios),
-                      title: const Text(' Chat '),
-                      onTap: () {
-                        MyNavigation.to(context, HomeScreen());
-                      },
+                      accountEmail: Text(authProvider.email),
+                      accountName: Text(authProvider.userName),
                     ),
                     ListTile(
                       trailing: Icon(Icons.arrow_forward_ios),
@@ -110,18 +118,19 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                         MyNavigation.to(context, EditProfileScreen());
                       },
                     ),
-                    ListTile(
-                      trailing: Icon(Icons.arrow_forward_ios),
-                      title: const Text(' View User '),
-                      onTap: () {
-                        MyNavigation.back(context);
-                        MyNavigation.to(context, ViewUsersScreen());
-                      },
-                    ),
+                    if (userRoleProvider.role == AppStatus.kSuperAdmin)
+                      ListTile(
+                        trailing: Icon(Icons.arrow_forward_ios),
+                        title: const Text(' View User '),
+                        onTap: () {
+                          MyNavigation.back(context);
+                          MyNavigation.to(context, ViewUsersScreen());
+                        },
+                      ),
                     ListTile(
                       title: const Text(' Terms & conditions '),
                       onTap: () {
-                        // MyNavigation.to(context, AboutUsScreen());
+                        MyNavigation.to(context, TermsAndConditionsScreen());
                       },
                     ),
                     ListTile(
@@ -155,8 +164,12 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                                   child: Text("No"),
                                 ),
                                 TextButton(
-                                  onPressed: () {
-                                    print("Yessss");
+                                  onPressed: () async {
+                                    await authProvider.signOut();
+                                    if (context.mounted) {
+                                      MyNavigation.replace(
+                                          context, LoginScreen());
+                                    }
                                   },
                                   child: Text("yes"),
                                 ),

@@ -15,7 +15,7 @@ class EditProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BackgroundScaffold(
       appBar: AppBar(),
-      showDrawer: true,
+      // showDrawer: true,
       body: SingleChildScrollView(
         child: Column(
           spacing: 0.03.sh,

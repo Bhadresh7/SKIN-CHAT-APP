@@ -17,6 +17,13 @@ class MyNavigation {
     Navigator.of(context).pop();
   }
 
+  static void namedRout(
+    String route, {
+    BuildContext? context,
+  }) {
+    Navigator.of(context ?? navigatorKey.currentContext!).pushNamed(route);
+  }
+
   static void replace(BuildContext context, Widget screen) {
     Navigator.pushReplacement(
       context,

@@ -36,7 +36,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
           ],
         ),
       ),
-      showDrawer: true,
+      // showDrawer: true,
       body: Column(
         children: [
           Padding(
