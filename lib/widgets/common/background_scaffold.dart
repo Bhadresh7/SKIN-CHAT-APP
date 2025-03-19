@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/providers/auth/user_role_provider.dart';
-import 'package:skin_chat_app/router/my_navigation.dart';
 import 'package:skin_chat_app/screens/about/about_us_screen.dart';
 import 'package:skin_chat_app/screens/auth/login_screen.dart';
 import 'package:skin_chat_app/screens/profile/edit_profile_screen.dart';
@@ -20,6 +20,7 @@ class BackgroundScaffold extends StatefulWidget {
     this.loading = false,
     this.appBar,
     this.showDrawer = false,
+    this.margin,
   });
 
   final Widget body;
@@ -27,6 +28,7 @@ class BackgroundScaffold extends StatefulWidget {
 
   final PreferredSizeWidget? appBar;
   final bool showDrawer;
+  final EdgeInsetsGeometry? margin;
 
   @override
   State<BackgroundScaffold> createState() => _BackgroundScaffoldState();
@@ -186,10 +188,11 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
         body: Stack(
           children: [
             Container(
-              margin: EdgeInsets.symmetric(
-                horizontal: AppStyles.margin,
-                vertical: AppStyles.margin,
-              ),
+              margin: widget.margin ??
+                  EdgeInsets.symmetric(
+                    horizontal: AppStyles.margin,
+                    vertical: AppStyles.margin,
+                  ),
               child: widget.body,
             ),
             if (widget.loading)

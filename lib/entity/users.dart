@@ -6,6 +6,9 @@ class Users {
     this.password,
     this.role = "user",
     this.isGoogle,
+    this.isAdmin = false,
+    this.canPost = false,
+    this.isBlocked = false,
   });
 
   final String uid;
@@ -13,7 +16,10 @@ class Users {
   final String email;
   String? password;
   bool? isGoogle;
-  String role;
+  final String role;
+  final bool isAdmin;
+  final bool canPost;
+  final bool isBlocked;
 
   ///convert the data to map to store in firebase
   Map<String, dynamic> toJson() {
@@ -23,7 +29,10 @@ class Users {
       'email': email,
       'password': password,
       'role': role,
-      'isGoogle': isGoogle
+      'isGoogle': isGoogle,
+      'isAdmin': isAdmin,
+      'canPost': canPost,
+      'isBlocked': isBlocked,
     };
   }
 }

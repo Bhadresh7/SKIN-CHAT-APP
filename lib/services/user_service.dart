@@ -14,15 +14,7 @@ class UserService {
 
       if (!doc.exists) {
         // Create a new user document if it doesn't exist
-        await _store.collection("users").doc(user.uid).set({
-          "uid": user.uid,
-          "name": user.username,
-          "email": user.email,
-          "password": user.password ?? "", // Empty for Google users
-          "role": user.role,
-
-          "createdAt": FieldValue.serverTimestamp(),
-        });
+        await _store.collection("users").doc(user.uid).set(user.toJson());
       } else {
         // Merge to update only missing fields (useful for Google login users)
         await _store.collection("users").doc(user.uid).set({
@@ -76,7 +68,7 @@ class UserService {
 
   ///change the user role in real-time (super-admin only)
 
-  // Stream<String> changeUserRole({required String email}) {
-  //   return ;
-  // }
+// Stream<String> changeUserRole({required String email}) {
+//   return ;
+// }
 }

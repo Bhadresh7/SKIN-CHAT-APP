@@ -4,14 +4,22 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lottie/lottie.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/helpers/my_navigation.dart';
+import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 import 'package:skin_chat_app/widgets/inputs/date_input_field.dart';
 
-class BasicDetailsScreen extends StatelessWidget {
+class BasicDetailsScreen extends StatefulWidget {
   const BasicDetailsScreen({super.key});
 
+  @override
+  State<BasicDetailsScreen> createState() => _BasicDetailsScreenState();
+}
+
+class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
+  String? role = "";
   @override
   Widget build(BuildContext context) {
     return BackgroundScaffold(
@@ -22,9 +30,48 @@ class BasicDetailsScreen extends StatelessWidget {
             spacing: 0.03.sh,
             children: [
               Lottie.asset(AppAssets.login, height: 0.3.sh),
-              CustomInputField(name: "name", hintText: "name", validators: [
-                FormBuilderValidators.required(errorText: "name is required"),
-              ]),
+              CustomInputField(
+                name: "name",
+                hintText: "name",
+                validators: [
+                  FormBuilderValidators.required(errorText: "name is required"),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Radio(
+                    value: "employee",
+                    groupValue: role,
+                    onChanged: (value) {
+                      setState(() {
+                        role = value!;
+                      });
+                    },
+                  ),
+                  Text(
+                    "Employee",
+                    style: TextStyle(
+                      fontSize: AppStyles.subTitle,
+                    ),
+                  ),
+                  Radio(
+                    value: "candidate",
+                    groupValue: role,
+                    onChanged: (value) {
+                      setState(() {
+                        role = value!;
+                      });
+                    },
+                  ),
+                  Text(
+                    "Candidate",
+                    style: TextStyle(
+                      fontSize: AppStyles.subTitle,
+                    ),
+                  )
+                ],
+              ),
               CustomInputField(
                 name: "Aadhar number",
                 maxLength: 12,
@@ -48,7 +95,10 @@ class BasicDetailsScreen extends StatelessWidget {
                 ],
               ),
               DateInputField(),
-              CustomButton(text: "submit", onPressed: () {}),
+              CustomButton(
+                  text: "submit",
+                  onPressed: () =>
+                      MyNavigation.replace(context, HomeScreenVarient2())),
               InkWell(
                 onTap: () {},
                 child: Text(

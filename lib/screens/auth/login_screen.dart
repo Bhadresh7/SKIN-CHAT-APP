@@ -6,10 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/providers/internet_provider.dart';
-import 'package:skin_chat_app/router/my_navigation.dart';
+import 'package:skin_chat_app/screens/auth/forget_password.dart';
 import 'package:skin_chat_app/screens/auth/register_screen.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
@@ -81,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     InkWell(
-                      onTap: () {},
+                      onTap: () => MyNavigation.to(context, ForgetPassword()),
                       child: Text("Forget password ?"),
                     ),
                   ],
@@ -131,12 +132,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (context.mounted) {
                     if (result == AppStatus.kSuccess) {
                       MyNavigation.replace(context, HomeScreenVarient2());
+                      ToastHelper.showSuccessToast(
+                        context: context,
+                        message: "Login successful",
+                      );
                     } else if (result == AppStatus.kFailed) {
                       ToastHelper.showErrorToast(
-                          context: context, message: "signin cancelled");
+                        context: context,
+                        message: "signin cancelled",
+                      );
                     } else {
                       ToastHelper.showErrorToast(
-                          context: context, message: result);
+                        context: context,
+                        message: result,
+                      );
                     }
                   }
                 },

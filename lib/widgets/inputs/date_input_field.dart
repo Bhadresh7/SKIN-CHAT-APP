@@ -20,6 +20,8 @@ class DateInputField extends StatelessWidget {
         inputType: InputType.date,
         format: DateFormat("dd/MM/yyyy"),
         decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
           hintText: "D.O.B",
           hintStyle: TextStyle(color: AppStyles.tertiary),
           border: OutlineInputBorder(

@@ -10,14 +10,21 @@ class MyAuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final UserService _service = UserService();
+  User? firebaseUser;
 
   bool isLoggedIn = false;
   bool _isLoading = false;
   String? _role;
+
   String get email => _auth.currentUser?.email ?? "no email";
+
   String get userName => _auth.currentUser?.displayName ?? "no username";
+
   String get uid => _auth.currentUser?.uid ?? "uid not found";
+
   String? get role => _role;
+
+  Future<bool> get isOauth async => await _googleSignIn.isSignedIn();
 
   bool get isLoading => _isLoading;
 
@@ -40,7 +47,7 @@ class MyAuthProvider extends ChangeNotifier {
   }
 
   /// Google Authentication
-  /// Google Authentication
+
   Future<String> googleAuth() async {
     try {
       setLoadingState(value: true);
@@ -65,24 +72,12 @@ class MyAuthProvider extends ChangeNotifier {
       UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
-      User? firebaseUser = userCredential.user;
+      firebaseUser = userCredential.user;
       if (firebaseUser == null) {
         return AppStatus.kFailed;
       }
 
       // Save the user to Firestore
-      Users userObj = Users(
-        uid: firebaseUser.uid,
-        username: firebaseUser.displayName ?? "Google User",
-        email: firebaseUser.email ?? "",
-        password: "",
-        role: "user",
-      );
-
-      await _service.saveUser(user: userObj);
-
-      await LocalStorage.setString("user_email", firebaseUser.email ?? "");
-      await LocalStorage.setBool("isLoggedIn", true);
 
       return AppStatus.kSuccess;
     } catch (e) {
@@ -121,6 +116,10 @@ class MyAuthProvider extends ChangeNotifier {
         email: email,
         password: password,
         role: "user",
+        canPost: false,
+        isAdmin: false,
+        isBlocked: false,
+        isGoogle: false,
       );
 
       //saving user object to DB
@@ -190,20 +189,52 @@ class MyAuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<String> resetPassword({required String email}) async {
+    try {
+      await _auth.setLanguageCode("en");
+      await _auth.sendPasswordResetEmail(email: email);
+      print("FROM PROVIDER =================$email");
+      return AppStatus.kSuccess;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  // Future<String> saveUsersToDatabaseAndLocally() async {
+  //   if (await _googleSignIn.isSignedIn()) {
+  //     Users userObj = Users(
+  //       uid: firebaseUser!.uid,
+  //       username: firebaseUser?.email ?? "",
+  //       email: firebaseUser?.email ?? "",
+  //       role: "user",
+  //       canPost: false,
+  //       isAdmin: false,
+  //       isBlocked: false,
+  //       isGoogle: true,
+  //     );
+  //
+  //     await _service.saveUser(user: userObj);
+  //     await LocalStorage.setString("role", "user");
+  //     await LocalStorage.setString("user_email", firebaseUser?.email ?? "");
+  //     await LocalStorage.setBool("isLoggedIn", true);
+  //     return AppStatus.kSuccess;
+  //   } else {}
+  // }
+
   ///check the user role
 
-  // String? _userEmail;
-  //
-  // String? get userEmail => _userEmail;
-  //
-  // void setEmail(String email) {
-  //   _userEmail = email;
-  //   notifyListeners();
-  // }
-  //
-  // Future<void> fetchUserRole() async {
-  //   if (_userEmail == null) return;
-  //   _role = await _service.fetchRoleAndSaveLocally(email: _userEmail!);
-  //   notifyListeners();
-  // }
+// String? _userEmail;
+//
+// String? get userEmail => _userEmail;
+//
+// void setEmail(String email) {
+//   _userEmail = email;
+//   notifyListeners();
+// }
+//
+// Future<void> fetchUserRole() async {
+//   if (_userEmail == null) return;
+//   _role = await _service.fetchRoleAndSaveLocally(email: _userEmail!);
+//   notifyListeners();
+// }
 }

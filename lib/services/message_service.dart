@@ -4,12 +4,12 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 class ChatService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("chats");
 
-  // Listen for real-time messages
+  /// Listen for real-time messages
   Stream<List<types.Message>> getMessagesStream() {
-    return _databaseRef.onValue.map((event) {
+    return _databaseRef.orderByChild("ts").onValue.map((event) {
       if (event.snapshot.value == null) return [];
 
-      final dynamic rawData = event.snapshot.value;
+      final rawData = event.snapshot.value;
       if (rawData is! Map) return [];
 
       return rawData.entries
@@ -30,7 +30,7 @@ class ChatService {
     });
   }
 
-  // Send a new message
+  /// Send a new message
   Future<void> sendMessage(String text, String userId) async {
     await _databaseRef.push().set({
       "id": userId,

@@ -6,10 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/router/my_navigation.dart';
-import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
+import 'package:skin_chat_app/screens/profile/basic_details_screen.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/buttons/oauth_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
@@ -117,7 +117,7 @@ class RegisterScreen extends StatelessWidget {
                     );
                     if (context.mounted) {
                       if (result == AppStatus.kSuccess) {
-                        MyNavigation.replace(context, HomeScreenVarient2());
+                        MyNavigation.replace(context, BasicDetailsScreen());
                         ToastHelper.showSuccessToast(
                             context: context, message: "Registeration success");
 
