@@ -71,13 +71,36 @@ class MyAuthProvider extends ChangeNotifier {
       // Sign in to Firebase
       UserCredential userCredential =
           await _auth.signInWithCredential(credential);
-
       firebaseUser = userCredential.user;
+
       if (firebaseUser == null) {
         return AppStatus.kFailed;
       }
 
+      // Extract user details
+      String? uid = firebaseUser!.uid;
+      String? displayName = firebaseUser!.displayName ?? "";
+      String? email = firebaseUser!.email ?? "";
+
       // Save the user to Firestore
+      Users userObj = Users(
+        uid: uid,
+        username: displayName,
+        email: email,
+        password: "",
+        role: "user",
+        canPost: false,
+        isAdmin: false,
+        isBlocked: false,
+        isGoogle: true,
+      );
+
+      // Saving user object to DB
+      await _service.saveUser(user: userObj);
+
+      await LocalStorage.setString("role", "user");
+      await LocalStorage.setString("user_email", email);
+      await LocalStorage.setBool("isLoggedIn", true);
 
       return AppStatus.kSuccess;
     } catch (e) {

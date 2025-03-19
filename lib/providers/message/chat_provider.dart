@@ -39,7 +39,8 @@ class ChatProvider extends ChangeNotifier {
   Future<void> sendMessage(
       types.PartialText message, MyAuthProvider authProvider) async {
     try {
-      await _chatService.sendMessage(message.text, authProvider.uid);
+      await _chatService.sendMessage(
+          message.text, authProvider.uid, authProvider.userName);
       notifyListeners();
       print("🔥🔥🔥🔥🔥🔥${message.text}🔥🔥🔥🔥🔥🔥");
     } catch (e) {

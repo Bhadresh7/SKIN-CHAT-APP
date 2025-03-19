@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:provider/provider.dart';
+import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/providers/internet_provider.dart';
@@ -66,6 +67,7 @@ class ForgetPassword extends StatelessWidget {
                     ToastHelper.showSuccessToast(
                         context: context,
                         message: "Email has sent to your email");
+                    MyNavigation.back(context);
                   } else {
                     ToastHelper.showErrorToast(
                       context: context,

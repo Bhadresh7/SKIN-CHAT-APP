@@ -16,9 +16,14 @@ import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/or_bar.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     /// formKey
@@ -107,7 +112,7 @@ class RegisterScreen extends StatelessWidget {
                     if (!(passwordController.text.trim() ==
                         confirmPasswordController.text.trim())) {
                       return ToastHelper.showErrorToast(
-                          context: context, message: "Password doesnt match");
+                          context: context, message: "Password doesn't match");
                     }
                     final result =
                         await authProvider.signInWithEmailAndPassword(

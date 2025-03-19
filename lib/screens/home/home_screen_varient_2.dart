@@ -87,7 +87,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                 }
                 chatProvider.sendMessage(message, authProvider);
               },
-        user: types.User(id: authProvider.uid),
+        user: types.User(
+          id: authProvider.uid,
+          firstName: authProvider.userName,
+        ),
         customBottomWidget: userRoleProvider.role == AppStatus.kUser
             ? const SizedBox.shrink()
             : null,

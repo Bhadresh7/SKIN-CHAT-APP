@@ -41,12 +41,15 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Radio(
-                    value: "employee",
+                    value: "admin",
                     groupValue: role,
                     onChanged: (value) {
-                      setState(() {
-                        role = value!;
-                      });
+                      setState(
+                        () {
+                          role = value!;
+                          print(role);
+                        },
+                      );
                     },
                   ),
                   Text(
@@ -56,12 +59,15 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                     ),
                   ),
                   Radio(
-                    value: "candidate",
+                    value: "user",
                     groupValue: role,
                     onChanged: (value) {
-                      setState(() {
-                        role = value!;
-                      });
+                      setState(
+                        () {
+                          role = value!;
+                          print(role);
+                        },
+                      );
                     },
                   ),
                   Text(
