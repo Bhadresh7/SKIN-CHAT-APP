@@ -39,10 +39,11 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   @override
   Widget build(BuildContext context) {
     /// Providers
-    final authProvider = Provider.of<MyAuthProvider>(context);
     final userRoleProvider = Provider.of<UserRoleProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context);
     final internetProvider = Provider.of<InternetProvider>(context);
+    final authProvider = Provider.of<MyAuthProvider>(context);
+    // print("👍👍👍👍👍👍${authProvider.userName}👍👍👍👍👍👍");
 
     /// Show a warning if there is no internet connection
     if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
@@ -67,6 +68,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     /// Sort messages (newest at the bottom)
     final sortedMessages = List<types.Message>.from(chatProvider.messages)
       ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+    //
+    // for (var messages in sortedMessages) {
+    //   username = messages.author.firstName;
+    // }
 
     return BackgroundScaffold(
       margin: EdgeInsets.all(0),
@@ -88,9 +93,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                 chatProvider.sendMessage(message, authProvider);
               },
         user: types.User(
-          id: authProvider.uid,
-          firstName: authProvider.userName,
+          id: context.read<MyAuthProvider>().uid,
+          // id: authProvider.uid,
         ),
+        showUserNames: true,
         customBottomWidget: userRoleProvider.role == AppStatus.kUser
             ? const SizedBox.shrink()
             : null,

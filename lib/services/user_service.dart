@@ -66,6 +66,23 @@ class UserService {
     );
   }
 
+  Future<String> fetchRole({required String email}) async {
+    try {
+      var doc = await _store
+          .collection("users")
+          .where("email", isEqualTo: email)
+          .limit(1)
+          .get()
+          .then((snapshot) =>
+              snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
+
+      return doc?["role"] as String? ?? "No email found";
+    } catch (e) {
+      print("Error fetching role: ${e.toString()}");
+      return "Error fetching role";
+    }
+  }
+
   ///change the user role in real-time (super-admin only)
 
 // Stream<String> changeUserRole({required String email}) {

@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
+import 'package:skin_chat_app/providers/auth/email_verification_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/providers/auth/user_role_provider.dart';
 import 'package:skin_chat_app/providers/internet_provider.dart';
@@ -33,6 +35,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MyAuthProvider()),
         ChangeNotifierProvider(create: (_) => UserRoleProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => EmailVerificationProvider()),
+        ChangeNotifierProvider(create: (_) => BasicUserDetailsProvider()),
       ],
       child: MyApp(),
     ),

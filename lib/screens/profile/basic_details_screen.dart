@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
+import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
+import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
@@ -22,6 +26,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   String? role = "";
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<MyAuthProvider>(context);
+    final basicDetailsProvider = Provider.of<BasicUserDetailsProvider>(context);
     return BackgroundScaffold(
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
@@ -102,9 +108,12 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
               ),
               DateInputField(),
               CustomButton(
-                  text: "submit",
-                  onPressed: () =>
-                      MyNavigation.replace(context, HomeScreenVarient2())),
+                text: "submit",
+                onPressed: () async {
+                  await LocalStorage.setBool("isLoggedIn", true);
+                  MyNavigation.replace(context, HomeScreenVarient2());
+                },
+              ),
               InkWell(
                 onTap: () {},
                 child: Text(

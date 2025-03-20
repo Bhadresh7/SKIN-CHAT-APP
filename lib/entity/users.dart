@@ -1,5 +1,7 @@
 class Users {
   Users({
+    required this.aadharNo,
+    required this.mobileNumber,
     required this.uid,
     required this.username,
     required this.email,
@@ -20,6 +22,8 @@ class Users {
   final bool isAdmin;
   final bool canPost;
   final bool isBlocked;
+  final String aadharNo;
+  final String mobileNumber;
 
   ///convert the data to map to store in firebase
   Map<String, dynamic> toJson() {

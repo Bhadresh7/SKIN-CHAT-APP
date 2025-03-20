@@ -5,30 +5,6 @@ class ChatService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("chats");
 
   /// Listen for real-time messages
-  // Stream<List<types.Message>> getMessagesStream() {
-  //   return _databaseRef.orderByChild("ts").onValue.map((event) {
-  //     if (event.snapshot.value == null) return [];
-  //
-  //     final rawData = event.snapshot.value;
-  //     if (rawData is! Map) return [];
-  //
-  //     return rawData.entries
-  //         .map((entry) {
-  //           final messageData = entry.value;
-  //           if (messageData is! Map) return null;
-  //
-  //           return types.TextMessage(
-  //             id: entry.key,
-  //             author: types.User(id: messageData["id"].toString()),
-  //             createdAt:
-  //                 messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch,
-  //             text: messageData["msg"]?.toString() ?? "No message",
-  //           );
-  //         })
-  //         .whereType<types.Message>()
-  //         .toList();
-  //   });
-  // }
   Stream<List<types.Message>> getMessagesStream() {
     return _databaseRef.orderByChild("ts").onValue.map((event) {
       if (event.snapshot.value == null) return [];
@@ -46,7 +22,7 @@ class ChatService {
               author: types.User(
                 id: messageData["id"].toString(),
                 firstName: messageData["name"]?.toString() ??
-                    "Unknown", // Get user name
+                    "Unknown", // Show user name
               ),
               createdAt:
                   messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch,
@@ -59,12 +35,12 @@ class ChatService {
   }
 
   /// Send a new message
-  Future<void> sendMessage(String text, String userId, String name) async {
+  Future<void> sendMessage(String text, String userId, String userName) async {
     await _databaseRef.push().set({
       "id": userId,
+      "name": userName,
       "msg": text,
       "ts": ServerValue.timestamp,
-      "na": name,
     });
   }
 }

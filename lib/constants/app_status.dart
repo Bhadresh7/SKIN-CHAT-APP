@@ -12,6 +12,7 @@ class AppStatus {
   static const String kEmailAlreadyExists = 'email-already-in-use';
   static const String kInternetErrorMsg = 'network-request-failed';
   static const String kWrongPassword = 'wrong-password';
+  static const String kEmailNotVerified = 'email-not-verified';
 
   ///role
   static const String kAdmin = "admin";
