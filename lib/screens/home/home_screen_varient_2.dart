@@ -43,23 +43,25 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final chatProvider = Provider.of<ChatProvider>(context);
     final internetProvider = Provider.of<InternetProvider>(context);
     final authProvider = Provider.of<MyAuthProvider>(context);
-    // print("👍👍👍👍👍👍${authProvider.userName}👍👍👍👍👍👍");
 
     /// Show a warning if there is no internet connection
     if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
-      return BackgroundScaffold(
-        showDrawer: true,
-        appBar: AppBar(title: const Text("Chat")),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "No internet connection. Please check your network.",
-                style:
-                    TextStyle(color: Colors.red, fontSize: AppStyles.subTitle),
-              ),
-            ],
+      return PopScope(
+        canPop: false,
+        child: BackgroundScaffold(
+          showDrawer: true,
+          appBar: AppBar(title: const Text("Chat")),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "No internet connection. Please check your network.",
+                  style: TextStyle(
+                      color: Colors.red, fontSize: AppStyles.subTitle),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -73,33 +75,37 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     //   username = messages.author.firstName;
     // }
 
-    return BackgroundScaffold(
-      margin: EdgeInsets.all(0),
-      showDrawer: true,
-      appBar: AppBar(
-        title: const Text("Chat"),
-      ),
-      body: Chat(
-        messages: sortedMessages,
-        onSendPressed: userRoleProvider.role == AppStatus.kUser
-            ? (_) {}
-            : (message) {
-                if (internetProvider.connectionStatus == AppStatus.kSlow) {
-                  return ToastHelper.showErrorToast(
-                    context: context,
-                    message: "Your internet is slow. Message may be delayed.",
-                  );
-                }
-                chatProvider.sendMessage(message, authProvider);
-              },
-        user: types.User(
-          id: context.read<MyAuthProvider>().uid,
-          // id: authProvider.uid,
+    return PopScope(
+      canPop: false,
+      child: BackgroundScaffold(
+        margin: EdgeInsets.all(0),
+        showDrawer: true,
+        appBar: AppBar(
+          title: const Text("Chat"),
         ),
-        showUserNames: true,
-        customBottomWidget: userRoleProvider.role == AppStatus.kUser
-            ? const SizedBox.shrink()
-            : null,
+        body: Chat(
+          messages: sortedMessages,
+          onSendPressed: userRoleProvider.role == AppStatus.kUser
+              ? (_) {}
+              : (message) {
+                  if (internetProvider.connectionStatus == AppStatus.kSlow) {
+                    return ToastHelper.showErrorToast(
+                      context: context,
+                      message: "Your internet is slow. Message may be delayed.",
+                    );
+                  }
+                  chatProvider.sendMessage(message, authProvider);
+                },
+          user: types.User(
+            id: context.read<MyAuthProvider>().uid,
+            imageUrl: authProvider.imgUrl ?? "no image",
+            // id: authProvider.uid,
+          ),
+          showUserNames: true,
+          customBottomWidget: userRoleProvider.role == AppStatus.kUser
+              ? const SizedBox.shrink()
+              : null,
+        ),
       ),
     );
   }

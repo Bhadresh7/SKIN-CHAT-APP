@@ -9,10 +9,14 @@ class BasicUserDetailsProvider extends ChangeNotifier {
 
   Future<String> saveUserToDbAndLocally(Users user) async {
     try {
-      await _service.saveUser(user: user);
+      final result = await _service.saveUser(user: user);
+      if (result == AppStatus.kEmailAlreadyExists) {
+        return AppStatus.kEmailAlreadyExists;
+      }
       await LocalStorage.setString("role", user.role);
       await LocalStorage.setString("email", user.email);
       await LocalStorage.setBool("isLoggedIn", true);
+
       return AppStatus.kSuccess;
     } catch (e) {
       print(e.toString());

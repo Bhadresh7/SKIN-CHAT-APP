@@ -6,13 +6,17 @@ import 'package:intl/intl.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 
 class DateInputField extends StatelessWidget {
-  const DateInputField({super.key});
+  const DateInputField({super.key, required this.controller});
+
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppStyles.margin),
       child: FormBuilderDateTimePicker(
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        controller: controller,
         name: "DOB",
         initialDate: DateTime.now(),
         firstDate: DateTime(1900),

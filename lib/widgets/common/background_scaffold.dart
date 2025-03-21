@@ -102,7 +102,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                   children: [
                     UserAccountsDrawerHeader(
                       accountEmail: Text(authProvider.email),
-                      accountName: Text(authProvider.userName),
+                      accountName: Text(
+                          authProvider.userName ?? authProvider.formUserName),
                     ),
                     ListTile(
                       trailing: Icon(Icons.arrow_forward_ios),

@@ -19,6 +19,8 @@ import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/or_bar.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 
+import '../profile/basic_details_screen.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -115,41 +117,28 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               ORBar(),
               OAuthButton(
-                text: "Continue with google",
-                onPressed: () async {
-                  if (internetProvider.connectionStatus == AppStatus.kSlow ||
-                      internetProvider.connectionStatus ==
-                          AppStatus.kDisconnected) {
-                    ToastHelper.showErrorToast(
-                        context: context,
-                        message: "Check your Internet Connection");
-                    return;
-                  }
-                  // This is a Quick fix for the BuildContext warning
-                  //the better way is to use a callback function
-                  final result = await authProvider.googleAuth();
+                  onPressed: () async {
+                    final result = await authProvider.googleAuth();
+                    if (context.mounted) {
+                      if (result == AppStatus.kSuccess) {
+                        MyNavigation.replace(context, BasicDetailsScreen());
+                        return ToastHelper.showSuccessToast(
+                            context: context,
+                            message: "Registered successfully");
+                      } else if (result == AppStatus.kFailed) {
+                        return ToastHelper.showErrorToast(
+                            context: context, message: "login canclled");
+                      } else if (result == AppStatus.kEmailAlreadyExists) {
+                        authProvider.completeBasicDetails();
+                        authProvider.completeImageSetup();
 
-                  if (context.mounted) {
-                    if (result == AppStatus.kSuccess) {
-                      MyNavigation.replace(context, HomeScreenVarient2());
-                      ToastHelper.showSuccessToast(
-                        context: context,
-                        message: "Login successful",
-                      );
-                    } else if (result == AppStatus.kFailed) {
-                      ToastHelper.showErrorToast(
-                        context: context,
-                        message: "signin cancelled",
-                      );
-                    } else {
-                      ToastHelper.showErrorToast(
-                        context: context,
-                        message: result,
-                      );
+                        MyNavigation.replace(context, HomeScreenVarient2());
+                        ToastHelper.showSuccessToast(
+                            context: context, message: "login successful");
+                      }
                     }
-                  }
-                },
-              ),
+                  },
+                  text: "Continue with google"),
               InkWell(
                 onTap: () => MyNavigation.to(context, RegisterScreen()),
                 child: Row(

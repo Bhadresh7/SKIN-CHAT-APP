@@ -9,6 +9,8 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
+import 'package:skin_chat_app/screens/profile/basic_details_screen.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/buttons/oauth_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
@@ -123,9 +125,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     );
                     if (context.mounted) {
                       if (result == AppStatus.kSuccess) {
-                        // MyNavigation.replace(context, BasicDetailsScreen());
-                        // ToastHelper.showSuccessToast(
-                        //     context: context, message: "Registeration success");
+                        authProvider
+                            .setPassword(passwordController.text.trim());
                         MyNavigation.replace(
                             context, EmailVerificationScreen());
 
@@ -149,11 +150,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onPressed: () async {
                     final result = await authProvider.googleAuth();
                     if (context.mounted) {
-                      result == AppStatus.kSuccess
-                          ? ToastHelper.showSuccessToast(
-                              context: context, message: "Signin Success")
-                          : ToastHelper.showErrorToast(
-                              context: context, message: "Error while Signin");
+                      if (result == AppStatus.kSuccess) {
+                        MyNavigation.replace(context, BasicDetailsScreen());
+                        return ToastHelper.showSuccessToast(
+                            context: context,
+                            message: "Registered successfully");
+                      } else if (result == AppStatus.kFailed) {
+                        return ToastHelper.showErrorToast(
+                            context: context, message: "Failed to register");
+                      } else if (result == AppStatus.kEmailAlreadyExists) {
+                        authProvider.completeBasicDetails();
+                        authProvider.completeImageSetup();
+                        MyNavigation.replace(context, HomeScreenVarient2());
+                        ToastHelper.showSuccessToast(
+                            context: context,
+                            message: "registeration successful");
+                      }
                     }
                   },
                   text: "Continue with google"),

@@ -6,7 +6,6 @@ import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
-import 'package:skin_chat_app/widgets/inputs/date_input_field.dart';
 
 class EditProfileScreen extends StatelessWidget {
   const EditProfileScreen({super.key});
@@ -54,7 +53,7 @@ class EditProfileScreen extends StatelessWidget {
                     errorText: "Enter a valid mobile number"),
               ],
             ),
-            DateInputField(),
+            // DateInputField(),
             CustomButton(text: "update", onPressed: () {}),
           ],
         ),

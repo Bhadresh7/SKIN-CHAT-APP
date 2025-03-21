@@ -28,7 +28,7 @@ class ChatProvider extends ChangeNotifier {
       await _chatService.sendMessage(
         message.text,
         authProvider.uid,
-        authProvider.userName,
+        authProvider.userName ?? authProvider.formUserName,
       );
       // print("🔥🔥🔥 Message Sent: ${message.text} 🔥🔥🔥");
     } catch (e) {

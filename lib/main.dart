@@ -9,6 +9,7 @@ import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/email_verification_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/providers/auth/user_role_provider.dart';
+import 'package:skin_chat_app/providers/image_picker_provider.dart';
 import 'package:skin_chat_app/providers/internet_provider.dart';
 import 'package:skin_chat_app/providers/message/chat_provider.dart';
 import 'package:skin_chat_app/screens/auth/auth_screen.dart';
@@ -18,16 +19,22 @@ void main() async {
   SystemChrome.setPreferredOrientations(
     [DeviceOrientation.portraitDown, DeviceOrientation.portraitUp],
   );
-
+  // await Hive.initFlutter();
+  // Hive.registerAdapter(UsersAdapter());
+  // await Hive.openBox<Users>('userBox');
   await Firebase.initializeApp();
 
   SharedPreferences store = await SharedPreferences.getInstance();
-  final result = store.getBool("isLoggedIn");
-  final email = store.getString("user_email");
-  final role = store.getString("role");
-  print(email);
-  print(result);
-  print(role);
+  // final login = store.getBool("isLoggedIn");
+  // final email = store.getString("user_email");
+  // final role = store.getString("role");
+  final formUserName = store.getString("userName");
+  // final userObj = LocalStorage.getString(user);
+  print("**********************$formUserName**********************");
+  // print(email);
+  // print(role);
+  // print("==========================$login========================");
+
   runApp(
     MultiProvider(
       providers: [
@@ -37,6 +44,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => EmailVerificationProvider()),
         ChangeNotifierProvider(create: (_) => BasicUserDetailsProvider()),
+        ChangeNotifierProvider(create: (_) => ImagePickerProvider()),
       ],
       child: MyApp(),
     ),

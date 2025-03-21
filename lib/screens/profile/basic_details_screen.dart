@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
+import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/helpers/local_storage.dart';
+import 'package:skin_chat_app/entity/users.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
+import 'package:skin_chat_app/screens/profile/image_setup_screen.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
@@ -23,105 +26,168 @@ class BasicDetailsScreen extends StatefulWidget {
 }
 
 class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
-  String? role = "";
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  final usernameController = TextEditingController();
+  final aadharController = TextEditingController();
+  final mobileNumberController = TextEditingController();
+  final dateController = TextEditingController();
+
+  String? selectedRole;
+  //
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   print(
+  //       "💗💗💗💗💗💗💗💗💗${context.read<MyAuthProvider>().isGoogle}💗💗💗💗💗💗💗💗💗");
+  //   usernameController.text = context.read<MyAuthProvider>().formUserName;
+  // }
+
+  @override
+  void dispose() {
+    super.dispose();
+    usernameController.dispose();
+    aadharController.dispose();
+    dateController.dispose();
+    mobileNumberController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<MyAuthProvider>(context);
     final basicDetailsProvider = Provider.of<BasicUserDetailsProvider>(context);
-    return BackgroundScaffold(
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: Center(
-          child: Column(
-            spacing: 0.03.sh,
-            children: [
-              Lottie.asset(AppAssets.login, height: 0.3.sh),
-              CustomInputField(
-                name: "name",
-                hintText: "name",
-                validators: [
-                  FormBuilderValidators.required(errorText: "name is required"),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+    print(authProvider.password);
+    return PopScope(
+      canPop: false,
+      child: BackgroundScaffold(
+        body: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Form(
+            key: _formKey,
+            child: Center(
+              child: Column(
+                spacing: 0.025.sh,
                 children: [
-                  Radio(
-                    value: "admin",
-                    groupValue: role,
-                    onChanged: (value) {
-                      setState(
-                        () {
-                          role = value!;
-                          print(role);
-                        },
-                      );
-                    },
+                  Lottie.asset(AppAssets.login, height: 0.3.sh),
+                  CustomInputField(
+                    controller: TextEditingController(
+                        text: context.read<MyAuthProvider>().userName ??
+                            context.read<MyAuthProvider>().formUserName),
+                    name: "name",
+                    hintText: "name",
+                    validators: [
+                      FormBuilderValidators.required(
+                          errorText: "name is required"),
+                    ],
                   ),
-                  Text(
-                    "Employee",
-                    style: TextStyle(
-                      fontSize: AppStyles.subTitle,
+                  Container(
+                    width: 0.70.sw,
+                    alignment: Alignment.center,
+                    child: FormBuilderRadioGroup<String>(
+                      name: 'role',
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                      ),
+                      validator: FormBuilderValidators.required(
+                        errorText: "Please select a role",
+                      ),
+                      options: [
+                        FormBuilderFieldOption(
+                          value: "admin",
+                          child: Text("Employee",
+                              style: TextStyle(fontSize: AppStyles.subTitle)),
+                        ),
+                        FormBuilderFieldOption(
+                          value: "user",
+                          child: Text("Candidate",
+                              style: TextStyle(fontSize: AppStyles.subTitle)),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedRole = value;
+                        });
+                      },
                     ),
                   ),
-                  Radio(
-                    value: "user",
-                    groupValue: role,
-                    onChanged: (value) {
-                      setState(
-                        () {
-                          role = value!;
-                          print(role);
-                        },
-                      );
+                  CustomInputField(
+                    controller: aadharController,
+                    name: "Aadhar number",
+                    maxLength: 12,
+                    keyboardType: TextInputType.number,
+                    hintText: "Aadhar number",
+                    validators: [
+                      FormBuilderValidators.required(
+                          errorText: "Aadhar number is required"),
+                      FormBuilderValidators.match(RegExp(r'^\d{12}$'),
+                          errorText: "Enter a valid 12-digit Aadhar number"),
+                    ],
+                  ),
+                  CustomInputField(
+                    controller: mobileNumberController,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    name: "mobile number",
+                    hintText: "mobile number",
+                    validators: [
+                      FormBuilderValidators.required(
+                          errorText: "Mobile number is required"),
+                      FormBuilderValidators.match(RegExp(r'^[6-9]\d{9}$'),
+                          errorText: "Enter a valid 10-digit mobile number"),
+                    ],
+                  ),
+                  DateInputField(
+                    controller: dateController,
+                  ),
+                  CustomButton(
+                    text: "submit",
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate() &&
+                          selectedRole != null) {
+                        Users user = Users(
+                          aadharNo: aadharController.text.trim(),
+                          mobileNumber: mobileNumberController.text.trim(),
+                          uid: authProvider.uid,
+                          username: usernameController.text.trim(),
+                          email: authProvider.email,
+                          role: selectedRole!,
+                          isGoogle: authProvider.isGoogle ? true : false,
+                          isBlocked: false,
+                          canPost: false,
+                          isAdmin: selectedRole! == "admin" ? true : false,
+                          password: authProvider.password,
+                        );
+                        final result = await basicDetailsProvider
+                            .saveUserToDbAndLocally(user);
+                        if (context.mounted) {
+                          if (result == AppStatus.kSuccess) {
+                            print(user.toString());
+                            await authProvider.completeBasicDetails();
+                            if (authProvider.isGoogle) {
+                              print("""object""");
+                              await authProvider.completeBasicDetails();
+                              MyNavigation.replace(
+                                  context, HomeScreenVarient2());
+                            } else {
+                              MyNavigation.replace(context, ImageSetupScreen());
+                            }
+                          } else {
+                            print("☠️☠️☠️☠️☠️☠️☠️☠️$result☠️☠️☠️☠️☠️☠️☠️☠️");
+                          }
+                        }
+                      }
                     },
                   ),
-                  Text(
-                    "Candidate",
-                    style: TextStyle(
-                      fontSize: AppStyles.subTitle,
+                  InkWell(
+                    onTap: () {},
+                    child: Text(
+                      "Terms & Conditions",
+                      style: TextStyle(color: AppStyles.links),
                     ),
-                  )
+                  ),
                 ],
               ),
-              CustomInputField(
-                name: "Aadhar number",
-                maxLength: 12,
-                hintText: "Aadhar number",
-                validators: [
-                  FormBuilderValidators.required(
-                      errorText: "Aadhar number is required"),
-                  FormBuilderValidators.match(RegExp(r'^\d{12}$'),
-                      errorText: "Enter a valid 12-digit Aadhar number"),
-                ],
-              ),
-              CustomInputField(
-                maxLength: 10,
-                name: "mobile number",
-                hintText: "mobile number",
-                validators: [
-                  FormBuilderValidators.required(
-                      errorText: "Mobile number is required"),
-                  FormBuilderValidators.match(RegExp(r'^[6-9]\d{9}$'),
-                      errorText: "Enter a valid 10-digit mobile number"),
-                ],
-              ),
-              DateInputField(),
-              CustomButton(
-                text: "submit",
-                onPressed: () async {
-                  await LocalStorage.setBool("isLoggedIn", true);
-                  MyNavigation.replace(context, HomeScreenVarient2());
-                },
-              ),
-              InkWell(
-                onTap: () {},
-                child: Text(
-                  "Terms & Conditions",
-                  style: TextStyle(color: AppStyles.links),
-                ),
-              )
-            ],
+            ),
           ),
         ),
       ),

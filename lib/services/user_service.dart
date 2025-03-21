@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/entity/users.dart';
 
 import '../helpers/local_storage.dart';
@@ -7,13 +8,23 @@ class UserService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
 
   ///saving user to firestore
-  Future<void> saveUser({required Users user}) async {
+  Future<String> saveUser({required Users user}) async {
     try {
+      // Check if the email already exists
+      QuerySnapshot querySnapshot = await _store
+          .collection("users")
+          .where("email", isEqualTo: user.email)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        print("Email already exists, not saving the user.");
+        return AppStatus.kEmailAlreadyExists;
+      }
+
       DocumentSnapshot doc =
           await _store.collection("users").doc(user.uid).get();
 
       if (!doc.exists) {
-        // Create a new user document if it doesn't exist
         await _store.collection("users").doc(user.uid).set(user.toJson());
       } else {
         // Merge to update only missing fields (useful for Google login users)
@@ -22,26 +33,53 @@ class UserService {
           "email": user.email,
         }, SetOptions(merge: true));
       }
+
+      print("✅ User saved successfully.");
+      return AppStatus.kSuccess;
     } catch (e) {
       print("☠️☠️☠️ Error saving user: ${e.toString()} ☠️☠️☠️");
+      return AppStatus.kFailed; // Return error status
     }
   }
 
-  ///find the particular user by email
-
+  ///find particular user by email
   Future<bool> findUserByEmail({required String email}) async {
     try {
       var querySnapshot = await _store
           .collection('users')
           .where('email', isEqualTo: email)
+          .limit(1) // Optimizes the query
           .get();
 
-      print(
-          "😶‍🌫️😶‍🌫️😶‍🌫️😶‍🌫️😶‍🌫️${querySnapshot.docs.isNotEmpty}😶‍🌫️😶‍🌫️😶‍🌫️😶‍🌫️😶‍🌫️");
-      return querySnapshot.docs.isNotEmpty;
+      return querySnapshot.docs.isNotEmpty; // Returns true if email exists
     } catch (e) {
-      print("Error checking user existence: $e");
-      return false;
+      print("☠️ Error finding user: ${e.toString()}");
+      return false; // Return false in case of an error
+    }
+  }
+
+  ///find the particular userRole by email
+  Future<String?> findUserRoleByEmail({required String email}) async {
+    try {
+      var querySnapshot = await _store
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        var userData = querySnapshot.docs.first.data();
+        String? role = userData['role'] as String?;
+        print("✅ User found with role: $role");
+        await LocalStorage.setString("role", role);
+        return role;
+      } else {
+        print("⚠️ User not found.");
+        return null;
+      }
+    } catch (e) {
+      print("☠️ Error checking user role: $e");
+      return null;
     }
   }
 

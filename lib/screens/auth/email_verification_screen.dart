@@ -23,38 +23,41 @@ class EmailVerificationScreen extends StatelessWidget {
             });
           }
 
-          return BackgroundScaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.email, size: 100, color: Colors.yellow),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Please verify your email",
-                    style: TextStyle(
-                        fontSize: AppStyles.subTitle,
-                        fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "A verification email has been sent to your email address.",
-                    style: TextStyle(fontSize: AppStyles.subTitle),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomButton(
-                    text: "Resend Email",
-                    onPressed: () async {
-                      await provider.resendEmail();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("Verification email sent again!")),
-                      );
-                    },
-                  ),
-                ],
+          return PopScope(
+            canPop: false,
+            child: BackgroundScaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.email, size: 100, color: Colors.yellow),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Please verify your email",
+                      style: TextStyle(
+                          fontSize: AppStyles.subTitle,
+                          fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "A verification email has been sent to your email address.",
+                      style: TextStyle(fontSize: AppStyles.subTitle),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    CustomButton(
+                      text: "Resend Email",
+                      onPressed: () async {
+                        await provider.resendEmail();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text("Verification email sent again!")),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           );
