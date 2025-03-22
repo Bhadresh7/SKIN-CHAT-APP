@@ -6,12 +6,15 @@ import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
+import 'package:skin_chat_app/widgets/inputs/date_input_field.dart';
 
 class EditProfileScreen extends StatelessWidget {
   const EditProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final dateController = TextEditingController();
+
     return BackgroundScaffold(
       appBar: AppBar(),
       // showDrawer: true,
@@ -52,6 +55,9 @@ class EditProfileScreen extends StatelessWidget {
                 FormBuilderValidators.match(RegExp(r'^[6789]\d{9}$'),
                     errorText: "Enter a valid mobile number"),
               ],
+            ),
+            DateInputField(
+              controller: dateController,
             ),
             // DateInputField(),
             CustomButton(text: "update", onPressed: () {}),

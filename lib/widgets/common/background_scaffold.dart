@@ -6,7 +6,6 @@ import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/providers/auth/user_role_provider.dart';
 import 'package:skin_chat_app/screens/about/about_us_screen.dart';
 import 'package:skin_chat_app/screens/auth/login_screen.dart';
 import 'package:skin_chat_app/screens/profile/edit_profile_screen.dart';
@@ -70,7 +69,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<MyAuthProvider>(context);
-    final userRoleProvider = Provider.of<UserRoleProvider>(context);
+    // final userRoleProvider = Provider.of<UserRoleProvider>(context);
 
     // if (!_isConnected) {
     //   return Scaffold(
@@ -121,7 +120,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                         MyNavigation.to(context, EditProfileScreen());
                       },
                     ),
-                    if (userRoleProvider.role == AppStatus.kSuperAdmin)
+                    if (authProvider.role == AppStatus.kSuperAdmin)
                       ListTile(
                         trailing: Icon(Icons.arrow_forward_ios),
                         title: const Text(' View User '),

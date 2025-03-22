@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 
 import '../../services/message_service.dart';
+import '../auth/my_auth_provider.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   List<types.Message> _messages = [];
-
-  // Stream<List<types.Message>> get messageStream =>
-  //     _chatService.getMessagesStream();
 
   List<types.Message> get messages => _messages;
 
@@ -22,19 +19,45 @@ class ChatProvider extends ChangeNotifier {
     );
   }
 
+  // Stream<List<types.Message>> get messagesStream =>
+  //     _chatService.getMessagesStream();
   Future<void> sendMessage(
       types.PartialText message, MyAuthProvider authProvider) async {
     try {
+      final newMessage = types.TextMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        author: types.User(
+          id: authProvider.uid,
+          firstName: authProvider.userName ?? authProvider.formUserName,
+
+          imageUrl: authProvider.imgUrl ?? "", // ✅ Include profile image URL
+        ),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        text: message.text,
+      );
+
+      _messages.insert(0, newMessage);
+
       await _chatService.sendMessage(
         message.text,
         authProvider.uid,
         authProvider.userName ?? authProvider.formUserName,
+        authProvider.imgUrl ?? "",
       );
-      // print("🔥🔥🔥 Message Sent: ${message.text} 🔥🔥🔥");
+
+      print("🔥🔥🔥 Message Sent: ${message.text} 🔥🔥🔥");
     } catch (e) {
       print("🔥🔥🔥 Error Sending Message: ${e.toString()} 🔥🔥🔥");
     } finally {
-      notifyListeners(); // Only call once
+      notifyListeners(); // ✅ UI updates after message is added
     }
+  }
+
+  Future<void> deleteMessage(String messageKey) async {
+    await _chatService.deleteMessage(messageKey: messageKey);
+
+    // Remove from local list and notify UI
+    messages.removeWhere((msg) => msg.id == messageKey);
+    notifyListeners();
   }
 }

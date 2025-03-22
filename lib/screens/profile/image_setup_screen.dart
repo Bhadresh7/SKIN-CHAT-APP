@@ -25,6 +25,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<MyAuthProvider>(context);
+
     return BackgroundScaffold(
       body: Column(
         children: [
@@ -35,7 +36,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
                       alignment: Alignment.topRight,
                       child: TextButton(
                         onPressed: () {
-                          // Handle skip action
+                          MyNavigation.replace(context, HomeScreenVarient2());
                         },
                         child: Text(
                           "Skip",
@@ -46,7 +47,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
                         ),
                       ),
                     )
-                  : SizedBox.shrink();
+                  : const SizedBox.shrink();
             },
           ),
           Expanded(
@@ -82,8 +83,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
                               message: "Please select a profile image",
                             );
                           } else {
-                            String userId =
-                                authProvider.uid; // Get logged-in user ID
+                            String userId = authProvider.uid;
                             String? imageUrl = await imagePickerProvider
                                 .uploadImageToFirebase(userId);
 

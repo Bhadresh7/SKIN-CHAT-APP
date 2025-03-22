@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
@@ -24,20 +23,65 @@ class MyAuthProvider extends ChangeNotifier {
   bool hasCompletedBasicDetails = false;
   bool hasCompletedImageSetup = false;
   bool isGoogle = false;
+  bool _canPost = false;
+  int? _adminCount;
+  int? _userCount;
+  String? imgUrl;
 
+  int get adminCount => _adminCount ?? 0;
+  int get userCount => _userCount ?? 0;
   String get password => _password;
   String get email => _auth.currentUser?.email ?? "no email";
   String? get userName => _auth.currentUser?.displayName;
   String get uid => _auth.currentUser?.uid ?? "uid not found";
   String? get role => _role;
   bool get isLoading => _isLoading;
+  bool get canPost => _canPost;
   String get formUserName => _formUserName ?? "no form name";
   Future<bool> get isOauth async => await _googleSignIn.isSignedIn();
-  String? imgUrl;
+  Stream<Map<String, int>> get adminUserCountStream =>
+      _service.userAndAdminCountStream;
 
   MyAuthProvider() {
     _loadUserDetails();
     _initializeEmailVerification();
+  }
+
+  /// Load user details
+  Future<void> _loadUserDetails() async {
+    _role = await LocalStorage.getString("role") ?? "no-role-found";
+    _canPost = await LocalStorage.getBool("canPost") ?? false;
+    isLoggedIn = await LocalStorage.getBool("isLoggedIn") ?? false;
+    isEmailVerified = await LocalStorage.getBool("isEmailVerified") ?? false;
+    _formUserName =
+        await LocalStorage.getString("userName") ?? "no form userName";
+    hasCompletedBasicDetails =
+        await LocalStorage.getBool('hasCompletedBasicDetails') ?? false;
+    hasCompletedImageSetup =
+        await LocalStorage.getBool('hasCompletedImageSetup') ?? false;
+
+    print("👍 isLoggedIn: $isLoggedIn");
+    print("🔥 isEmailVerified: $isEmailVerified");
+    print("🔹 Role from LocalStorage: $_role");
+    print("🔹 CanPost from LocalStorage: $_canPost");
+
+    notifyListeners();
+
+    // Start listening for real-time updates
+    _service.fetchRoleAndSaveLocally(email: email).listen(
+      (data) async {
+        _role = data["role"];
+        _canPost = data["canPost"];
+
+        // Ensure updates are stored correctly
+        await LocalStorage.setString("role", _role);
+        await LocalStorage.setBool("canPost", _canPost);
+
+        print("🔄 Live update - Role: $_role, CanPost: $_canPost");
+
+        notifyListeners();
+      },
+    );
   }
 
   void setPassword(String newPassword) {
@@ -50,18 +94,6 @@ class MyAuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> getUserProfileImage(String userId) async {
-    DataSnapshot snapshot = await FirebaseDatabase.instance
-        .ref()
-        .child("users")
-        .child(userId)
-        .child("img")
-        .get();
-
-    imgUrl = snapshot.value.toString();
-    return imgUrl;
-  }
-
   Future<void> completeBasicDetails() async {
     await LocalStorage.setBool('hasCompletedBasicDetails', true);
     notifyListeners();
@@ -69,26 +101,6 @@ class MyAuthProvider extends ChangeNotifier {
 
   Future<void> completeImageSetup() async {
     await LocalStorage.setBool('hasCompletedImageSetup', true);
-  }
-
-  /// Load user details
-  Future<void> _loadUserDetails() async {
-    isLoggedIn = await LocalStorage.getBool("isLoggedIn") ?? false;
-    isEmailVerified = await LocalStorage.getBool("isEmailVerified") ?? false;
-    _formUserName =
-        await LocalStorage.getString("userName") ?? "no form userName";
-    hasCompletedBasicDetails =
-        await LocalStorage.getBool('hasCompletedBasicDetails') ?? false;
-    hasCompletedImageSetup =
-        await LocalStorage.getBool('hasCompletedImageSetup') ?? false;
-
-    print("👍👍👍👍👍👍👍👍$isLoggedIn");
-    print("🔥🔥🔥🔥🔥🔥🔥🔥$isEmailVerified");
-    _service.fetchRoleAndSaveLocally(email: email).listen((newRow) {
-      _role = newRow;
-    });
-
-    notifyListeners();
   }
 
   /// Initialize email verification
@@ -146,17 +158,33 @@ class MyAuthProvider extends ChangeNotifier {
       firebaseUser = userCredential.user;
       if (firebaseUser == null) return AppStatus.kFailed;
 
-      final isEmailExists = await _service.findUserByEmail(email: email);
+      final isEmailExists =
+          await _service.findUserByEmail(email: firebaseUser!.email!);
       if (isEmailExists) {
+        completeImageSetup();
         await LocalStorage.setBool("isLoggedIn", true);
         await LocalStorage.setBool("isEmailVerified", true);
-        print("aksdjfak;lsdjf;alkhs");
+
+        final result = await _service.fetchRoleAndCanPostStatus(
+            email: firebaseUser!.email!);
+
+        await LocalStorage.setBool('canPost', result['canPost']);
+        await LocalStorage.setString('role', result['role']);
         return AppStatus.kEmailAlreadyExists;
+      } else {
+        completeImageSetup();
+        await LocalStorage.setBool("isLoggedIn", true);
+        await LocalStorage.setBool("isEmailVerified", true);
+
+        final result = await _service.fetchRoleAndCanPostStatus(
+            email: firebaseUser!.email!);
+
+        await LocalStorage.setBool('canPost', result['canPost']);
+        await LocalStorage.setString('role', result['role']);
+
+        isGoogle = true;
+        return AppStatus.kSuccess;
       }
-      await LocalStorage.setBool("isLoggedIn", true);
-      await LocalStorage.setBool("isEmailVerified", true);
-      isGoogle = true;
-      return AppStatus.kSuccess;
     } catch (e) {
       print("❌ Error: ${e.toString()}");
       return AppStatus.kFailed;
@@ -164,12 +192,6 @@ class MyAuthProvider extends ChangeNotifier {
       setLoadingState(value: false);
     }
   }
-
-  // Future<void> _saveUserSession(User user) async {
-  //   await LocalStorage.setString("user_email", user.email ?? "");
-  //   await LocalStorage.setBool("isLoggedIn", true);
-  //   notifyListeners();
-  // }
 
   /// Email and Password Registration
   Future<String> signUpWithEmailAndPassword({
@@ -195,7 +217,7 @@ class MyAuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Login with Email Verification Check
+  /// Login with Email and password
   Future<String> loginWithEmailAndPassword(
       {required String email, required String password}) async {
     try {
@@ -205,21 +227,43 @@ class MyAuthProvider extends ChangeNotifier {
       User? user = userCredential.user;
       if (user == null) return AppStatus.kFailed;
 
-      String? role = await _service.findUserRoleByEmail(email: email);
-      print("================================$role");
-      // if (!isUserExists) {
-      //   return AppStatus.kUserNotFound;
-      // }
-      // // // await _saveUserSession(user);
-      // print("==========================${user.email}");
-      // var result = await LocalStorage.getBool("isLoggedIn");
-      // print("===============================$result");
+      bool isUserExists = await _service.findUserByEmail(email: email);
+
+      if (!isUserExists) {
+        return AppStatus.kUserNotFound;
+      }
+      print("-==-=-=-=-=-=-=-=-=-=-=-=-=-=-${user.displayName}");
+      print("==========================${user.email}");
+      await LocalStorage.setBool("isLoggedIn", true);
+      await LocalStorage.setBool('isEmailVerified', true);
+      await LocalStorage.setBool('hasCompletedBasicDetails', true);
+      await LocalStorage.setBool('hasCompletedImageSetup', true);
+
       return AppStatus.kSuccess;
     } catch (e) {
       return e.toString();
     } finally {
       setLoadingState(value: false);
+      notifyListeners();
     }
+  }
+
+  /// Reset Password
+  Future<String> resetPassword({required String email}) async {
+    try {
+      await _auth.setLanguageCode("en");
+      await _auth.sendPasswordResetEmail(email: email);
+      return AppStatus.kSuccess;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  ///dispose timer for email verification
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   /// Sign Out
@@ -235,60 +279,4 @@ class MyAuthProvider extends ChangeNotifier {
       print("Error signing out: $e");
     }
   }
-
-  /// Reset Password
-  Future<String> resetPassword({required String email}) async {
-    try {
-      await _auth.setLanguageCode("en");
-      await _auth.sendPasswordResetEmail(email: email);
-      return AppStatus.kSuccess;
-    } catch (e) {
-      return e.toString();
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 }
-
-// Future<String> saveUsersToDatabaseAndLocally() async {
-//   if (await _googleSignIn.isSignedIn()) {
-//     Users userObj = Users(
-//       uid: firebaseUser!.uid,
-//       username: firebaseUser?.email ?? "",
-//       email: firebaseUser?.email ?? "",
-//       role: "user",
-//       canPost: false,
-//       isAdmin: false,
-//       isBlocked: false,
-//       isGoogle: true,
-//     );
-//
-//     await _service.saveUser(user: userObj);
-//     await LocalStorage.setString("role", "user");
-//     await LocalStorage.setString("user_email", firebaseUser?.email ?? "");
-//     await LocalStorage.setBool("isLoggedIn", true);
-//     return AppStatus.kSuccess;
-//   } else {}
-// }
-
-///check the user role
-
-// String? _userEmail;
-//
-// String? get userEmail => _userEmail;
-//
-// void setEmail(String email) {
-//   _userEmail = email;
-//   notifyListeners();
-// }
-//
-// Future<void> fetchUserRole() async {
-//   if (_userEmail == null) return;
-//   _role = await _service.fetchRoleAndSaveLocally(email: _userEmail!);
-//   notifyListeners();
-// }
-// }

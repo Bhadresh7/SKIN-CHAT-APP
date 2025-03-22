@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -33,12 +34,15 @@ class ImagePickerProvider extends ChangeNotifier {
       // Get download URL
       String downloadUrl = await snapshot.ref.getDownloadURL();
 
+      await FirebaseFirestore.instance.collection("users").doc(userId).update({
+        "imageUrl": downloadUrl,
+      });
       // Store URL in Realtime Database
       await FirebaseDatabase.instance
           .ref()
-          .child("users")
+          .child("chats")
           .child(userId)
-          .update({"img": downloadUrl});
+          .update({"imageUrl": downloadUrl});
 
       return downloadUrl;
     } catch (e) {

@@ -53,12 +53,12 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC12BePAsg2t3ZkYN99RIeVZmtBomCjJtc',
-    appId: '1:190812402106:android:17d17e077e6921be2aed83',
-    messagingSenderId: '190812402106',
-    projectId: 'skin-chat-app',
-    databaseURL: 'https://skin-chat-app-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'skin-chat-app.firebasestorage.app',
+    apiKey: 'AIzaSyA3unvS8yjI3VUf3M9OQh7wmJGPLUwi3qI',
+    appId: '1:58564698490:android:191a4ecc2c3c65073a36c3',
+    messagingSenderId: '58564698490',
+    projectId: 'shopping-cart-ef9af',
+    databaseURL: 'https://shopping-cart-ef9af-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'shopping-cart-ef9af.appspot.com',
   );
 
 }

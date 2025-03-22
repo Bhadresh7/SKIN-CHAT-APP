@@ -38,7 +38,7 @@ class UserService {
       return AppStatus.kSuccess;
     } catch (e) {
       print("☠️☠️☠️ Error saving user: ${e.toString()} ☠️☠️☠️");
-      return AppStatus.kFailed; // Return error status
+      return AppStatus.kFailed;
     }
   }
 
@@ -48,63 +48,51 @@ class UserService {
       var querySnapshot = await _store
           .collection('users')
           .where('email', isEqualTo: email)
-          .limit(1) // Optimizes the query
+          .limit(1)
           .get();
 
-      return querySnapshot.docs.isNotEmpty; // Returns true if email exists
+      return querySnapshot.docs.isNotEmpty;
     } catch (e) {
       print("☠️ Error finding user: ${e.toString()}");
       return false; // Return false in case of an error
     }
   }
 
-  ///find the particular userRole by email
-  Future<String?> findUserRoleByEmail({required String email}) async {
-    try {
-      var querySnapshot = await _store
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        var userData = querySnapshot.docs.first.data();
-        String? role = userData['role'] as String?;
-        print("✅ User found with role: $role");
-        await LocalStorage.setString("role", role);
-        return role;
-      } else {
-        print("⚠️ User not found.");
-        return null;
-      }
-    } catch (e) {
-      print("☠️ Error checking user role: $e");
-      return null;
-    }
-  }
-
   /// fetch the user role in real-time
-  Stream<String> fetchRoleAndSaveLocally({required String email}) {
+  Stream<Map<String, dynamic>> fetchRoleAndSaveLocally(
+      {required String email}) {
     return _store
         .collection("users")
         .where("email", isEqualTo: email)
         .limit(1)
         .snapshots()
-        .map(
-      (snapshot) {
-        if (snapshot.docs.isNotEmpty) {
-          final data = snapshot.docs.first.data();
-          final role = data["role"] ?? "no-role-found";
-          print("🔥 Updated User Role: $role");
-          LocalStorage.setString("role", role);
-          return role;
-        }
-        return "no-role-found";
-      },
-    );
+        .map((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+
+        final role = data["role"] ?? "no-role-found";
+        final canPost = data["canPost"] ?? false;
+
+        print("🔥 Updated User Role: $role");
+        print("📝 canPost: $canPost");
+
+        LocalStorage.setString("role", role);
+        LocalStorage.setBool("canPost", canPost);
+
+        return {
+          "role": role,
+          "canPost": canPost,
+        };
+      }
+      return {
+        "role": "no-role-found",
+        "canPost": false,
+      };
+    });
   }
 
-  Future<String> fetchRole({required String email}) async {
+  Future<Map<String, dynamic>> fetchRoleAndCanPostStatus(
+      {required String email}) async {
     try {
       var doc = await _store
           .collection("users")
@@ -114,16 +102,35 @@ class UserService {
           .then((snapshot) =>
               snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
 
-      return doc?["role"] as String? ?? "No email found";
+      print("=====================${doc?.data()}=============================");
+      final role = doc?["role"] ?? "no-role-found";
+      final canPost = doc?["canPost"] ?? false;
+
+      print("🔥 Updated User Role: $role");
+      print("📝 canPost: $canPost");
+
+      await LocalStorage.setString("role", role);
+      await LocalStorage.setBool("canPost", canPost);
+
+      return {
+        'role': role,
+        'canPost': canPost,
+      };
     } catch (e) {
       print("Error fetching role: ${e.toString()}");
-      return "Error fetching role";
+      return {
+        'status': AppStatus.kUserNotFound,
+      };
     }
   }
 
-  ///change the user role in real-time (super-admin only)
-
-// Stream<String> changeUserRole({required String email}) {
-//   return ;
-// }
+  Stream<Map<String, int>> get userAndAdminCountStream {
+    return _store.collection('users').snapshots().map((snapshot) {
+      int adminCount =
+          snapshot.docs.where((doc) => doc['role'] == 'admin').length;
+      int userCount =
+          snapshot.docs.where((doc) => doc['role'] == 'user').length;
+      return {'admin': adminCount, 'user': userCount};
+    });
+  }
 }

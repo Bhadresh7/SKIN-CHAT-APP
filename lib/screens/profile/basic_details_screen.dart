@@ -34,14 +34,15 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   final dateController = TextEditingController();
 
   String? selectedRole;
-  //
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   print(
-  //       "💗💗💗💗💗💗💗💗💗${context.read<MyAuthProvider>().isGoogle}💗💗💗💗💗💗💗💗💗");
-  //   usernameController.text = context.read<MyAuthProvider>().formUserName;
-  // }
+
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = context.read<MyAuthProvider>();
+    usernameController.text =
+        authProvider.userName ?? authProvider.formUserName;
+    print(usernameController.text);
+  }
 
   @override
   void dispose() {
@@ -60,6 +61,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     return PopScope(
       canPop: false,
       child: BackgroundScaffold(
+        loading: basicDetailsProvider.isLoading,
         body: SingleChildScrollView(
           scrollDirection: Axis.vertical,
           child: Form(
@@ -159,21 +161,21 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         );
                         final result = await basicDetailsProvider
                             .saveUserToDbAndLocally(user);
-                        if (context.mounted) {
-                          if (result == AppStatus.kSuccess) {
-                            print(user.toString());
+
+                        if (result == AppStatus.kSuccess) {
+                          print(user.toString());
+                          await authProvider.completeBasicDetails();
+                          if (authProvider.isGoogle) {
+                            print("""object""");
                             await authProvider.completeBasicDetails();
-                            if (authProvider.isGoogle) {
-                              print("""object""");
-                              await authProvider.completeBasicDetails();
-                              MyNavigation.replace(
-                                  context, HomeScreenVarient2());
-                            } else {
-                              MyNavigation.replace(context, ImageSetupScreen());
-                            }
+                            await authProvider.completeImageSetup();
+                            MyNavigation.replace(context, HomeScreenVarient2());
                           } else {
-                            print("☠️☠️☠️☠️☠️☠️☠️☠️$result☠️☠️☠️☠️☠️☠️☠️☠️");
+                            await authProvider.completeBasicDetails();
+                            MyNavigation.replace(context, ImageSetupScreen());
                           }
+                        } else {
+                          print("☠️☠️☠️☠️☠️☠️☠️☠️$result☠️☠️☠️☠️☠️☠️☠️☠️");
                         }
                       }
                     },

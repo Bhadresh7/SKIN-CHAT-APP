@@ -1,43 +1,50 @@
 {
   "project_info": {
-    "project_number": "190812402106",
-    "firebase_url": "https://skin-chat-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "project_id": "skin-chat-app",
-    "storage_bucket": "skin-chat-app.firebasestorage.app"
+    "project_number": "58564698490",
+    "firebase_url": "https://shopping-cart-ef9af-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "shopping-cart-ef9af",
+    "storage_bucket": "shopping-cart-ef9af.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:190812402106:android:17d17e077e6921be2aed83",
+        "mobilesdk_app_id": "1:58564698490:android:191a4ecc2c3c65073a36c3",
         "android_client_info": {
-          "package_name": "com.example.skin_chat_app"
+          "package_name": "com.chat.skin_chat_app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "190812402106-0h24dqob8o78f3t9na1bo3jmgrj1hp5c.apps.googleusercontent.com",
+          "client_id": "58564698490-bjsjj02rd9fddjo9tcq71ff94vrf9c3e.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.skin_chat_app",
+            "package_name": "com.chat.skin_chat_app",
             "certificate_hash": "6604124065f1253cd210b6f355bd11b91bd773ba"
           }
         },
         {
-          "client_id": "190812402106-flfhqkevn7c12avf84qeahh2n048dip0.apps.googleusercontent.com",
+          "client_id": "58564698490-112s1e1kr7iop6j2p3seum2f6evrvai4.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyC12BePAsg2t3ZkYN99RIeVZmtBomCjJtc"
+          "current_key": "AIzaSyA3unvS8yjI3VUf3M9OQh7wmJGPLUwi3qI"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "190812402106-flfhqkevn7c12avf84qeahh2n048dip0.apps.googleusercontent.com",
+              "client_id": "58564698490-112s1e1kr7iop6j2p3seum2f6evrvai4.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "58564698490-b8b87k29gicin5pu5mbnhp1itaajshnj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.shoppingCartExample"
+              }
             }
           ]
         }

@@ -6,9 +6,17 @@ import 'package:skin_chat_app/services/user_service.dart';
 
 class BasicUserDetailsProvider extends ChangeNotifier {
   final UserService _service = UserService();
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  void setLoadingState({required bool value}) {
+    _isLoading = value;
+    notifyListeners();
+  }
 
   Future<String> saveUserToDbAndLocally(Users user) async {
     try {
+      setLoadingState(value: true);
       final result = await _service.saveUser(user: user);
       if (result == AppStatus.kEmailAlreadyExists) {
         return AppStatus.kEmailAlreadyExists;
@@ -22,6 +30,7 @@ class BasicUserDetailsProvider extends ChangeNotifier {
       print(e.toString());
       return AppStatus.kFailed;
     } finally {
+      setLoadingState(value: false);
       notifyListeners();
     }
   }

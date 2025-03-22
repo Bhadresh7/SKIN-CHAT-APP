@@ -46,7 +46,7 @@ class GridViews extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            "User Name",
+                            "Bhadreshpalani",
                             style: TextStyle(
                               fontSize: 16.sp,
                             ),
