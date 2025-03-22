@@ -1,0 +1,2 @@
+C:/Users/Bhadresh/Desktop/Projects/skin_chat_app/android/app/.cxx/RelWithDebInfo/49692p1p/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Bhadresh/Desktop/Projects/skin_chat_app/android/app/.cxx/RelWithDebInfo/49692p1p/x86_64/CMakeFiles/rebuild_cache.dir
