@@ -1,6 +1,8 @@
 // part 'users.g.dart';
 
 // @HiveType(typeId: 1)
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Users {
   Users({
     required this.aadharNo,
@@ -14,6 +16,7 @@ class Users {
     this.isAdmin = false,
     this.canPost = false,
     this.isBlocked = false,
+    required this.dob,
   });
 
   // @HiveField(0)
@@ -38,6 +41,7 @@ class Users {
   final String aadharNo;
   // @HiveField(10)
   final String mobileNumber;
+  final String dob;
 
   /// Convert the data to a map to store in Firebase
   Map<String, dynamic> toJson() {
@@ -53,6 +57,8 @@ class Users {
       'isBlocked': isBlocked,
       'aadharNo': aadharNo,
       'mobileNumber': mobileNumber,
+      'dob': dob,
+      'createdAt': FieldValue.serverTimestamp(),
     };
   }
 
@@ -71,7 +77,8 @@ Users(
   canPost: $canPost,
   isBlocked: $isBlocked,
   aadharNo: $aadharNo,
-  mobileNumber: $mobileNumber
+  mobileNumber: $mobileNumber,
+  dob: $dob
 )''';
   }
 }
