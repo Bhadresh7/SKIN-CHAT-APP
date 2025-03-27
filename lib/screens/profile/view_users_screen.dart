@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/services/csv_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/grid_views_varient.dart';
@@ -13,8 +14,77 @@ class ViewUsersScreen extends StatefulWidget {
 }
 
 class _ViewUsersScreenState extends State<ViewUsersScreen> {
-  List<String> chipLabels = ["All", "Admins", "Blocked"];
+  List<String> chipLabels = ["All", "Employee", "Candidates", "Blocked"];
+  List<String> roles = ["user", "admin"];
+  final CsvService _service = CsvService();
   int selectedIndex = 0;
+
+  void _confirmDownload(String role) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Confirm Download"),
+          content: Text("Are you sure you want to download the CSV for $role?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context); // Close dialog
+                await _service.fetchUserDetailsAndConvertToCsv(role: role);
+              },
+              child:
+                  Text("Confirm", style: TextStyle(color: AppStyles.primary)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDownloadSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Select Role",
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 16.h),
+              ListTile(
+                leading: Icon(Icons.person, color: AppStyles.primary),
+                title: Text("Candidate"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDownload("user");
+                },
+              ),
+              ListTile(
+                leading:
+                    Icon(Icons.admin_panel_settings, color: AppStyles.primary),
+                title: Text("Employee"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDownload("admin");
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,45 +99,49 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
                 height: 0.09.sh,
                 width: 0.50.sw,
                 text: "Download csv",
-                onPressed: () {},
+                onPressed: _showDownloadSheet,
                 suffixIcon: Icons.file_download_outlined,
               ),
             ),
           ],
         ),
       ),
-      // showDrawer: true,
       body: Column(
         children: [
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10.h),
-            child: Row(
-              children: List.generate(chipLabels.length, (index) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 5.w),
-                  child: ChoiceChip(
-                    showCheckmark: false,
-                    label: Text(
-                      chipLabels[index],
-                      style: TextStyle(
-                        color: selectedIndex == index
-                            ? Colors.white
-                            : Colors.black,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(chipLabels.length, (index) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 5.w),
+                    child: ChoiceChip(
+                      showCheckmark: false,
+                      label: Text(
+                        chipLabels[index],
+                        style: TextStyle(
+                          color: selectedIndex == index
+                              ? Colors.white
+                              : Colors.black,
+                        ),
                       ),
+                      selected: selectedIndex == index,
+                      selectedColor: AppStyles.primary,
+                      onSelected: (bool selected) {
+                        setState(() {
+                          selectedIndex = index;
+                        });
+                      },
                     ),
-                    selected: selectedIndex == index,
-                    selectedColor: AppStyles.primary,
-                    onSelected: (bool selected) {
-                      setState(() {
-                        selectedIndex = index;
-                      });
-                    },
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
-          Expanded(child: GridViewsVarient()),
+          Expanded(
+            child: GridViewsVarient(filter: chipLabels[selectedIndex]),
+          ),
         ],
       ),
     );

@@ -68,8 +68,9 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<MyAuthProvider>(context);
+    final authProvider = context.watch<MyAuthProvider>();
     // final userRoleProvider = Provider.of<UserRoleProvider>(context);
+    print("🔥🔥🔥🔥🔥&&&&&&&&&&&&&&&&&&&&&&&${authProvider.role}🔥🔥🔥🔥🔥");
 
     // if (!_isConnected) {
     //   return Scaffold(
@@ -97,6 +98,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
         appBar: widget.appBar,
         drawer: widget.showDrawer
             ? Drawer(
+                // width: MediaQuery.of(context).size.width / 2,
                 child: ListView(
                   children: [
                     UserAccountsDrawerHeader(

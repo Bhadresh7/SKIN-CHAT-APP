@@ -11,6 +11,7 @@ class MyAuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final UserService _service = UserService();
+
   User? firebaseUser;
   Timer? _timer;
 
@@ -29,16 +30,27 @@ class MyAuthProvider extends ChangeNotifier {
   String? imgUrl;
 
   int get adminCount => _adminCount ?? 0;
+
   int get userCount => _userCount ?? 0;
+
   String get password => _password;
+
   String get email => _auth.currentUser?.email ?? "no email";
+
   String? get userName => _auth.currentUser?.displayName;
+
   String get uid => _auth.currentUser?.uid ?? "uid not found";
+
   String? get role => _role;
+
   bool get isLoading => _isLoading;
+
   bool get canPost => _canPost;
+
   String get formUserName => _formUserName ?? "no form name";
+
   Future<bool> get isOauth async => await _googleSignIn.isSignedIn();
+
   Stream<Map<String, int>> get adminUserCountStream =>
       _service.userAndAdminCountStream;
 
@@ -52,6 +64,7 @@ class MyAuthProvider extends ChangeNotifier {
     _role = await LocalStorage.getString("role") ?? "no-role-found";
     _canPost = await LocalStorage.getBool("canPost") ?? false;
     isLoggedIn = await LocalStorage.getBool("isLoggedIn") ?? false;
+    isGoogle = await LocalStorage.getBool("isGoogle") ?? false;
     isEmailVerified = await LocalStorage.getBool("isEmailVerified") ?? false;
     _formUserName =
         await LocalStorage.getString("userName") ?? "no form userName";
@@ -64,22 +77,25 @@ class MyAuthProvider extends ChangeNotifier {
     print("🔥 isEmailVerified: $isEmailVerified");
     print("🔹 Role from LocalStorage: $_role");
     print("🔹 CanPost from LocalStorage: $_canPost");
+    print("🥰 Google Login Status LocalStorage: $isGoogle");
 
     notifyListeners();
 
     // Start listening for real-time updates
     _service.fetchRoleAndSaveLocally(email: email).listen(
       (data) async {
-        _role = data["role"];
-        _canPost = data["canPost"];
+        if (_role != data["role"] || _canPost != data["canPost"]) {
+          _role = data["role"];
+          _canPost = data["canPost"];
 
-        // Ensure updates are stored correctly
-        await LocalStorage.setString("role", _role);
-        await LocalStorage.setBool("canPost", _canPost);
+          // Only update local storage if values have changed
+          await LocalStorage.setString("role", _role);
+          await LocalStorage.setBool("canPost", _canPost);
 
-        print("🔄 Live update - Role: $_role, CanPost: $_canPost");
+          print("======>>>>> Live update - Role: $_role, CanPost: $_canPost");
 
-        notifyListeners();
+          notifyListeners();
+        }
       },
     );
   }
@@ -158,38 +174,34 @@ class MyAuthProvider extends ChangeNotifier {
       firebaseUser = userCredential.user;
       if (firebaseUser == null) return AppStatus.kFailed;
 
+      // ✅ Ensure isGoogle is updated **after** successful sign-in
+      isGoogle = true;
+      await LocalStorage.setBool("isGoogle", true); // Store in LocalStorage
+      notifyListeners(); // UI should update immediately
+
       final isEmailExists =
           await _service.findUserByEmail(email: firebaseUser!.email!);
-      if (isEmailExists) {
-        completeImageSetup();
-        await LocalStorage.setBool("isLoggedIn", true);
-        await LocalStorage.setBool("isEmailVerified", true);
 
-        final result = await _service.fetchRoleAndCanPostStatus(
-            email: firebaseUser!.email!);
+      await completeImageSetup();
+      await LocalStorage.setBool("isLoggedIn", true);
+      await LocalStorage.setBool("isEmailVerified", true);
 
-        await LocalStorage.setBool('canPost', result['canPost']);
-        await LocalStorage.setString('role', result['role']);
-        return AppStatus.kEmailAlreadyExists;
-      } else {
-        completeImageSetup();
-        await LocalStorage.setBool("isLoggedIn", true);
-        await LocalStorage.setBool("isEmailVerified", true);
+      final result =
+          await _service.fetchRoleAndCanPostStatus(email: firebaseUser!.email!);
 
-        final result = await _service.fetchRoleAndCanPostStatus(
-            email: firebaseUser!.email!);
+      await LocalStorage.setBool('canPost', result['canPost']);
+      await LocalStorage.setString('role', result['role']);
 
-        await LocalStorage.setBool('canPost', result['canPost']);
-        await LocalStorage.setString('role', result['role']);
-
-        isGoogle = true;
-        return AppStatus.kSuccess;
-      }
+      return isEmailExists ? AppStatus.kEmailAlreadyExists : AppStatus.kSuccess;
     } catch (e) {
       print("❌ Error: ${e.toString()}");
+      isGoogle = false; // Ensure isGoogle is false if something fails
+      await LocalStorage.setBool("isGoogle", false); // Store failure state
+      notifyListeners();
       return AppStatus.kFailed;
     } finally {
       setLoadingState(value: false);
+      notifyListeners();
     }
   }
 
@@ -201,17 +213,25 @@ class MyAuthProvider extends ChangeNotifier {
   }) async {
     try {
       setLoadingState(value: true);
+
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
+
       User? user = userCredential.user;
       if (user == null) return AppStatus.kFailed;
 
       await user.sendEmailVerification();
       await LocalStorage.setString("userName", username);
       _formUserName = username;
+      await LocalStorage.setBool('isLoggedIn', true);
       return AppStatus.kSuccess;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == AppStatus.kEmailAlreadyExists) {
+        return AppStatus.kEmailAlreadyExists;
+      }
+      return e.message ?? "An unknown error occurred.";
     } catch (e) {
-      return e.toString();
+      return "Error: $e";
     } finally {
       setLoadingState(value: false);
     }
@@ -227,11 +247,12 @@ class MyAuthProvider extends ChangeNotifier {
       User? user = userCredential.user;
       if (user == null) return AppStatus.kFailed;
 
-      bool isUserExists = await _service.findUserByEmail(email: email);
+      final result = await _service.fetchRoleAndCanPostStatus(email: email);
 
-      if (!isUserExists) {
-        return AppStatus.kUserNotFound;
-      }
+      final status = result['canPost'];
+      print("🐈🐈🐈🐈🐈🐈🐈${result['email']}");
+      print("😎😎😎😎😎😎$status");
+
       print("-==-=-=-=-=-=-=-=-=-=-=-=-=-=-${user.displayName}");
       print("==========================${user.email}");
       await LocalStorage.setBool("isLoggedIn", true);
@@ -266,6 +287,36 @@ class MyAuthProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  Future<void> clearUserDetails() async {
+    await LocalStorage.removeElement("role");
+    await LocalStorage.removeElement("canPost");
+    await LocalStorage.removeElement("isLoggedIn");
+    await LocalStorage.removeElement("isEmailVerified");
+    await LocalStorage.removeElement("userName");
+    await LocalStorage.removeElement("hasCompletedBasicDetails");
+    await LocalStorage.removeElement("hasCompletedImageSetup");
+
+    // Reset variables
+    _role = "no-role-found";
+    _canPost = false;
+    isLoggedIn = false;
+    isEmailVerified = false;
+    _formUserName = "no form userName";
+    hasCompletedBasicDetails = false;
+    hasCompletedImageSetup = false;
+
+    print("🗑️ User details cleared from LocalStorage");
+    print("🔹 Role: $_role");
+    print("🔹 CanPost: $_canPost");
+    print("👍 isLoggedIn: $isLoggedIn");
+    print("🔥 isEmailVerified: $isEmailVerified");
+    print("📛 UserName: $_formUserName");
+    print("✅ hasCompletedBasicDetails: $hasCompletedBasicDetails");
+    print("🖼️ hasCompletedImageSetup: $hasCompletedImageSetup");
+
+    notifyListeners();
+  }
+
   /// Sign Out
   Future<void> signOut() async {
     try {
@@ -274,9 +325,14 @@ class MyAuthProvider extends ChangeNotifier {
         await _googleSignIn.disconnect();
       }
       await LocalStorage.clear();
+      await clearUserDetails();
+      print("After logout====>>>$role");
+      print("After logout ====>>>$_role");
       notifyListeners();
     } catch (e) {
       print("Error signing out: $e");
+    } finally {
+      notifyListeners();
     }
   }
 }

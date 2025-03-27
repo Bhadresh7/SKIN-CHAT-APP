@@ -1,4 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class ChatService {
@@ -15,12 +16,13 @@ class ChatService {
       return rawData.entries
           .map((entry) {
             final messageData = entry.value;
+            print("-=-=-=-=-=-=-=-$messageData-=-=-=-=");
             if (messageData is! Map) return null;
 
             return types.TextMessage(
               id: entry.key,
               author: types.User(
-                imageUrl: messageData['imgUrl'].toString(),
+                // imageUrl: _getProfileImageUrl(messageData['id']).toString(),
                 id: messageData["id"].toString(),
                 firstName: messageData["name"]?.toString() ?? "Unknown",
               ),
@@ -83,14 +85,26 @@ class ChatService {
   }
 
   /// Send a new message
-  Future<void> sendMessage(
-      String text, String userId, String userName, String imageUrl) async {
+  Future<void> sendMessage(String text, String userId, String userName) async {
     await _databaseRef.push().set({
       "id": userId,
       "name": userName,
       "msg": text,
       "ts": ServerValue.timestamp,
-      "img": imageUrl
+      // "img": imageUrl
     });
+  }
+
+  ///get image url
+  Future<String?> _getProfileImageUrl(String userId) async {
+    try {
+      String filePath = "profile_images/$userId.jpg";
+      Reference ref = FirebaseStorage.instance.ref().child(filePath);
+      String downloadUrl = await ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print("Error getting download URL: $e");
+      return null;
+    }
   }
 }

@@ -13,13 +13,12 @@ import 'package:skin_chat_app/providers/internet_provider.dart';
 import 'package:skin_chat_app/screens/auth/forget_password.dart';
 import 'package:skin_chat_app/screens/auth/register_screen.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
+import 'package:skin_chat_app/screens/profile/basic_details_screen.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/buttons/oauth_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/or_bar.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
-
-import '../profile/basic_details_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -117,28 +116,29 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               ORBar(),
               OAuthButton(
-                  onPressed: () async {
-                    final result = await authProvider.googleAuth();
-                    if (context.mounted) {
-                      if (result == AppStatus.kSuccess) {
-                        MyNavigation.replace(context, BasicDetailsScreen());
-                        return ToastHelper.showSuccessToast(
-                            context: context,
-                            message: "Registered successfully");
-                      } else if (result == AppStatus.kFailed) {
-                        return ToastHelper.showErrorToast(
-                            context: context, message: "login canclled");
-                      } else if (result == AppStatus.kEmailAlreadyExists) {
-                        authProvider.completeBasicDetails();
-                        authProvider.completeImageSetup();
-
-                        MyNavigation.replace(context, HomeScreenVarient2());
-                        ToastHelper.showSuccessToast(
-                            context: context, message: "login successful");
-                      }
+                onPressed: () async {
+                  final result = await authProvider.googleAuth();
+                  if (context.mounted) {
+                    if (result == AppStatus.kSuccess ||
+                        result == AppStatus.kEmailAlreadyExists) {
+                      await authProvider.completeBasicDetails();
+                      await authProvider.completeImageSetup();
+                      MyNavigation.replace(context, HomeScreenVarient2());
+                      return ToastHelper.showSuccessToast(
+                          context: context, message: "Login Successful");
+                    } else if (result == AppStatus.kFailed) {
+                      return ToastHelper.showErrorToast(
+                          context: context, message: "Login Failed");
+                    } else {
+                      print("😍😍😍😍😍$result😍😍😍😍😍");
+                      MyNavigation.replace(context, BasicDetailsScreen());
+                      return ToastHelper.showSuccessToast(
+                          context: context, message: "Login successful");
                     }
-                  },
-                  text: "Continue with google"),
+                  }
+                },
+                text: 'continue with google',
+              ),
               InkWell(
                 onTap: () => MyNavigation.to(context, RegisterScreen()),
                 child: Row(

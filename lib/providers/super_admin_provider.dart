@@ -1,37 +1,89 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:skin_chat_app/helpers/local_storage.dart';
 
-class SuperAdminProvider extends ChangeNotifier {
-  final FirebaseFirestore _store = FirebaseFirestore.instance;
-  bool _canPost = false;
-  bool get canPost => _canPost;
+import '../services/super_admin_service.dart';
 
-  ///change user role
-  Future<void> enablePosting({required String email}) async {
+class SuperAdminProvider with ChangeNotifier {
+  final SuperAdminService _service = SuperAdminService();
+  bool _isSuperAdmin = false;
+  bool get isSuperAdmin => _isSuperAdmin;
+  bool _loading = false;
+  bool get loading => _loading;
+
+  void setLoadingState(bool value) {
+    _loading = value;
+    notifyListeners();
+  }
+
+  Future<void> checkSuperAdminStatus(String email) async {
     try {
-      final snapshot = await _store
-          .collection("users")
-          .where("email", isEqualTo: email)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        final doc = snapshot.docs.first;
-        final docId = doc.id;
-
-        await _store.collection("users").doc(docId).update({"canPost": true});
-
-        _canPost = true;
-        notifyListeners();
-
-        print("✅ canPost updated successfully for $email");
-      } else {
-        print("⚠️ No user found with email: $email");
-      }
+      setLoadingState(true);
+      _isSuperAdmin = await _service.findSuperAdminByEmail(email: email);
+      await LocalStorage.setBool('isLoggedIn', true);
+      await LocalStorage.setBool('isEmailVerified', true);
+      await LocalStorage.setString('role', 'super_admin');
+      await LocalStorage.setBool("canPost", true);
     } catch (e) {
-      print("❌ Error updating canPost: $e");
+      print(e.toString());
+    } finally {
+      setLoadingState(false);
+      notifyListeners();
     }
   }
 
-  ///block users
+  Future<void> allowUserToPost({required String userId}) async {
+    try {
+      setLoadingState(true);
+      await _service.enablePosting(userId: userId);
+    } catch (e) {
+      print(e.toString());
+    } finally {
+      setLoadingState(false);
+      notifyListeners();
+    }
+  }
+
+  Stream userStream() {
+    return _service.userStream();
+  }
+
+  Future<void> blockUsers({required String userId}) async {
+    try {
+      await _service.blockUsers(uid: userId);
+    } catch (e) {
+      print(e.toString());
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  List<DocumentSnapshot> _users = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
+
+  List<DocumentSnapshot> get users => _users;
+  bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+
+  Future<void> fetchUsers(String filter) async {
+    if (_isLoading || !_hasMore) return;
+    _isLoading = true;
+    notifyListeners();
+
+    final newUsers = await _service.fetchUsers(
+      filter: filter,
+      lastDocument: _lastDocument,
+    );
+
+    if (newUsers.isNotEmpty) {
+      _lastDocument = newUsers.last;
+      _users.addAll(newUsers);
+    } else {
+      _hasMore = false;
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
 }

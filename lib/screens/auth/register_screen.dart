@@ -124,6 +124,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       password: passwordController.text.trim(),
                     );
                     if (context.mounted) {
+                      if (result == AppStatus.kEmailAlreadyExists) {
+                        return ToastHelper.showErrorToast(
+                            context: context,
+                            message: AppStatus.kEmailAlreadyExists);
+                      }
                       if (result == AppStatus.kSuccess) {
                         authProvider
                             .setPassword(passwordController.text.trim());
@@ -146,29 +151,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ORBar(),
 
               ///OAuthButton
+
               OAuthButton(
-                  onPressed: () async {
-                    final result = await authProvider.googleAuth();
-                    if (context.mounted) {
-                      if (result == AppStatus.kSuccess) {
-                        MyNavigation.replace(context, BasicDetailsScreen());
-                        return ToastHelper.showSuccessToast(
-                            context: context,
-                            message: "Registered successfully");
-                      } else if (result == AppStatus.kFailed) {
-                        return ToastHelper.showErrorToast(
-                            context: context, message: "Failed to register");
-                      } else if (result == AppStatus.kEmailAlreadyExists) {
-                        authProvider.completeBasicDetails();
-                        authProvider.completeImageSetup();
-                        MyNavigation.replace(context, HomeScreenVarient2());
-                        ToastHelper.showSuccessToast(
-                            context: context,
-                            message: "registeration successful");
-                      }
+                onPressed: () async {
+                  final result = await authProvider.googleAuth();
+                  if (context.mounted) {
+                    if (result == AppStatus.kSuccess ||
+                        result == AppStatus.kEmailAlreadyExists) {
+                      await authProvider.completeBasicDetails();
+                      await authProvider.completeImageSetup();
+                      MyNavigation.replace(context, HomeScreenVarient2());
+                      return ToastHelper.showSuccessToast(
+                          context: context, message: "Login Successful");
+                    } else if (result == AppStatus.kFailed) {
+                      return ToastHelper.showErrorToast(
+                          context: context, message: "Login Failed");
+                    } else {
+                      print("😍😍😍😍😍$result😍😍😍😍😍");
+                      MyNavigation.replace(context, BasicDetailsScreen());
+                      return ToastHelper.showSuccessToast(
+                          context: context, message: "Login successful");
                     }
-                  },
-                  text: "Continue with google"),
+                  }
+                },
+                text: 'continue with google',
+              ),
+
               InkWell(
                 onTap: () => MyNavigation.back(context),
                 child: Row(

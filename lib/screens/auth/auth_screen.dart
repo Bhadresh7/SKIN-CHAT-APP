@@ -24,7 +24,7 @@ class AuthScreen extends StatelessWidget {
     } else if (!authProvider.hasCompletedImageSetup) {
       return const ImageSetupScreen();
     } else {
-      return const HomeScreenVarient2();
+      return HomeScreenVarient2();
     }
   }
 }

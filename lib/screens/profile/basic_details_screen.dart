@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/entity/users.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
@@ -17,6 +16,8 @@ import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 import 'package:skin_chat_app/widgets/inputs/date_input_field.dart';
+
+import '../../modal/users.dart';
 
 class BasicDetailsScreen extends StatefulWidget {
   const BasicDetailsScreen({super.key});
@@ -58,6 +59,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     final authProvider = Provider.of<MyAuthProvider>(context);
     final basicDetailsProvider = Provider.of<BasicUserDetailsProvider>(context);
     print(authProvider.password);
+    print("GOOGLE STATUS=====>>>>${context.read<MyAuthProvider>().isGoogle}");
     return PopScope(
       canPop: false,
       child: BackgroundScaffold(
@@ -147,6 +149,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                       if (_formKey.currentState!.validate() &&
                           selectedRole != null) {
                         Users user = Users(
+                          dob: dateController.text.trim(),
                           aadharNo: aadharController.text.trim(),
                           mobileNumber: mobileNumberController.text.trim(),
                           uid: authProvider.uid,
@@ -166,7 +169,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           print(user.toString());
                           await authProvider.completeBasicDetails();
                           if (authProvider.isGoogle) {
-                            print("""object""");
+                            print("""using Google Authentication """);
                             await authProvider.completeBasicDetails();
                             await authProvider.completeImageSetup();
                             MyNavigation.replace(context, HomeScreenVarient2());

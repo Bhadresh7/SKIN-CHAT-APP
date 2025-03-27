@@ -5,22 +5,26 @@ import '../../services/message_service.dart';
 import '../auth/my_auth_provider.dart';
 
 class ChatProvider extends ChangeNotifier {
+  ChatProvider() {
+    print("I'm Initilized");
+  }
   final ChatService _chatService = ChatService();
   List<types.Message> _messages = [];
 
   List<types.Message> get messages => _messages;
 
-  listenForMessages() {
-    _chatService.getMessagesStream().listen(
-      (newMessages) {
-        _messages = newMessages;
-        notifyListeners();
-      },
-    );
-  }
+  // listenForMessages() {
+  //   _chatService.getMessagesStream().listen(
+  //     (newMessages) {
+  //       _messages = newMessages;
+  //       notifyListeners();
+  //     },
+  //   );
+  // }
 
-  // Stream<List<types.Message>> get messagesStream =>
-  //     _chatService.getMessagesStream();
+  Stream<List<types.Message>> get messagesStream =>
+      _chatService.getMessagesStream();
+
   Future<void> sendMessage(
       types.PartialText message, MyAuthProvider authProvider) async {
     try {
@@ -29,8 +33,7 @@ class ChatProvider extends ChangeNotifier {
         author: types.User(
           id: authProvider.uid,
           firstName: authProvider.userName ?? authProvider.formUserName,
-
-          imageUrl: authProvider.imgUrl ?? "", // ✅ Include profile image URL
+          // imageUrl: imageProvider.imgUrl ?? "hello there",
         ),
         createdAt: DateTime.now().millisecondsSinceEpoch,
         text: message.text,
@@ -38,18 +41,17 @@ class ChatProvider extends ChangeNotifier {
 
       _messages.insert(0, newMessage);
 
-      await _chatService.sendMessage(
-        message.text,
-        authProvider.uid,
-        authProvider.userName ?? authProvider.formUserName,
-        authProvider.imgUrl ?? "",
-      );
+      await _chatService.sendMessage(message.text, authProvider.uid,
+          authProvider.userName ?? authProvider.formUserName
+          // imageProvider.imgUrl ?? "",
+          );
+      // print(imageProvider.selectedImage);
 
       print("🔥🔥🔥 Message Sent: ${message.text} 🔥🔥🔥");
     } catch (e) {
       print("🔥🔥🔥 Error Sending Message: ${e.toString()} 🔥🔥🔥");
     } finally {
-      notifyListeners(); // ✅ UI updates after message is added
+      notifyListeners();
     }
   }
 

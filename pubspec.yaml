@@ -34,6 +34,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 #utitlities
   flutter_screenutil: ^5.9.3
+  flutter_launcher_icons: ^0.14.3
   flutter_chat_ui: ^1.6.15
   flutter_chat_types: ^3.6.2
 #  file_picker: ^9.2.0
@@ -42,11 +43,15 @@ dependencies:
   flutter_svg: ^2.0.17
   intl: ^0.20.2
   image_picker: ^1.1.2
+  flutter_image_compress: ^2.4.0
   permission_handler: ^11.4.0
+  csv: ^6.0.0
+  open_filex: ^4.7.0
+  infinite_scroll_pagination: ^5.0.0
 
 
 #  state management
-  provider: ^6.1.2
+  provider: ^6.1.4
 
 
 #  form packages
@@ -69,8 +74,11 @@ dependencies:
   path_provider: ^2.1.5
   shared_preferences: ^2.5.2
   toastification: ^3.0.2
-#  stylish_bottom_bar: ^1.1.0
+  flutter_sharing_intent: ^1.1.1
 
+
+# rebuild the widget tree
+  flutter_phoenix: ^1.1.1
 
 #  env loader
   flutter_dotenv: ^5.2.1
@@ -80,6 +88,8 @@ dependencies:
 
 dependency_overrides:
   intl: ^0.20.2
+  archive: ^4.0.5
+
 
 
 dev_dependencies:
@@ -87,6 +97,7 @@ dev_dependencies:
     sdk: flutter
   build_runner: ^2.4.15
   hive_generator: ^2.0.1
+
 
 
 
@@ -114,7 +125,11 @@ flutter_native_splash:
     color: "#ffffff" # Required for Android 12+
     color_dark: "#042a49" # Dark mode background color
 
-
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo/skin-logo.jpg"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
