@@ -34,8 +34,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   final mobileNumberController = TextEditingController();
   final dateController = TextEditingController();
 
-  String? selectedRole;
-
   @override
   void initState() {
     super.initState();
@@ -60,6 +58,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     final basicDetailsProvider = Provider.of<BasicUserDetailsProvider>(context);
     print(authProvider.password);
     print("GOOGLE STATUS=====>>>>${context.read<MyAuthProvider>().isGoogle}");
+
     return PopScope(
       canPop: false,
       child: BackgroundScaffold(
@@ -108,9 +107,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         ),
                       ],
                       onChanged: (value) {
-                        setState(() {
-                          selectedRole = value;
-                        });
+                        basicDetailsProvider.selectRole(role: value);
                       },
                     ),
                   ),
@@ -147,7 +144,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                     text: "submit",
                     onPressed: () async {
                       if (_formKey.currentState!.validate() &&
-                          selectedRole != null) {
+                          basicDetailsProvider.selectedRole != null) {
                         Users user = Users(
                           dob: dateController.text.trim(),
                           aadharNo: aadharController.text.trim(),
@@ -155,11 +152,13 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           uid: authProvider.uid,
                           username: usernameController.text.trim(),
                           email: authProvider.email,
-                          role: selectedRole!,
+                          role: basicDetailsProvider.selectedRole!,
                           isGoogle: authProvider.isGoogle ? true : false,
                           isBlocked: false,
                           canPost: false,
-                          isAdmin: selectedRole! == "admin" ? true : false,
+                          isAdmin: basicDetailsProvider.selectedRole! == "admin"
+                              ? true
+                              : false,
                           password: authProvider.password,
                         );
                         final result = await basicDetailsProvider

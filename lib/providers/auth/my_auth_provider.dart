@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -159,8 +160,15 @@ class MyAuthProvider extends ChangeNotifier {
       setLoadingState(value: true);
       notifyListeners();
 
+      print("🔹 Google Sign-In Process Started");
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return AppStatus.kFailed;
+      if (googleUser == null) {
+        print("❌ Google sign-in canceled by user");
+        return AppStatus.kFailed;
+      }
+
+      print("✅ Google User Signed In: ${googleUser.email}");
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -169,18 +177,28 @@ class MyAuthProvider extends ChangeNotifier {
         idToken: googleAuth.idToken,
       );
 
+      print("🔹 Signing in with Google credentials...");
       UserCredential userCredential =
           await _auth.signInWithCredential(credential);
       firebaseUser = userCredential.user;
-      if (firebaseUser == null) return AppStatus.kFailed;
 
-      // ✅ Ensure isGoogle is updated **after** successful sign-in
+      if (firebaseUser == null) {
+        print("❌ Firebase User is NULL after authentication");
+        return AppStatus.kFailed;
+      }
+
+      print("✅ Firebase User Signed In: ${firebaseUser!.email}");
+
+      // ✅ Update `isGoogle` after successful sign-in
       isGoogle = true;
-      await LocalStorage.setBool("isGoogle", true); // Store in LocalStorage
+      await LocalStorage.setBool("isGoogle", true);
       notifyListeners(); // UI should update immediately
+
+      print("🔹 isGoogle Set to TRUE");
 
       final isEmailExists =
           await _service.findUserByEmail(email: firebaseUser!.email!);
+      print("🔹 Checking if email exists: $isEmailExists");
 
       await completeImageSetup();
       await LocalStorage.setBool("isLoggedIn", true);
@@ -188,15 +206,20 @@ class MyAuthProvider extends ChangeNotifier {
 
       final result =
           await _service.fetchRoleAndCanPostStatus(email: firebaseUser!.email!);
+      print("✅ Fetched Role and CanPost Status: $result");
 
-      await LocalStorage.setBool('canPost', result['canPost']);
-      await LocalStorage.setString('role', result['role']);
+      await LocalStorage.setBool('canPost', result['canPost'] ?? false);
+      await LocalStorage.setString('role', result['role'] ?? "");
+
+      print("🔹 Stored isGoogle: ${await LocalStorage.getBool('isGoogle')}");
+      print("🔹 Stored canPost: ${await LocalStorage.getBool('canPost')}");
+      print("🔹 Stored role: ${await LocalStorage.getString('role')}");
 
       return isEmailExists ? AppStatus.kEmailAlreadyExists : AppStatus.kSuccess;
     } catch (e) {
       print("❌ Error: ${e.toString()}");
       isGoogle = false; // Ensure isGoogle is false if something fails
-      await LocalStorage.setBool("isGoogle", false); // Store failure state
+      await LocalStorage.setBool("isGoogle", false);
       notifyListeners();
       return AppStatus.kFailed;
     } finally {
@@ -334,5 +357,44 @@ class MyAuthProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  final FirebaseFirestore _store = FirebaseFirestore.instance;
+
+  /// Listen to user role updates in real-time
+  void listenToRoleChanges(String email) {
+    _store
+        .collection("super_admins")
+        .where("email", isEqualTo: email)
+        .limit(1)
+        .snapshots()
+        .listen((superAdminSnapshot) async {
+      if (superAdminSnapshot.docs.isNotEmpty) {
+        _updateUserData(superAdminSnapshot.docs.first.data());
+        return;
+      }
+
+      _store
+          .collection("users")
+          .where("email", isEqualTo: email)
+          .limit(1)
+          .snapshots()
+          .listen((userSnapshot) async {
+        if (userSnapshot.docs.isNotEmpty) {
+          _updateUserData(userSnapshot.docs.first.data());
+        }
+      });
+    });
+  }
+
+  /// Update local storage and notify UI
+  Future<void> _updateUserData(Map<String, dynamic> data) async {
+    _role = data["role"] ?? "no-role-found";
+    _canPost = data["canPost"] ?? false;
+
+    await LocalStorage.setString("role", _role);
+    await LocalStorage.setBool("canPost", _canPost);
+
+    notifyListeners(); // Updates UI
   }
 }

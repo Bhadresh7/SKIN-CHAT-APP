@@ -9,6 +9,13 @@ class BasicUserDetailsProvider extends ChangeNotifier {
   final UserService _service = UserService();
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  String? _selectedRole;
+  String? get selectedRole => _selectedRole;
+
+  void selectRole({required String? role}) {
+    _selectedRole = role;
+    notifyListeners();
+  }
 
   void setLoadingState({required bool value}) {
     _isLoading = value;

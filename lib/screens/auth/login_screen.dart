@@ -118,23 +118,36 @@ class _LoginScreenState extends State<LoginScreen> {
               OAuthButton(
                 onPressed: () async {
                   final result = await authProvider.googleAuth();
-                  if (context.mounted) {
-                    if (result == AppStatus.kSuccess ||
-                        result == AppStatus.kEmailAlreadyExists) {
+                  print("0000000000000000$result");
+                  if (!context.mounted) return;
+
+                  switch (result) {
+                    case AppStatus.kEmailAlreadyExists:
+                      MyNavigation.replace(
+                          context, HomeScreenVarient2()); // Navigate first
+                      ToastHelper.showSuccessToast(
+                          context: context, message: "Login Successful");
+
+                      // Run these after navigating to avoid UI blocking issues
                       await authProvider.completeBasicDetails();
                       await authProvider.completeImageSetup();
-                      MyNavigation.replace(context, HomeScreenVarient2());
-                      return ToastHelper.showSuccessToast(
-                          context: context, message: "Login Successful");
-                    } else if (result == AppStatus.kFailed) {
-                      return ToastHelper.showErrorToast(
-                          context: context, message: "Login Failed");
-                    } else {
-                      print("😍😍😍😍😍$result😍😍😍😍😍");
+                      break;
+
+                    case AppStatus.kSuccess:
                       MyNavigation.replace(context, BasicDetailsScreen());
-                      return ToastHelper.showSuccessToast(
-                          context: context, message: "Login successful");
-                    }
+                      break;
+
+                    case AppStatus.kFailed:
+                      ToastHelper.showErrorToast(
+                          context: context, message: "Login Failed");
+                      break;
+
+                    default:
+                      print("Google Auth Result: $result");
+                      // MyNavigation.replace(context, HomeScreenVarient2());
+                      ToastHelper.showErrorToast(
+                          context: context, message: result);
+                      break;
                   }
                 },
                 text: 'continue with google',

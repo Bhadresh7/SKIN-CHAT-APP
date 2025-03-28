@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
+import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/screens/about/about_us_screen.dart';
 import 'package:skin_chat_app/screens/auth/login_screen.dart';
@@ -69,8 +70,9 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
+    final basicUserDetailsProvider =
+        Provider.of<BasicUserDetailsProvider>(context);
     // final userRoleProvider = Provider.of<UserRoleProvider>(context);
-    print("🔥🔥🔥🔥🔥&&&&&&&&&&&&&&&&&&&&&&&${authProvider.role}🔥🔥🔥🔥🔥");
 
     // if (!_isConnected) {
     //   return Scaffold(

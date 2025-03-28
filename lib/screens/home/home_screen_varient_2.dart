@@ -28,10 +28,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   @override
   void initState() {
     super.initState();
-
+    _messageController = TextEditingController();
     final internetProvider =
         Provider.of<InternetProvider>(context, listen: false);
+    final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
 
+    authProvider.listenToRoleChanges(authProvider.email);
     // Check internet before loading role and messages
     if (internetProvider.connectionStatus != AppStatus.kDisconnected ||
         internetProvider.connectionStatus != AppStatus.kSlow) {

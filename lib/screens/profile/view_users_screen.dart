@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/services/csv_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
-import 'package:skin_chat_app/widgets/common/grid_views_varient.dart';
+
+import '../../widgets/common/grid_views_varient.dart';
 
 class ViewUsersScreen extends StatefulWidget {
   const ViewUsersScreen({super.key});
@@ -14,6 +17,8 @@ class ViewUsersScreen extends StatefulWidget {
 }
 
 class _ViewUsersScreenState extends State<ViewUsersScreen> {
+  StreamController<double> progressController = StreamController<double>();
+
   List<String> chipLabels = ["All", "Employee", "Candidates", "Blocked"];
   List<String> roles = ["user", "admin"];
   final CsvService _service = CsvService();
@@ -32,9 +37,9 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
               child: Text("Cancel"),
             ),
             TextButton(
-              onPressed: () async {
-                Navigator.pop(context); // Close dialog
-                await _service.fetchUserDetailsAndConvertToCsv(role: role);
+              onPressed: () {
+                Navigator.pop(context);
+                _showProgressModal(role);
               },
               child:
                   Text("Confirm", style: TextStyle(color: AppStyles.primary)),
@@ -43,6 +48,45 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
         );
       },
     );
+  }
+
+  void _showProgressModal(String role) {
+    progressController = StreamController<double>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StreamBuilder<double>(
+          stream: progressController.stream,
+          initialData: 0.0,
+          builder: (context, snapshot) {
+            double progress = snapshot.data ?? 0.0;
+            return AlertDialog(
+              title: Text("Downloading CSV"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("${(progress * 100).toInt()}%"),
+                  SizedBox(height: 10),
+                  LinearProgressIndicator(value: progress),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    _service
+        .fetchUserDetailsAndConvertToCsv(
+      role: role,
+      progressController: progressController,
+    )
+        .then((_) {
+      Navigator.pop(context); // Close the progress dialog when done
+      progressController.close();
+    });
   }
 
   void _showDownloadSheet() {
@@ -62,6 +106,14 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16.h),
+              ListTile(
+                leading: Icon(Icons.group, color: AppStyles.primary),
+                title: Text("All Users"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDownload("all");
+                },
+              ),
               ListTile(
                 leading: Icon(Icons.person, color: AppStyles.primary),
                 title: Text("Candidate"),
@@ -141,6 +193,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
           ),
           Expanded(
             child: GridViewsVarient(filter: chipLabels[selectedIndex]),
+            // child: GridWithPagination(filter: chipLabels[selectedIndex]),
           ),
         ],
       ),

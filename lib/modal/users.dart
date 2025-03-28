@@ -1,6 +1,3 @@
-// part 'users.g.dart';
-
-// @HiveType(typeId: 1)
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Users {
@@ -17,31 +14,22 @@ class Users {
     this.canPost = false,
     this.isBlocked = false,
     required this.dob,
+    this.createdAt,
   });
 
-  // @HiveField(0)
   final String uid;
-  // @HiveField(1)
   final String username;
-  // @HiveField(2)
   final String email;
-  // @HiveField(3)
   String? password;
-  // @HiveField(4)
   bool? isGoogle;
-  // @HiveField(5)
   final String role;
-  // @HiveField(6)
   final bool isAdmin;
-  // @HiveField(7)
   final bool canPost;
-  // @HiveField(8)
   final bool isBlocked;
-  // @HiveField(9)
   final String aadharNo;
-  // @HiveField(10)
   final String mobileNumber;
   final String dob;
+  final Timestamp? createdAt;
 
   /// Convert the data to a map to store in Firebase
   Map<String, dynamic> toJson() {
@@ -58,8 +46,28 @@ class Users {
       'aadharNo': aadharNo,
       'mobileNumber': mobileNumber,
       'dob': dob,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
     };
+  }
+
+  /// Convert Firestore document to a `Users` object
+  factory Users.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Users(
+      uid: data['uid'] ?? '',
+      username: data['username'] ?? '',
+      email: data['email'] ?? '',
+      password: data['password'],
+      role: data['role'] ?? '',
+      isGoogle: data['isGoogle'],
+      isAdmin: data['isAdmin'] ?? false,
+      canPost: data['canPost'] ?? false,
+      isBlocked: data['isBlocked'] ?? false,
+      aadharNo: data['aadharNo'] ?? '',
+      mobileNumber: data['mobileNumber'] ?? '',
+      dob: data['dob'] ?? '',
+      createdAt: data['createdAt'],
+    );
   }
 
   /// Method to print the object
@@ -78,7 +86,8 @@ Users(
   isBlocked: $isBlocked,
   aadharNo: $aadharNo,
   mobileNumber: $mobileNumber,
-  dob: $dob
+  dob: $dob,
+  createdAt: ${createdAt != null ? createdAt!.toDate().toString() : "N/A"}
 )''';
   }
 }

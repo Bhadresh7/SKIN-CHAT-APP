@@ -2,33 +2,53 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../constants/app_assets.dart';
 import '../../constants/app_status.dart';
 import '../../constants/app_styles.dart';
 
-class GridViewsVarient extends StatefulWidget {
+class GridWithPagination extends StatefulWidget {
   final String filter;
-  const GridViewsVarient({super.key, required this.filter});
+  const GridWithPagination({super.key, required this.filter});
 
   @override
-  State<GridViewsVarient> createState() => _GridViewsVarientState();
+  State<GridWithPagination> createState() => _GridWithPaginationState();
 }
 
-class _GridViewsVarientState extends State<GridViewsVarient> {
-  Stream<QuerySnapshot> _getUsersStream() {
+class _GridWithPaginationState extends State<GridWithPagination> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late Future<List<DocumentSnapshot>> _usersFuture;
+
+  @override
+  void didUpdateWidget(covariant GridWithPagination oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.filter != oldWidget.filter) {
+      _usersFuture = _getDocuments();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _usersFuture = _getDocuments();
+  }
+
+  Future<List<DocumentSnapshot>> _getDocuments() async {
     Query<Map<String, dynamic>> query = _firestore.collection('users');
 
     if (widget.filter == "Employee") {
-      query = query.where('role', isEqualTo: 'admin');
+      query = query
+          .where('role', isEqualTo: 'admin')
+          .where('isBlocked', isEqualTo: false);
     } else if (widget.filter == "Candidates") {
-      query = query.where('role', isEqualTo: 'user');
+      query = query
+          .where('role', isEqualTo: 'user')
+          .where('isBlocked', isEqualTo: false);
     } else if (widget.filter == "Blocked") {
       query = query.where('isBlocked', isEqualTo: true);
     }
-    return query.snapshots();
-  }
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    QuerySnapshot<Map<String, dynamic>> snapshot = await query.get();
+    return snapshot.docs;
+  }
 
   void _showOptions(
     BuildContext context,
@@ -164,6 +184,9 @@ class _GridViewsVarientState extends State<GridViewsVarient> {
               onPressed: () {
                 Navigator.pop(context);
                 onConfirm();
+                setState(() {
+                  _usersFuture = _getDocuments();
+                });
               },
               child: Text("Yes"),
             ),
@@ -175,127 +198,77 @@ class _GridViewsVarientState extends State<GridViewsVarient> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _getUsersStream(),
+    return FutureBuilder<List<DocumentSnapshot>>(
+      future: _usersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}"));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("No users found"));
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("No Users Found"));
-        }
 
-        var users = snapshot.data!.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
+        List<DocumentSnapshot> users = snapshot.data!;
 
-        // Separate admins and regular users
-        var admins = users.where((user) => user['role'] == 'admin').toList();
-        var regularUsers =
-            users.where((user) => user['role'] != 'admin').toList();
-
-        // Combine sorted users
-        var sortedUsers = [...admins, ...regularUsers];
-
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisSpacing: 0.02.sw,
-            crossAxisCount: 1,
-            mainAxisSpacing: 0.02.sh,
-            childAspectRatio: 16 / 5,
-          ),
-          itemCount: sortedUsers.length,
+        return ListView.builder(
+          padding: const EdgeInsets.all(8.0),
+          itemCount: users.length,
           itemBuilder: (context, index) {
-            var userData = sortedUsers[index];
-            String userId = snapshot.data!.docs[index].id;
-            String name = userData['username'] ?? 'Unknown';
-            String email = userData['email'] ?? 'No Email';
-            String role = userData['role'] ?? 'user';
-            bool isBlocked = userData['isBlocked'] ?? false;
-            bool canPost = userData['canPost'] ?? false;
-            print("💗💗💗💗💗💗$role💗💗💗💗💗💗");
-            print("======>====>===>$canPost<=======<======<======");
+            var userData = users[index].data() as Map<String, dynamic>;
+            bool isAdmin = userData['role'] == 'admin';
+            bool canPost = userData['canPost'];
+            String uid = userData['uid'];
+            String username = userData['username'];
+            bool isBlocked = userData['isBlocked'];
+            String role = userData['role'];
 
             return Stack(
               children: [
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                  color: AppStyles.smoke,
-                  child: InkWell(
-                    onTap: () {
-                      if (role == AppStatus.kUser) {
-                        return _showUserInfoModal(
-                            context, userData['username']);
-                      } else {
-                        return _showOptions(
-                            context, userId, name, isBlocked, canPost);
-                      }
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.all(12.r),
-                      child: Row(
-                        children: [
-                          // CircleAvatar(
-                          //   radius: 30,
-                          //   backgroundImage: NetworkImage(img),
-                          // ),
-                          SizedBox(width: AppStyles.padding),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  name,
-                                  style: TextStyle(fontSize: AppStyles.heading),
-                                ),
-                                Text(
-                                  email,
-                                  style:
-                                      TextStyle(fontSize: AppStyles.bodyText),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                InkWell(
+                  onTap: () {
+                    role == AppStatus.kAdmin
+                        ? _showOptions(
+                            context, uid, username, isBlocked, canPost)
+                        : _showUserInfoModal(context, username);
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    color: isBlocked
+                        ? Colors.red.shade200
+                        : Colors.white, // Change color
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(12.0),
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            isBlocked ? Colors.red : Colors.blueAccent,
+                        child: Icon(
+                          isBlocked ? Icons.block : Icons.person,
+                          color: Colors.white,
+                        ),
+                      ),
+                      title: Text(
+                        userData['username'] ?? 'No Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isBlocked ? Colors.black54 : Colors.black,
+                          decoration:
+                              isBlocked ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      subtitle: Text(
+                        userData['email'] ?? 'No Email',
+                        style: TextStyle(
+                          color: isBlocked ? Colors.black54 : Colors.black,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                if (role == AppStatus.kAdmin && canPost)
-                  Positioned(
-                    top: 0.02.sh,
-                    right: 0.05.sw,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                          vertical: 0.02.sw, horizontal: 0.03.sw),
-                      decoration: BoxDecoration(
-                        color: AppStyles.primary,
-                        borderRadius:
-                            BorderRadius.circular(AppStyles.borderRadius),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(
-                            AppAssets.crown,
-                            width: 0.04.sw,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            "Admin",
-                            style: TextStyle(
-                              fontSize: AppStyles.bodyText,
-                              color: AppStyles.smoke,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
               ],
             );
           },

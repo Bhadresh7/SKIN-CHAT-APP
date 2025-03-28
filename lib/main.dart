@@ -13,7 +13,7 @@ import 'package:skin_chat_app/providers/internet_provider.dart';
 import 'package:skin_chat_app/providers/message/chat_provider.dart';
 import 'package:skin_chat_app/providers/message/share_intent_provider.dart';
 import 'package:skin_chat_app/providers/super_admin_provider.dart';
-import 'package:skin_chat_app/screens/profile/view_users_screen.dart';
+import 'package:skin_chat_app/screens/auth/auth_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,7 +88,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    // return AuthScreen();
-    return ViewUsersScreen();
+    return AuthScreen();
+    // return ViewUsersScreen();
   }
 }
