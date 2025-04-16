@@ -11,7 +11,6 @@ class TermsAndConditionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BackgroundScaffold(
       appBar: AppBar(),
-      // showDrawer: true,
       body: SingleChildScrollView(
         child: Center(
           child: Column(
@@ -22,7 +21,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
                 style: TextStyle(fontSize: AppStyles.heading),
               ),
               Text(
-                AppText.aboutUs,
+                AppText.privacyPolicy,
                 textAlign: TextAlign.justify,
               ),
             ],

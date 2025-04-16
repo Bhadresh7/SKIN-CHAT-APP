@@ -28,6 +28,10 @@ class InternetConnectionHelper {
     );
   }
 
+  Future<InternetConnectionStatus> getCurrentStatus() async {
+    return await _checker.connectionStatus;
+  }
+
   void dispose() {
     _subscription?.cancel();
   }

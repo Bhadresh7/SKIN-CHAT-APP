@@ -1,27 +1,42 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
-import 'package:skin_chat_app/providers/auth/email_verification_provider.dart';
-import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/providers/image_picker_provider.dart';
-import 'package:skin_chat_app/providers/internet_provider.dart';
-import 'package:skin_chat_app/providers/message/chat_provider.dart';
-import 'package:skin_chat_app/providers/message/share_intent_provider.dart';
-import 'package:skin_chat_app/providers/super_admin_provider.dart';
-import 'package:skin_chat_app/screens/auth/auth_screen.dart';
+import 'package:skin_chat_app/providers/exports.dart';
+import 'package:skin_chat_app/services/notification_service.dart';
+
+import 'constants/app_styles.dart';
+import 'firebase_options.dart';
+import 'helpers/notification_helpers.dart';
+import 'screens/auth/auth_screen.dart' show AuthScreen;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
-    [DeviceOrientation.portraitDown, DeviceOrientation.portraitUp],
+    [
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.portraitUp,
+    ],
   );
 
-  await Firebase.initializeApp();
+  ///init the env
+  await dotenv.load(fileName: ".env");
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  final NotificationService service = NotificationService();
+
+  await service.initializeNotifications();
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  await NotificationHelpers().requestNotificationPermission();
 
   SharedPreferences store = await SharedPreferences.getInstance();
   final login = store.getBool("isLoggedIn");
@@ -65,8 +80,11 @@ class MyApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (context, child) {
         return MaterialApp(
+          themeMode: ThemeMode.system,
           theme: ThemeData(
+            brightness: Brightness.light,
             fontFamily: AppStyles.primaryFont,
+            scaffoldBackgroundColor: Colors.white,
           ),
           debugShowCheckedModeBanner: false,
           home: const MyHomePage(title: "Hello there"),
@@ -89,6 +107,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return AuthScreen();
+    // return ImageSetupScreen();
     // return ViewUsersScreen();
+    // return EditProfileScreen();
+    // return ErrorScreen();
   }
 }

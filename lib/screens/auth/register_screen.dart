@@ -9,6 +9,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/screens/auth/email_verification_screen.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
 import 'package:skin_chat_app/screens/profile/basic_details_screen.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
@@ -16,8 +17,6 @@ import 'package:skin_chat_app/widgets/buttons/oauth_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/or_bar.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
-
-import 'email_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -27,6 +26,34 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  /// controllers
+  late TextEditingController usernameController;
+  late TextEditingController emailController;
+  late TextEditingController passwordController;
+  late TextEditingController confirmPasswordController;
+
+  ///initilization of controllers
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    usernameController = TextEditingController();
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+    confirmPasswordController = TextEditingController();
+  }
+
+  ///disposing the controllers
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    usernameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     /// formKey
@@ -35,14 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     /// providers
     final authProvider = Provider.of<MyAuthProvider>(context);
 
-    /// controllers
-    final usernameController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-
     ///clearing controllers
-
     void clearController() {
       usernameController.clear();
       emailController.clear();
@@ -91,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: passwordController,
                 validators: [
                   FormBuilderValidators.required(
-                      errorText: "Username is required"),
+                      errorText: "password is required"),
                   FormBuilderValidators.minLength(6,
                       errorText: "Must be at least 6 characters"),
                 ],
@@ -109,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
               CustomButton(
-                text: "Signin",
+                text: "Register",
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
                     if (!(passwordController.text.trim() ==
@@ -124,23 +144,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       password: passwordController.text.trim(),
                     );
                     if (context.mounted) {
-                      if (result == AppStatus.kEmailAlreadyExists) {
-                        return ToastHelper.showErrorToast(
+                      switch (result) {
+                        case AppStatus.kUserNameAlreadyExists:
+                          return ToastHelper.showErrorToast(
+                              context: context,
+                              message: AppStatus.kUserNameAlreadyExists);
+                        case AppStatus.kEmailAlreadyExists:
+                          return ToastHelper.showErrorToast(
                             context: context,
-                            message: AppStatus.kEmailAlreadyExists);
-                      }
-                      if (result == AppStatus.kSuccess) {
-                        authProvider
-                            .setPassword(passwordController.text.trim());
-                        MyNavigation.replace(
-                            context, EmailVerificationScreen());
-
-                        ///clearing controllers
-                        clearController();
-                      } else if (result == AppStatus.kFailed) {
-                        ToastHelper.showErrorToast(
+                            message: AppStatus.kEmailAlreadyExists,
+                          );
+                        case AppStatus.kUserFound:
+                          return ToastHelper.showErrorToast(
                             context: context,
-                            message: "Error while Registering");
+                            message: "Username already exists",
+                          );
+                        case AppStatus.kFailed:
+                          return ToastHelper.showErrorToast(
+                            context: context,
+                            message: "Failed to Register",
+                          );
+                        case AppStatus.kSuccess:
+                          ToastHelper.showSuccessToast(
+                            context: context,
+                            message: "Registeration successful",
+                          );
+                          authProvider
+                              .setPassword(passwordController.text.trim());
+                          MyNavigation.replace(
+                            context,
+                            EmailVerificationScreen(),
+                          );
+                          clearController();
+                          break;
+                        default:
+                          return ToastHelper.showErrorToast(
+                            context: context,
+                            message: result,
+                          );
                       }
                     }
                   }
@@ -159,6 +200,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   if (!context.mounted) return;
 
                   switch (result) {
+                    case AppStatus.kBlocked:
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text("User Blocked"),
+                            content: Text(
+                                "Please contact the Admin for more information"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => MyNavigation.back(context),
+                                child: Text("ok"),
+                              )
+                            ],
+                          );
+                        },
+                      );
                     case AppStatus.kEmailAlreadyExists:
                       MyNavigation.replace(context, HomeScreenVarient2());
                       ToastHelper.showSuccessToast(
@@ -180,9 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     default:
                       print("Google Auth Result: $result");
-                      // MyNavigation.replace(context, HomeScreenVarient2());
-                      ToastHelper.showErrorToast(
-                          context: context, message: result);
+
                       break;
                   }
                 },

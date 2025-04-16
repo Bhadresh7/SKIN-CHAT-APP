@@ -8,6 +8,24 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+
+
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+    // Printing out the keystore values to the console for debugging purposes
+    println "Keystore Properties:"
+    println "Key Alias: ${keystoreProperties['keyAlias']}"
+    println "Key Password: ${keystoreProperties['keyPassword']}"
+    println "Store File: ${keystoreProperties['storeFile']}"
+    println "Store Password: ${keystoreProperties['storePassword']}"
+} else {
+    println "Key properties file not found!"
+
+}
 android {
     namespace = "com.chat.skin_chat_app"
     compileSdk = flutter.compileSdkVersion
@@ -32,12 +50,20 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig = signingConfigs.release
+            minifyEnabled = true
+            shrinkResources = true
         }
     }
 }

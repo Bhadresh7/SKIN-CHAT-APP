@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/helpers/local_storage.dart';
+import 'package:skin_chat_app/modal/view_users.dart';
 
-import '../services/super_admin_service.dart';
+import '../../services/super_admin_service.dart';
 
 class SuperAdminProvider with ChangeNotifier {
   final SuperAdminService _service = SuperAdminService();
@@ -10,6 +12,9 @@ class SuperAdminProvider with ChangeNotifier {
   bool get isSuperAdmin => _isSuperAdmin;
   bool _loading = false;
   bool get loading => _loading;
+  ViewUsers? _viewUsers;
+
+  ViewUsers? get viewUsers => _viewUsers;
 
   void setLoadingState(bool value) {
     _loading = value;
@@ -32,12 +37,14 @@ class SuperAdminProvider with ChangeNotifier {
     }
   }
 
-  Future<void> allowUserToPost({required String userId}) async {
+  Future<String> makeAsAdmin({required String email}) async {
     try {
       setLoadingState(true);
-      await _service.enablePosting(userId: userId);
+      await _service.togglePosting(email: email);
+      return AppStatus.kSuccess;
     } catch (e) {
       print(e.toString());
+      return AppStatus.kFailed;
     } finally {
       setLoadingState(false);
       notifyListeners();
@@ -48,18 +55,22 @@ class SuperAdminProvider with ChangeNotifier {
     return _service.userStream();
   }
 
-  Future<void> blockUsers({required String userId}) async {
+  Future<String> blockUsers({required String uid}) async {
     try {
-      await _service.blockUsers(uid: userId);
+      setLoadingState(true);
+      notifyListeners();
+      return await _service.blockUsers(uid: uid);
     } catch (e) {
       print(e.toString());
+      return e.toString();
     } finally {
+      setLoadingState(false);
       notifyListeners();
     }
   }
 
   final FirebaseFirestore _store = FirebaseFirestore.instance;
-  List<DocumentSnapshot> _users = [];
+  final List<DocumentSnapshot> _users = [];
   bool _isLoading = false;
   bool _hasMore = true;
   DocumentSnapshot? _lastDocument;
@@ -116,5 +127,21 @@ class SuperAdminProvider with ChangeNotifier {
 
     final snapshot = await query.get();
     return snapshot.docs;
+  }
+
+  Future<ViewUsers?> getAllUsers({required String email}) async {
+    try {
+      final user = await _service.getAllUsers(email: email);
+      if (user != null) {
+        _viewUsers = user;
+        notifyListeners();
+      } else {
+        print(AppStatus.kUserNotFound);
+      }
+      return user;
+    } catch (e) {
+      print('Error fetching user: ${e.toString()}');
+      return null;
+    }
   }
 }

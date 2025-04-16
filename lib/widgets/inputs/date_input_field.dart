@@ -6,9 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 
 class DateInputField extends StatelessWidget {
-  const DateInputField({super.key, required this.controller});
+  const DateInputField(
+      {super.key, required this.controller, this.initialValue});
 
   final TextEditingController controller;
+  final DateTime? initialValue;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +20,7 @@ class DateInputField extends StatelessWidget {
         autovalidateMode: AutovalidateMode.onUserInteraction,
         controller: controller,
         name: "DOB",
-        initialDate: DateTime.now(),
+        initialValue: initialValue,
         firstDate: DateTime(1900),
         lastDate: DateTime.now(),
         inputType: InputType.date,

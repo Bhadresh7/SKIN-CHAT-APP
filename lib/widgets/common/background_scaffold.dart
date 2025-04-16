@@ -2,16 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
-import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
-import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/screens/about/about_us_screen.dart';
-import 'package:skin_chat_app/screens/auth/login_screen.dart';
-import 'package:skin_chat_app/screens/profile/edit_profile_screen.dart';
-import 'package:skin_chat_app/screens/profile/view_users_screen.dart';
-import 'package:skin_chat_app/screens/settings/terms_and_conditions_screen.dart';
+import 'package:skin_chat_app/providers/exports.dart';
+import 'package:skin_chat_app/screens/exports.dart';
 
 class BackgroundScaffold extends StatefulWidget {
   const BackgroundScaffold({
@@ -21,6 +17,7 @@ class BackgroundScaffold extends StatefulWidget {
     this.appBar,
     this.showDrawer = false,
     this.margin,
+    this.showBackgroundImage = false,
   });
 
   final Widget body;
@@ -29,6 +26,7 @@ class BackgroundScaffold extends StatefulWidget {
   final PreferredSizeWidget? appBar;
   final bool showDrawer;
   final EdgeInsetsGeometry? margin;
+  final bool showBackgroundImage;
 
   @override
   State<BackgroundScaffold> createState() => _BackgroundScaffoldState();
@@ -72,6 +70,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
     final authProvider = context.watch<MyAuthProvider>();
     final basicUserDetailsProvider =
         Provider.of<BasicUserDetailsProvider>(context);
+    // print(authProvider.currentUser?.username);
     // final userRoleProvider = Provider.of<UserRoleProvider>(context);
 
     // if (!_isConnected) {
@@ -100,13 +99,15 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
         appBar: widget.appBar,
         drawer: widget.showDrawer
             ? Drawer(
-                // width: MediaQuery.of(context).size.width / 2,
                 child: ListView(
                   children: [
                     UserAccountsDrawerHeader(
+                      currentAccountPicture: Image.asset(
+                        AppAssets.profileIcon,
+                      ),
                       accountEmail: Text(authProvider.email),
-                      accountName: Text(
-                          authProvider.userName ?? authProvider.formUserName),
+                      accountName:
+                          Text(authProvider.currentUser?.username ?? "User"),
                     ),
                     ListTile(
                       trailing: Icon(Icons.arrow_forward_ios),

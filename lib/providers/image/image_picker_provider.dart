@@ -16,8 +16,8 @@ class ImagePickerProvider extends ChangeNotifier {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       selectedImage = File(pickedFile.path);
-      debugPrint("Selected Image Path: ${selectedImage!.path}"); // Debugging
-      notifyListeners(); // ✅ Make sure this is called after updating the state
+      debugPrint("Selected Image Path: ${selectedImage!.path}");
+      notifyListeners();
       return AppStatus.kSuccess;
     } else {
       return AppStatus.kFailed;
@@ -29,22 +29,44 @@ class ImagePickerProvider extends ChangeNotifier {
     final lastIndex = filePath.lastIndexOf(".");
     final newPath = "${filePath.substring(0, lastIndex)}_compressed.jpg";
 
+    // Size before compression
+    final beforeSize = imageFile.lengthSync();
+    print("📦 Original size: ${beforeSize / 1024} KB");
+
     var result = await FlutterImageCompress.compressAndGetFile(
       filePath,
       newPath,
-      quality: 75, // Adjust quality (0-100) as needed
+      quality: 50,
+      autoCorrectionAngle: true,
     );
 
-    return result != null ? File(result.path) : null;
+    if (result != null) {
+      final compressedFile = File(result.path);
+      final afterSize = compressedFile.lengthSync();
+      print("📉 Compressed size: ${afterSize / 1024} KB");
+      return compressedFile;
+    } else {
+      print("❌ Compression failed.");
+      return null;
+    }
   }
+
+  bool isUploading = false; // Define a boolean flag
 
   Future<String?> uploadImageToFirebase(String userId) async {
     if (selectedImage == null) return AppStatus.kFailed;
 
+    isUploading = true;
+    notifyListeners();
+
     try {
       // Compress the image
       File? compressedImage = await compressImage(selectedImage!);
-      if (compressedImage == null) return AppStatus.kFailed;
+      if (compressedImage == null) {
+        isUploading = false;
+        notifyListeners();
+        return AppStatus.kFailed;
+      }
 
       // Create a storage reference
       String filePath = "profile_images/$userId.jpg";
@@ -52,6 +74,13 @@ class ImagePickerProvider extends ChangeNotifier {
 
       // Upload the compressed file
       UploadTask uploadTask = storageRef.putFile(compressedImage);
+
+      // Show upload progress (optional)
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        print("📤 Upload Progress: ${(progress * 100).toStringAsFixed(2)}%");
+      });
+
       TaskSnapshot snapshot = await uploadTask;
 
       // Get download URL
@@ -65,12 +94,14 @@ class ImagePickerProvider extends ChangeNotifier {
     } catch (e) {
       print("❌ Error uploading image: $e");
       return AppStatus.kFailed;
+    } finally {
+      isUploading = false;
+      notifyListeners();
     }
   }
+
+  void clear() {
+    selectedImage = null;
+    notifyListeners();
+  }
 }
-// Store URL in Realtime Database
-// await FirebaseDatabase.instance
-//     .ref()
-//     .child("chats")
-//     .child(userId)
-//     .update({"imageUrl": downloadUrl});

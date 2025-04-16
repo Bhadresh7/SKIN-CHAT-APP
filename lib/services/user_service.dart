@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 
 import '../helpers/local_storage.dart';
@@ -204,6 +205,7 @@ class UserService {
       final mail = doc['email'] ?? "no-email-found";
       final role = doc["role"] ?? "no-role-found";
       final canPost = doc["canPost"] ?? false;
+      final isBlocked = doc['isBlocked'] ?? false;
 
       print("email =====> $mail");
       print("🔥 Updated User Role: $role");
@@ -212,6 +214,12 @@ class UserService {
       await LocalStorage.setString("role", role);
       await LocalStorage.setBool("canPost", canPost);
       await LocalStorage.setString('email', mail);
+
+      if (isBlocked) {
+        return {
+          'status': AppStatus.kBlocked,
+        };
+      }
 
       return {
         'role': role,
@@ -226,21 +234,30 @@ class UserService {
     }
   }
 
-  Stream<Map<String, int>> get userAndAdminCountStream {
+  Stream<Map<String, int?>> get userAndAdminCountStream {
     return _store.collection('users').snapshots().map((snapshot) {
+      int? blockedUserCount = snapshot.docs
+          .where((doc) =>
+              doc.data().containsKey('isBlocked') && doc['isBlocked'] == true)
+          .length;
+      print("$blockedUserCount");
+
       int adminCount =
           snapshot.docs.where((doc) => doc['role'] == 'admin').length;
+
       int userCount =
           snapshot.docs.where((doc) => doc['role'] == 'user').length;
+
       return {
         'admin': adminCount,
         'user': userCount,
+        'blocked': blockedUserCount,
       };
     });
   }
 
   ///update user profile
-  Future<String> updateUserProfile({
+  Future<Users?> updateUserProfile({
     String? imgUrl,
     String? name,
     required String aadharNumber,
@@ -248,32 +265,104 @@ class UserService {
     String? dob,
   }) async {
     try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      // Check if the user exists
       var querySnapshot = await _store
           .collection("users")
           .where("aadharNo", isEqualTo: aadharNumber)
           .limit(1)
           .get();
 
+      if (user != null) {
+        await user.updateDisplayName(name);
+        await user.reload();
+      }
       if (querySnapshot.docs.isNotEmpty) {
         var docRef = querySnapshot.docs.first.reference;
 
-        await docRef.set(
-          {
-            // if (imgUrl != null) "imgUrl": imgUrl,
-            if (name != null) "username": name,
-            if (mobile != null) "mobileNumber": mobile,
-            if (dob != null) "dob": dob,
-          },
-          SetOptions(merge: true),
-        );
+        // Prepare fields to update
+        Map<String, dynamic> updateData = {};
+        if (imgUrl != null) updateData["imgUrl"] = imgUrl;
+        if (name != null) updateData["username"] = name;
+        if (mobile != null) updateData["mobileNumber"] = mobile;
+        if (dob != null) updateData["dob"] = dob;
 
-        return AppStatus.kSuccess;
+        // Perform update if needed
+        if (updateData.isNotEmpty) {
+          await docRef.update(updateData);
+        }
+
+        // Re-fetch the updated user document
+        var updatedDoc = await docRef.get();
+        var data = updatedDoc.data();
+
+        if (data != null) {
+          return Users.fromFirestore(data); // Adjust based on your model
+        } else {
+          return null; // Unexpected: no data found after update
+        }
       } else {
-        return "User with Aadhaar number $aadharNumber not found";
+        print("User with Aadhaar number $aadharNumber not found");
+        return null;
       }
     } catch (e) {
+      print("Error updating user profile: $e");
+      return null;
+    }
+  }
+
+  Future<Users?> getUserDetailsByEmail({required String email}) async {
+    try {
+      final userSnapshot = await _store
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userSnapshot.docs.isNotEmpty) {
+        final userData = userSnapshot.docs.first.data();
+        return Users.fromFirestore(userData);
+      }
+
+      final adminSnapshot = await _store
+          .collection('super_admins')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (adminSnapshot.docs.isNotEmpty) {
+        final adminData = adminSnapshot.docs.first.data();
+        return Users.fromFirestore(adminData);
+      }
+
+      return null;
+    } catch (e) {
+      print("Error fetching user by email: $e");
+      return null;
+    }
+  }
+
+  Future<bool> isUserExists({required String username}) async {
+    try {
+      final result = await Future.wait([
+        _store
+            .collection('users')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get(),
+        _store
+            .collection('super_admins')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get(),
+      ]);
+      final userExists = result[0].docs.isNotEmpty;
+      final superAdminExists = result[1].docs.isNotEmpty;
+      return userExists || superAdminExists;
+    } catch (e) {
       print(e.toString());
-      return AppStatus.kFailed;
+      return false;
     }
   }
 }

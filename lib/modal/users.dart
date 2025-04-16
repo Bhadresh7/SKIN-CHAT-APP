@@ -51,8 +51,7 @@ class Users {
   }
 
   /// Convert Firestore document to a `Users` object
-  factory Users.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory Users.fromFirestore(Map<String, dynamic> data) {
     return Users(
       uid: data['uid'] ?? '',
       username: data['username'] ?? '',

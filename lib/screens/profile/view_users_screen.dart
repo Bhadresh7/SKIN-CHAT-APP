@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/services/csv_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
-
-import '../../widgets/common/grid_views_varient.dart';
+import 'package:skin_chat_app/widgets/common/user_list_view.dart';
 
 class ViewUsersScreen extends StatefulWidget {
   const ViewUsersScreen({super.key});
@@ -59,7 +60,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
       builder: (context) {
         return StreamBuilder<double>(
           stream: progressController.stream,
-          initialData: 0.0,
+          initialData: 0,
           builder: (context, snapshot) {
             double progress = snapshot.data ?? 0.0;
             return AlertDialog(
@@ -140,6 +141,8 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<MyAuthProvider>(context);
+
     return BackgroundScaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(0.1.sh),
@@ -160,6 +163,40 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
       ),
       body: Column(
         children: [
+          StreamBuilder<Map<String, int?>>(
+            stream: authProvider.adminUserCountStream,
+            builder: (context, snapshot) {
+              final employeeCount = snapshot.data?["admin"] ?? 0;
+              final candidateCount = snapshot.data?["user"] ?? 0;
+              final blockedUserCount = snapshot.data?["blocked"] ?? 0;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Row(
+                      spacing: 0.03.sw,
+                      children: [
+                        Text(
+                          "Employee: $employeeCount",
+                          style: TextStyle(fontSize: AppStyles.bodyText),
+                        ),
+                        Text(
+                          "Candidate: $candidateCount",
+                          style: TextStyle(fontSize: AppStyles.bodyText),
+                        ),
+                        Text(
+                          "Blocked Users: $blockedUserCount",
+                          style: TextStyle(fontSize: AppStyles.bodyText),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10.h),
             child: SingleChildScrollView(
@@ -192,7 +229,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
             ),
           ),
           Expanded(
-            child: GridViewsVarient(filter: chipLabels[selectedIndex]),
+            child: UserListView(filter: chipLabels[selectedIndex]),
             // child: GridWithPagination(filter: chipLabels[selectedIndex]),
           ),
         ],

@@ -7,7 +7,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/providers/image_picker_provider.dart';
+import 'package:skin_chat_app/providers/image/image_picker_provider.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
@@ -75,6 +75,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
                   ),
                   CustomButton(
                     text: "Next",
+                    isLoading: imagePickerProvider.isUploading,
                     onPressed: () async {
                       if (imagePickerProvider.selectedImage == null) {
                         ToastHelper.showErrorToast(

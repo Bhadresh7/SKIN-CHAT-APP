@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/providers/internet_provider.dart';
+import 'package:skin_chat_app/providers/internet/internet_provider.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 

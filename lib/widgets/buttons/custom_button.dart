@@ -30,52 +30,61 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padding ?? EdgeInsets.symmetric(horizontal: AppStyles.margin),
-      child: SizedBox(
-        width: width ?? double.infinity,
-        height: height ?? 0.06.sh,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color ?? AppStyles.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+      child: ConstrainedBox(
+        constraints: width != null
+            ? BoxConstraints(maxWidth: width!)
+            : const BoxConstraints(),
+        child: SizedBox(
+          width: width ?? double.infinity,
+          height: height ?? 0.06.sh,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color ?? AppStyles.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+              ),
             ),
-          ),
-          onPressed: isLoading ? null : onPressed,
-          child: isLoading
-              ? SizedBox(
-                  width: 24.w,
-                  height: 24.w,
-                  child: CircularProgressIndicator(
-                    color: AppStyles.primary,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (prefixWidget != null)
-                      Padding(
-                        padding: EdgeInsets.only(right: 8.w),
-                        child: prefixWidget!,
-                      ),
-                    Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: AppStyles.subTitle,
-                      ),
+            onPressed: isLoading ? null : onPressed,
+            child: isLoading
+                ? SizedBox(
+                    width: 24.w,
+                    height: 24.w,
+                    child: CircularProgressIndicator(
+                      color: AppStyles.primary,
+                      strokeWidth: 2,
                     ),
-                    if (suffixIcon != null)
-                      Padding(
-                        padding: EdgeInsets.only(left: 8.w),
-                        child: Icon(
-                          suffixIcon,
-                          size: 20.w,
-                          color: Colors.white,
+                  )
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (prefixWidget != null)
+                          Padding(
+                            padding: EdgeInsets.only(right: 8.w),
+                            child: prefixWidget!,
+                          ),
+                        Text(
+                          text,
+                          style: TextStyle(
+                            fontSize: AppStyles.subTitle,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (suffixIcon != null)
+                          Padding(
+                            padding: EdgeInsets.only(left: 8.w),
+                            child: Icon(
+                              suffixIcon,
+                              size: 20.w,
+                              color: Colors.white,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
         ),
       ),
     );

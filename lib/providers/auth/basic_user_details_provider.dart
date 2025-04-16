@@ -12,6 +12,10 @@ class BasicUserDetailsProvider extends ChangeNotifier {
   String? _selectedRole;
   String? get selectedRole => _selectedRole;
 
+  Users? _currentUser;
+
+  Users? get currentUser => _currentUser;
+
   void selectRole({required String? role}) {
     _selectedRole = role;
     notifyListeners();
@@ -44,27 +48,58 @@ class BasicUserDetailsProvider extends ChangeNotifier {
   }
 
   Future<String> updateUserProfile({
-    // String? imgUrl,
+    String? imgUrl,
     String? name,
     required String aadharNumber,
     String? mobile,
     String? dob,
   }) async {
     try {
-      await _service.updateUserProfile(
+      _isLoading = true;
+      notifyListeners();
+      final result = await _service.updateUserProfile(
         aadharNumber: aadharNumber,
         name: name,
         dob: dob,
-        // imgUrl: imgUrl,
+        imgUrl: imgUrl,
         mobile: mobile,
       );
+
       notifyListeners();
+      if (result == null) {
+        return AppStatus.kFailed;
+      }
       return AppStatus.kSuccess;
     } catch (e) {
+      _isLoading = false;
+      notifyListeners();
       print(e.toString());
       return AppStatus.kFailed;
     } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
+
+  // Future<String> getUserDetails({required String email}) async {
+  //   try {
+  //     _isLoading = true;
+  //     notifyListeners();
+  //
+  //     _currentUser = await _service.getUserDetailsByEmail(email: email);
+  //
+  //     _isLoading = false;
+  //     notifyListeners();
+  //
+  //     if (_currentUser == null) {
+  //       return AppStatus.kUserNotFound;
+  //     }
+  //
+  //     return AppStatus.kSuccess;
+  //   } catch (e) {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //     return AppStatus.kFailed;
+  //   }
+  // }
 }

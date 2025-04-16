@@ -57,8 +57,8 @@ class DefaultFirebaseOptions {
     appId: '1:58564698490:android:191a4ecc2c3c65073a36c3',
     messagingSenderId: '58564698490',
     projectId: 'shopping-cart-ef9af',
-    databaseURL: 'https://shopping-cart-ef9af-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://shopping-cart-ef9af-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'shopping-cart-ef9af.appspot.com',
   );
-
 }

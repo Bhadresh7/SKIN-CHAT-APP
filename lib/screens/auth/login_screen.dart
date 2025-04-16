@@ -9,7 +9,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/providers/internet_provider.dart';
+import 'package:skin_chat_app/providers/internet/internet_provider.dart';
 import 'package:skin_chat_app/screens/auth/forget_password.dart';
 import 'package:skin_chat_app/screens/auth/register_screen.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
@@ -28,6 +28,71 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  ///controller
+  late TextEditingController emailController;
+  late TextEditingController passwordController;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+  }
+
+  void getAuthBaseScreen(BuildContext context, String result) {
+    switch (result) {
+      case AppStatus.kBlocked:
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("User Blocked"),
+              content: Text("Please contact the Admin for more information"),
+              actions: [
+                TextButton(
+                  onPressed: () => MyNavigation.back(context),
+                  child: Text("ok"),
+                )
+              ],
+            );
+          },
+        );
+        break;
+
+      case AppStatus.kInvalidCredential:
+        ToastHelper.showErrorToast(
+          context: context,
+          message: "Invalid credentials",
+        );
+        break;
+
+      case AppStatus.kSuccess:
+        MyNavigation.replace(context, HomeScreenVarient2());
+        ToastHelper.showSuccessToast(
+          context: context,
+          message: "Login Success",
+        );
+        break;
+
+      case AppStatus.kFailed:
+      default:
+        ToastHelper.showErrorToast(
+          context: context,
+          message: "Login failed",
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     //context.watch => automatically rebuild the ui if there is a change in the context
@@ -37,10 +102,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     ///formKey
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
-    ///controller
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
 
     return BackgroundScaffold(
       loading: authProvider.isLoading,
@@ -72,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: passwordController,
                 validators: [
                   FormBuilderValidators.required(
-                      errorText: "Username is required"),
+                      errorText: "password is required"),
                   FormBuilderValidators.minLength(6,
                       errorText: "Must be at least 6 characters"),
                 ],
@@ -99,17 +160,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       print(passwordController.text);
                       final result =
                           await authProvider.loginWithEmailAndPassword(
-                              email: emailController.text.trim(),
-                              password: passwordController.text.trim());
-                      if (context.mounted) {
-                        if (result == AppStatus.kSuccess) {
-                          MyNavigation.replace(context, HomeScreenVarient2());
-                          return ToastHelper.showSuccessToast(
-                              context: context, message: "Login Success");
-                        }
-                        return ToastHelper.showErrorToast(
-                            context: context, message: "Login Failed");
-                      }
+                        email: emailController.text.trim(),
+                        password: passwordController.text.trim(),
+                      );
+                      getAuthBaseScreen(context, result);
+                      print("=========================$result");
                     }
                   }
                 },
@@ -118,10 +173,29 @@ class _LoginScreenState extends State<LoginScreen> {
               OAuthButton(
                 onPressed: () async {
                   final result = await authProvider.googleAuth();
-                  print("0000000000000000$result");
                   if (!context.mounted) return;
 
+                  print(result);
+
                   switch (result) {
+                    case AppStatus.kBlocked:
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text("Blocked"),
+                            content: Text(
+                                "Please contact the Admin for more information"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => MyNavigation.back(context),
+                                child: Text("ok"),
+                              )
+                            ],
+                          );
+                        },
+                      );
+
                     case AppStatus.kEmailAlreadyExists:
                       MyNavigation.replace(
                           context, HomeScreenVarient2()); // Navigate first

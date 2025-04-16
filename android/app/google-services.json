@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "58564698490-pnrkppsa6toek06mjg4t5nna7kkmofk7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chat.skin_chat_app",
+            "certificate_hash": "8886448ffd8029403bb70a1ca2697e9a2e4d1eeb"
+          }
+        },
+        {
           "client_id": "58564698490-112s1e1kr7iop6j2p3seum2f6evrvai4.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -5,4 +5,6 @@ class AppAssets {
   static final String profile = "assets/svgs/profile.svg";
   static final String crown = "assets/svgs/crown.png";
   static final String logo = "assets/logo/skin-logo.png";
+  static final String profileIcon = "assets/icons/profile.png";
+  static final String developerLottie = "assets/lottie/developer.json";
 }

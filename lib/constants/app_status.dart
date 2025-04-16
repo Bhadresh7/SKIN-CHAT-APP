@@ -11,8 +11,11 @@ class AppStatus {
   static const String kTooManyRequests = 'too-many-requests';
   static const String kEmailAlreadyExists = 'email-already-in-use';
   static const String kInternetErrorMsg = 'network-request-failed';
-  static const String kWrongPassword = 'wrong-password';
+
   static const String kEmailNotVerified = 'email-not-verified';
+  static const String kBlocked = 'blocked';
+  static const String kInvalidCredential = 'invalid-credential';
+  static const String kUserNameAlreadyExists = 'user-name-already-exists';
 
   ///role
   static const String kAdmin = "admin";

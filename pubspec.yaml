@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+20
 
 environment:
   sdk: ^3.6.0
@@ -44,10 +44,14 @@ dependencies:
   intl: ^0.20.2
   image_picker: ^1.1.2
   flutter_image_compress: ^2.4.0
-  permission_handler: ^11.4.0
+  permission_handler: ^12.0.0+1
   csv: ^6.0.0
   open_filex: ^4.7.0
   infinite_scroll_pagination: ^5.0.0
+  dio: ^5.8.0+1
+  url_launcher: ^6.3.1
+  flutter_local_notifications: ^19.1.0
+  skeletonizer: ^1.4.3
 
 
 #  state management
@@ -61,30 +65,28 @@ dependencies:
 
 
 #  firebase and google auth
-  firebase_auth: ^5.5.1
-  firebase_core: ^3.12.1
-  cloud_firestore: ^5.6.5
-  firebase_storage: ^12.4.4
-  firebase_database: ^11.3.4
+  firebase_auth: ^5.5.2
+  firebase_core: ^3.13.0
+  cloud_firestore: ^5.6.6
+  firebase_storage: ^12.4.5
+  firebase_database: ^11.3.5
+  firebase_messaging: ^15.2.5
   google_sign_in: ^6.3.0
+
 
   #local storage
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.1.5
-  shared_preferences: ^2.5.2
+  shared_preferences: ^2.5.3
   toastification: ^3.0.2
   flutter_sharing_intent: ^1.1.1
-
-
-# rebuild the widget tree
-  flutter_phoenix: ^1.1.1
 
 #  env loader
   flutter_dotenv: ^5.2.1
 
 #splash screen
-  flutter_native_splash: ^2.4.5
+  flutter_native_splash: ^2.4.6
 
 dependency_overrides:
   intl: ^0.20.2
@@ -111,25 +113,26 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
-# native splash-screen configs
+# native splash screen configs
 flutter_native_splash:
   android: true
   ios: false
   web: false
   color: "#ffffff"
   image: assets/logo/skin-logo.jpg
-  color_dark: "#042a49"
+  color_dark: "#000000"
 
   android_12:
     image: assets/logo/skin-logo.jpg
-    color: "#ffffff" # Required for Android 12+
-    color_dark: "#042a49" # Dark mode background color
+    color: "#ffffff"
+    color_dark: "#000000"
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/logo/skin-logo.jpg"
   min_sdk_android: 21
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -148,6 +151,7 @@ flutter:
    - assets/icons/
    - assets/svgs/
    - assets/logo/
+   - .env
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

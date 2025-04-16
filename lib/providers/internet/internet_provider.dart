@@ -8,6 +8,8 @@ class InternetProvider extends ChangeNotifier {
   String _connectionStatus = "Unknown";
 
   String get connectionStatus => _connectionStatus;
+  bool _isLoading = false;
+  get isLoading => _isLoading;
 
   InternetProvider() {
     _startListening();
@@ -29,6 +31,26 @@ class InternetProvider extends ChangeNotifier {
       }
       notifyListeners();
     });
+  }
+
+  Future<void> checkConnectivity() async {
+    _isLoading = true;
+    notifyListeners();
+    await Future.delayed(Duration(seconds: 2));
+    final status = await _internetHelper.getCurrentStatus();
+    switch (status) {
+      case InternetConnectionStatus.connected:
+        _connectionStatus = AppStatus.kConnected;
+        break;
+      case InternetConnectionStatus.disconnected:
+        _connectionStatus = AppStatus.kDisconnected;
+        break;
+      case InternetConnectionStatus.slow:
+        _connectionStatus = AppStatus.kSlow;
+        break;
+    }
+    _isLoading = false;
+    notifyListeners();
   }
 
   @override
