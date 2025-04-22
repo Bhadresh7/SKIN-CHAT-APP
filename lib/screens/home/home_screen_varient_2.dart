@@ -12,6 +12,7 @@ import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
+import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
 
 class HomeScreenVarient2 extends StatefulWidget {
   const HomeScreenVarient2({super.key});
@@ -21,45 +22,50 @@ class HomeScreenVarient2 extends StatefulWidget {
 }
 
 class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
+  late TextEditingController messageController;
+  late NotificationService service;
+
   @override
   void initState() {
     super.initState();
 
-    final internetProvider =
-        Provider.of<InternetProvider>(context, listen: false);
-
+    messageController = TextEditingController();
+    service = NotificationService();
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
     authProvider.listenToRoleChanges(authProvider.email);
-    // Check internet before loading role and messages
-    if (internetProvider.connectionStatus == AppStatus.kDisconnected ||
-        internetProvider.connectionStatus == AppStatus.kSlow) {
-      return;
-    }
+
     authProvider.getUserDetails(email: authProvider.email);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController messageController = TextEditingController();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
+    print("${shareIntentProvider.sharedValues}");
+    final sharedText = shareIntentProvider.sharedValues;
+    if (sharedText.isNotEmpty) {
+      messageController.text = sharedText[0];
+    }
+    print("😛😌😴${messageController.text}");
+  }
 
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    messageController.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     /// Providers
     final chatProvider = Provider.of<ChatProvider>(context);
     final internetProvider = Provider.of<InternetProvider>(context);
     final authProvider = Provider.of<MyAuthProvider>(context);
     final imagePickerProvider = Provider.of<ImagePickerProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
-    // final ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
-
-    final NotificationService service = NotificationService();
 
     print("(((((${authProvider.currentUser?.username})))))))");
-    print("${shareIntentProvider.sharedValues}");
-    final sharedText = shareIntentProvider.sharedValues;
-    if (sharedText.isNotEmpty) {
-      setState(() {
-        messageController.text = sharedText.toString();
-      });
-    }
 
     /// Show a warning if there is no internet connection
     if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
@@ -148,11 +154,25 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
               stream: chatProvider.messagesStream,
               builder: (context, snapshot) {
                 final messages = snapshot.data ?? [];
-                final sortedMessages = messages
-                  ..sort(
-                      (a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-
                 return Chat(
+                  emptyState: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Welcome to Skin Chats",
+                          style: TextStyle(
+                            fontSize: AppStyles.heading,
+                            color: AppStyles.tertiary,
+                          ),
+                        ),
+                        Text(
+                          "Start your journey",
+                          style: TextStyle(color: AppStyles.tertiary),
+                        ),
+                      ],
+                    ),
+                  ),
                   theme: DefaultChatTheme(
                     dateDividerMargin: EdgeInsets.all(0.03.sh),
                     dateDividerTextStyle: TextStyle(fontSize: 15),
@@ -170,9 +190,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     inputTextCursorColor: AppStyles.smoke,
                     inputBorderRadius: BorderRadius.all(Radius.circular(0)),
                     sentMessageBodyLinkTextStyle: TextStyle(
-                      color: AppStyles.links,
+                      color: AppStyles.smoke,
                       decoration: TextDecoration.underline,
-                      decorationColor: AppStyles.links,
+                      decorationColor: AppStyles.smoke,
                     ),
                   ),
                   timeFormat: DateFormat("d/MM/yyyy - hh:mm a "),
@@ -203,7 +223,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       debugPrint("No image selected.");
                     }
                   },
-                  messages: sortedMessages,
+                  messages: messages,
                   onSendPressed: (message) async {
                     if (internetProvider.connectionStatus == AppStatus.kSlow) {
                       ToastHelper.showErrorToast(
@@ -215,12 +235,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     }
 
                     chatProvider.sendMessage(message, authProvider);
+                    shareIntentProvider.clear();
+                    messageController.clear();
                     await service.sendNotificationToUsers(
                       title: authProvider.currentUser!.username,
                       content: message.text,
                     );
-                    shareIntentProvider.clear();
-                    messageController.clear();
                   },
                   user: types.User(
                     firstName:
@@ -315,7 +335,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
           TextButton(
             onPressed: () async {
               await chatProvider.deleteMessage(message.id);
-              Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),

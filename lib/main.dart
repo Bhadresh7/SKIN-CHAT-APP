@@ -26,18 +26,18 @@ void main() async {
   ///init the env
   await dotenv.load(fileName: ".env");
 
+  ///init firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+ ///init notification service
   final NotificationService service = NotificationService();
-
   await service.initializeNotifications();
-
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
   await NotificationHelpers().requestNotificationPermission();
 
+
+///local storage
   SharedPreferences store = await SharedPreferences.getInstance();
   final login = store.getBool("isLoggedIn");
   final email = store.getString("user_email");
@@ -52,6 +52,8 @@ void main() async {
   print("==========================$login========================");
   print("imgSetupCompletedStatus: $imgCompleted");
   print("basicUserDetailsStatus: $basicDetailsCompleted");
+
+  ///Providers
   runApp(
     MultiProvider(
       providers: [
@@ -107,9 +109,5 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return AuthScreen();
-    // return ImageSetupScreen();
-    // return ViewUsersScreen();
-    // return EditProfileScreen();
-    // return ErrorScreen();
   }
 }

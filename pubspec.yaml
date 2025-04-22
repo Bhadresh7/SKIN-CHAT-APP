@@ -2,7 +2,7 @@ name: skin_chat_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -32,12 +32,12 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-#utitlities
+  #utitlities
   flutter_screenutil: ^5.9.3
   flutter_launcher_icons: ^0.14.3
   flutter_chat_ui: ^1.6.15
   flutter_chat_types: ^3.6.2
-#  file_picker: ^9.2.0
+  #  file_picker: ^9.2.0
   internet_connection_checker: ^3.0.1
   lottie: ^3.3.1
   flutter_svg: ^2.0.17
@@ -51,20 +51,15 @@ dependencies:
   dio: ^5.8.0+1
   url_launcher: ^6.3.1
   flutter_local_notifications: ^19.1.0
-  skeletonizer: ^1.4.3
 
-
-#  state management
+  #  state management
   provider: ^6.1.4
 
-
-#  form packages
+  #  form packages
   flutter_form_builder: ^10.0.1
   form_builder_validators: ^11.1.2
-#  pinput: ^5.0.1
 
-
-#  firebase and google auth
+  #  firebase and google auth
   firebase_auth: ^5.5.2
   firebase_core: ^3.13.0
   cloud_firestore: ^5.6.6
@@ -73,38 +68,29 @@ dependencies:
   firebase_messaging: ^15.2.5
   google_sign_in: ^6.3.0
 
-
   #local storage
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
+
   path_provider: ^2.1.5
   shared_preferences: ^2.5.3
   toastification: ^3.0.2
   flutter_sharing_intent: ^1.1.1
 
-#  env loader
+  #  env loader
   flutter_dotenv: ^5.2.1
 
-#splash screen
+  #splash screen
   flutter_native_splash: ^2.4.6
+
+  #skeleton loader
+  shimmer: ^3.0.0
 
 dependency_overrides:
   intl: ^0.20.2
   archive: ^4.0.5
 
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: ^2.4.15
-  hive_generator: ^2.0.1
-
-
-
-
-
-
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -133,13 +119,11 @@ flutter_launcher_icons:
   image_path: "assets/logo/skin-logo.jpg"
   min_sdk_android: 21
 
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -147,11 +131,11 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-   - assets/lottie/
-   - assets/icons/
-   - assets/svgs/
-   - assets/logo/
-   - .env
+    - assets/lottie/
+    - assets/icons/
+    - assets/svgs/
+    - assets/logo/
+    - .env
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

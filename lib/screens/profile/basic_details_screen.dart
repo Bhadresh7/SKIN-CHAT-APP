@@ -8,6 +8,7 @@ import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
+import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
@@ -164,21 +165,48 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         final result = await basicDetailsProvider
                             .saveUserToDbAndLocally(user);
 
+                        // handle email exists
+                        if (result == AppStatus.kEmailAlreadyExists) {
+                          return ToastHelper.showErrorToast(
+                            context: context,
+                            message: AppStatus.kEmailAlreadyExists,
+                          );
+                        }
+                        //Handle aadhar exists
+                        if (result == AppStatus.kaadharNoExists) {
+                          return ToastHelper.showErrorToast(
+                            context: context,
+                            message: AppStatus.kaadharNoExists,
+                          );
+                        }
+
+                        // Proceed only if success
                         if (result == AppStatus.kSuccess) {
-                          print(user.toString());
                           await authProvider.completeBasicDetails();
+
                           if (authProvider.isGoogle) {
-                            print("""using Google Authentication """);
-                            await authProvider.completeBasicDetails();
                             await authProvider.completeImageSetup();
                             MyNavigation.replace(context, HomeScreenVarient2());
                           } else {
-                            await authProvider.completeBasicDetails();
                             MyNavigation.replace(context, ImageSetupScreen());
                           }
-                        } else {
-                          print("☠️☠️☠️☠️☠️☠️☠️☠️$result☠️☠️☠️☠️☠️☠️☠️☠️");
                         }
+
+                        // if (result == AppStatus.kSuccess) {
+                        //   print(user.toString());
+                        //   await authProvider.completeBasicDetails();
+                        //   if (authProvider.isGoogle) {
+                        //     print("""using Google Authentication """);
+                        //     await authProvider.completeBasicDetails();
+                        //     await authProvider.completeImageSetup();
+                        //     MyNavigation.replace(context, HomeScreenVarient2());
+                        //   } else {
+                        //     await authProvider.completeBasicDetails();
+                        //     MyNavigation.replace(context, ImageSetupScreen());
+                        //   }
+                        // } else {
+                        //   print("☠️☠️☠️☠️☠️☠️☠️☠️$result☠️☠️☠️☠️☠️☠️☠️☠️");
+                        // }
                       }
                     },
                   ),

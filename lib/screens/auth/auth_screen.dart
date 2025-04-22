@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/auth/my_auth_provider.dart' show MyAuthProvider;
-import '../exports.dart';
+import 'package:skin_chat_app/providers/exports.dart' show MyAuthProvider;
+import 'package:skin_chat_app/screens/exports.dart'
+    show
+        LoginScreen,
+        EmailVerificationScreen,
+        BasicDetailsScreen,
+        ImageSetupScreen,
+        HomeScreenVarient2;
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});

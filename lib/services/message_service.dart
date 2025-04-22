@@ -10,59 +10,57 @@ class ChatService {
 
   UploadTask? get currentUploadTask => _currentUploadTask;
 
-  /// Listen for real-time messages
-  Stream<List<types.Message>> getMessagesStream() {
-    // await Future.delayed(Duration(seconds: 5));
 
+  /// Listen for real-time messages, sorted by timestamp (newest first)
+  Stream<List<types.Message>> getMessagesStream() {
     return _databaseRef.orderByChild("ts").onValue.map((event) {
       if (event.snapshot.value == null) return [];
 
       final rawData = event.snapshot.value;
       if (rawData is! Map) return [];
 
-      return rawData.entries
-          .map(
-            (entry) {
-              final messageData = entry.value;
-              print("-=-=-=-=-=-=-=-$messageData-=-=-=-=");
+      final messages = rawData.entries
+          .map((entry) {
+            final messageData = entry.value;
+            if (messageData is! Map) return null;
+            print(messageData);
+            final msg = messageData["msg"]?.toString() ?? "";
+            final isImage =
+                msg.startsWith("https://firebasestorage.googleapis.com");
 
-              if (messageData is! Map) return null;
+            final author = types.User(
+              id: messageData["id"].toString(),
+              firstName: messageData["name"]?.toString() ?? "Unknown",
+            );
 
-              final msg = messageData["msg"]?.toString() ?? "";
-              final isImage =
-                  msg.startsWith("https://firebasestorage.googleapis.com");
+            final timestamp =
+                messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
 
-              final author = types.User(
-                id: messageData["id"].toString(),
-                firstName: messageData["name"]?.toString() ?? "Unknown",
+            if (isImage) {
+              return types.ImageMessage(
+                id: entry.key,
+                author: author,
+                createdAt: timestamp,
+                name: "Image",
+                size: 0,
+                uri: msg,
               );
-
-              final timestamp =
-                  messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-
-              if (isImage) {
-                return types.ImageMessage(
-                  id: entry.key,
-                  author: author,
-                  createdAt: timestamp,
-                  name: "Image",
-                  size: 0,
-                  uri: msg,
-                  // height: 50,
-                  // width: 50,
-                );
-              } else {
-                return types.TextMessage(
-                  id: entry.key,
-                  author: author,
-                  createdAt: timestamp,
-                  text: msg,
-                );
-              }
-            },
-          )
+            } else {
+              return types.TextMessage(
+                id: entry.key,
+                author: author,
+                createdAt: timestamp,
+                text: msg,
+              );
+            }
+          })
           .whereType<types.Message>()
           .toList();
+
+      // 🔽 Sort by createdAt timestamp (latest first)
+      messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+
+      return messages;
     });
   }
 

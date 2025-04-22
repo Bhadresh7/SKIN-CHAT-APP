@@ -1,0 +1,2 @@
+C:/Users/ocean/Projects/Bhadresh/SKIN-CHAT-APP/android/app/.cxx/RelWithDebInfo/5a1v1r5b/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/ocean/Projects/Bhadresh/SKIN-CHAT-APP/android/app/.cxx/RelWithDebInfo/5a1v1r5b/armeabi-v7a/CMakeFiles/rebuild_cache.dir

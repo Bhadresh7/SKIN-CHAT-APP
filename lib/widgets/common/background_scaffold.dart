@@ -68,8 +68,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
-    final basicUserDetailsProvider =
-        Provider.of<BasicUserDetailsProvider>(context);
+    // final basicUserDetailsProvider =
+    //     Provider.of<BasicUserDetailsProvider>(context);
     // print(authProvider.currentUser?.username);
     // final userRoleProvider = Provider.of<UserRoleProvider>(context);
 
@@ -165,7 +165,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    print("Nooooo");
+                                    // print("Nooooo");
                                     MyNavigation.back(context);
                                   },
                                   child: Text("No"),

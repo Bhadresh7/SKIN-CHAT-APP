@@ -50,6 +50,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+
     signingConfigs {
         release {
             keyAlias keystoreProperties['keyAlias']
@@ -64,6 +65,7 @@ android {
             signingConfig = signingConfigs.release
             minifyEnabled = true
             shrinkResources = true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),'proguard-rules.pro'
         }
     }
 }

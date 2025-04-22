@@ -51,47 +51,52 @@ class UserService {
 
   Future<String> saveUser({required Users user}) async {
     try {
-      QuerySnapshot superAdminSnapshots = await _store
-          .collection('super_admins')
-          .where('email', isEqualTo: user.email)
-          .limit(1)
-          .get();
+      // Run all queries in parallel for better performance
+      final results = await Future.wait([
+        _checkDocumentExists('super_admins', 'email', user.email),
+        _checkDocumentExists('super_admins', 'aadharNo', user.aadharNo),
+        _checkDocumentExists('users', 'email', user.email),
+        _checkDocumentExists('users', 'aadharNo', user.aadharNo),
+      ]);
 
-      if (superAdminSnapshots.docs.isNotEmpty) {
-        print('user Exist in the super_admin collection');
+      final isEmailInSuperAdmins = results[0];
+      final isAadharInSuperAdmins = results[1];
+      final isEmailInUsers = results[2];
+      final isAadharInUsers = results[3];
+      print("===================================");
+      print(isEmailInUsers);
+      print(isAadharInUsers);
+      print("===================================");
+      print(isEmailInSuperAdmins);
+      print(isEmailInSuperAdmins);
+      print("===================================");
+
+      if (isEmailInUsers || isEmailInSuperAdmins) {
         return AppStatus.kEmailAlreadyExists;
       }
-
-      // Check if the email already exists
-      QuerySnapshot querySnapshot = await _store
-          .collection("users")
-          .where("email", isEqualTo: user.email)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        print("user exists in the user collection");
-        return AppStatus.kEmailAlreadyExists;
+      if (isAadharInUsers || isAadharInSuperAdmins) {
+        return AppStatus.kaadharNoExists;
       }
 
-      DocumentSnapshot doc =
-          await _store.collection("users").doc(user.uid).get();
+      // Save or update the user document
+      final userRef = _store.collection("users").doc(user.uid);
+      final doc = await userRef.get();
 
       if (!doc.exists) {
-        await _store.collection("users").doc(user.uid).set(user.toJson());
+        await userRef.set(user.toJson());
       } else {
-        // Merge to update only missing fields (useful for Google login users)
-        await _store.collection("users").doc(user.uid).set({
+        await userRef.set({
           "name": user.username,
           "email": user.email,
-          "createdAt": DateTime.timestamp()
+          "aadhar": user.aadharNo,
+          "createdAt": DateTime.timestamp(),
         }, SetOptions(merge: true));
       }
 
       print("✅ User saved successfully.");
       return AppStatus.kSuccess;
     } catch (e) {
-      print("☠️☠️☠️ Error saving user: ${e.toString()} ☠️☠️☠️");
+      print("☠️ Error saving user: ${e.toString()}");
       return AppStatus.kFailed;
     }
   }
@@ -364,5 +369,16 @@ class UserService {
       print(e.toString());
       return false;
     }
+  }
+
+  Future<bool> _checkDocumentExists(
+      String collection, String field, String value) async {
+    final query = await _store
+        .collection(collection)
+        .where(field, isEqualTo: value)
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty;
   }
 }

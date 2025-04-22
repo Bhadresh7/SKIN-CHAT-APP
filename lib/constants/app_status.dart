@@ -11,6 +11,7 @@ class AppStatus {
   static const String kTooManyRequests = 'too-many-requests';
   static const String kEmailAlreadyExists = 'email-already-in-use';
   static const String kInternetErrorMsg = 'network-request-failed';
+  static const String kaadharNoExists='aadhar-already-exists';
 
   static const String kEmailNotVerified = 'email-not-verified';
   static const String kBlocked = 'blocked';

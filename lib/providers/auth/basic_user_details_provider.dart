@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/services/user_service.dart';
-
-import '../../modal/users.dart';
+import 'package:skin_chat_app/modal/users.dart';
 
 class BasicUserDetailsProvider extends ChangeNotifier {
   final UserService _service = UserService();
@@ -32,6 +31,9 @@ class BasicUserDetailsProvider extends ChangeNotifier {
       final result = await _service.saveUser(user: user);
       if (result == AppStatus.kEmailAlreadyExists) {
         return AppStatus.kEmailAlreadyExists;
+      }
+      if(result == AppStatus.kaadharNoExists){
+        return AppStatus.kaadharNoExists;
       }
       await LocalStorage.setString("role", user.role);
       await LocalStorage.setString("email", user.email);
@@ -80,26 +82,4 @@ class BasicUserDetailsProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // Future<String> getUserDetails({required String email}) async {
-  //   try {
-  //     _isLoading = true;
-  //     notifyListeners();
-  //
-  //     _currentUser = await _service.getUserDetailsByEmail(email: email);
-  //
-  //     _isLoading = false;
-  //     notifyListeners();
-  //
-  //     if (_currentUser == null) {
-  //       return AppStatus.kUserNotFound;
-  //     }
-  //
-  //     return AppStatus.kSuccess;
-  //   } catch (e) {
-  //     _isLoading = false;
-  //     notifyListeners();
-  //     return AppStatus.kFailed;
-  //   }
-  // }
 }
