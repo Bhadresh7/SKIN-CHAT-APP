@@ -49,15 +49,7 @@ class CsvService {
         }
 
         List<List<dynamic>> csvData = [
-          [
-            "User ID",
-            "Name",
-            "Email",
-            "Role",
-            "Created-At",
-            "Aadhar no",
-            "mobile no"
-          ]
+          ["User ID", "Name", "Email", "Created-At", "Aadhar no", "mobile no"]
         ];
 
         final totalDocs = querySnapshot.docs.length;
@@ -70,7 +62,6 @@ class CsvService {
             doc.id,
             '${data["username"] ?? "N/A"}',
             '${data["email"] ?? "N/A"}',
-            '${data["role"] ?? "N/A"}',
             formatDate(data["createdAt"]),
             data["aadharNo"] != null
                 ? '\t${data["aadharNo"].toString()}'

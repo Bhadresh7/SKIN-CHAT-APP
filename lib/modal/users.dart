@@ -15,6 +15,7 @@ class Users {
     this.isBlocked = false,
     required this.dob,
     this.createdAt,
+    this.imageUrl,
   });
 
   final String uid;
@@ -30,6 +31,7 @@ class Users {
   final String mobileNumber;
   final String dob;
   final Timestamp? createdAt;
+  String? imageUrl;
 
   /// Convert the data to a map to store in Firebase
   Map<String, dynamic> toJson() {
@@ -47,6 +49,7 @@ class Users {
       'mobileNumber': mobileNumber,
       'dob': dob,
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      'imageUrl': imageUrl,
     };
   }
 
@@ -66,6 +69,7 @@ class Users {
       mobileNumber: data['mobileNumber'] ?? '',
       dob: data['dob'] ?? '',
       createdAt: data['createdAt'],
+      imageUrl: data['imageUrl'],
     );
   }
 
@@ -86,7 +90,8 @@ Users(
   aadharNo: $aadharNo,
   mobileNumber: $mobileNumber,
   dob: $dob,
-  createdAt: ${createdAt != null ? createdAt!.toDate().toString() : "N/A"}
+  createdAt: ${createdAt != null ? createdAt!.toDate().toString() : "N/A"},
+  imageUrl: ${imageUrl ?? "N/A"}
 )''';
   }
 }

@@ -12,6 +12,7 @@ class CustomButton extends StatelessWidget {
   final double? width;
   final double? height;
   final EdgeInsetsGeometry? padding;
+  final Color? loadingColor;
 
   const CustomButton({
     super.key,
@@ -24,6 +25,7 @@ class CustomButton extends StatelessWidget {
     this.width,
     this.height,
     this.padding,
+    this.loadingColor,
   });
 
   @override
@@ -51,7 +53,7 @@ class CustomButton extends StatelessWidget {
                     width: 24.w,
                     height: 24.w,
                     child: CircularProgressIndicator(
-                      color: AppStyles.primary,
+                      color: loadingColor ?? AppStyles.primary,
                       strokeWidth: 2,
                     ),
                   )

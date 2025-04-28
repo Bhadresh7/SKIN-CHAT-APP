@@ -90,11 +90,11 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                         _buildDetailRow('Email', user?.email),
                         _buildDetailRow('Mobile No', user?.mobileNumber),
                         _buildDetailRow('Aadhar No', user?.aadharNo),
+                        _buildDetailRow('DOB', user?.dob)
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 0.001.sh),
                 if (user?.role == AppStatus.kAdmin)
                   CustomButton(
                     text: "Make as Admin",
@@ -120,8 +120,10 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                 CustomButton(
                   text: "Block User",
                   onPressed: () async {
+                    print(user?.uid);
                     final result =
                         await adminProvider.blockUsers(uid: user!.uid);
+
                     switch (result) {
                       case AppStatus.kSuccess:
                         return ToastHelper.showSuccessToast(

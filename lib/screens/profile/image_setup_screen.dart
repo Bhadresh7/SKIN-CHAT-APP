@@ -68,8 +68,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
                                 ? FileImage(imagePickerProvider.selectedImage!)
                                 : null, // ✅ Prevent error
                             child: imagePickerProvider.selectedImage == null
-                                ? Icon(Icons.person,
-                                    size: 50) // ✅ Placeholder icon
+                                ? Icon(Icons.person, size: 50)
                                 : null,
                           ),
                   ),

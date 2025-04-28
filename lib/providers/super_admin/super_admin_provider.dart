@@ -51,15 +51,17 @@ class SuperAdminProvider with ChangeNotifier {
     }
   }
 
-  Stream userStream() {
-    return _service.userStream();
-  }
+
 
   Future<String> blockUsers({required String uid}) async {
     try {
       setLoadingState(true);
       notifyListeners();
-      return await _service.blockUsers(uid: uid);
+
+
+      final blockedUsers= await _service.blockUsers(uid: uid);
+      print("=========$blockedUsers========");
+      return blockedUsers;
     } catch (e) {
       print(e.toString());
       return e.toString();

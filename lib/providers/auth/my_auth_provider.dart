@@ -36,6 +36,7 @@ class MyAuthProvider extends ChangeNotifier {
 
   Users? get currentUser => _currentUser;
   final bool _isBlocked = false;
+
   bool get isBlocked => _isBlocked;
 
   int get adminCount => _adminCount ?? 0;

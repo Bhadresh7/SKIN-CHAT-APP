@@ -8,46 +8,7 @@ import '../modal/users.dart';
 class UserService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
 
-  ///saving user to firestore
-  // Future<String> saveUser({required Users user}) async {
-  //   try {
-  //     // Step 1: Check if the user exists in "super_admins"
-  //     QuerySnapshot superAdminSnapshot = await _store
-  //         .collection("super_admins")
-  //         .where("email", isEqualTo: user.email)
-  //         .get();
-  //
-  //     if (superAdminSnapshot.docs.isNotEmpty) {
-  //       print("⚠️ User exists in super_admins, no need to create a new one.");
-  //       return AppStatus.kEmailAlreadyExists;
-  //     }
-  //
-  //     // Step 2: Check if the user exists in "users"
-  //     QuerySnapshot userSnapshot = await _store
-  //         .collection("users")
-  //         .where("email", isEqualTo: user.email)
-  //         .get();
-  //
-  //     if (userSnapshot.docs.isNotEmpty) {
-  //       print("⚠️ User already exists in users, not saving.");
-  //       return AppStatus.kEmailAlreadyExists;
-  //     }
-  //
-  //     // Step 3: Create the new user in "users"
-  //     await _store.collection("users").doc(user.uid).set({
-  //       "username": user.username,
-  //       "email": user.email,
-  //       "role": "user",
-  //       'isAdmin': false,
-  //     });
-  //
-  //     print("✅ User saved successfully.");
-  //     return AppStatus.kSuccess;
-  //   } catch (e) {
-  //     print("☠️ Error saving user: ${e.toString()} ☠️");
-  //     return AppStatus.kFailed;
-  //   }
-  // }
+  ///save user details to db
 
   Future<String> saveUser({required Users user}) async {
     try {
@@ -239,19 +200,26 @@ class UserService {
     }
   }
 
+  ///Track the count of the users role (admin,user,blocked users)
   Stream<Map<String, int?>> get userAndAdminCountStream {
     return _store.collection('users').snapshots().map((snapshot) {
-      int? blockedUserCount = snapshot.docs
+      int blockedUserCount = snapshot.docs
           .where((doc) =>
               doc.data().containsKey('isBlocked') && doc['isBlocked'] == true)
           .length;
-      print("$blockedUserCount");
 
-      int adminCount =
-          snapshot.docs.where((doc) => doc['role'] == 'admin').length;
+      int adminCount = snapshot.docs
+          .where(
+              (doc) => doc.data().containsKey('role') && doc['role'] == 'admin')
+          .length;
 
-      int userCount =
-          snapshot.docs.where((doc) => doc['role'] == 'user').length;
+      int userCount = snapshot.docs
+          .where(
+              (doc) => doc.data().containsKey('role') && doc['role'] == 'user')
+          .length;
+
+      print(
+          "Admins: $adminCount, Users: $userCount, Blocked: $blockedUserCount");
 
       return {
         'admin': adminCount,
@@ -288,7 +256,7 @@ class UserService {
 
         // Prepare fields to update
         Map<String, dynamic> updateData = {};
-        if (imgUrl != null) updateData["imgUrl"] = imgUrl;
+        if (imgUrl != null) updateData["imageUrl"] = imgUrl;
         if (name != null) updateData["username"] = name;
         if (mobile != null) updateData["mobileNumber"] = mobile;
         if (dob != null) updateData["dob"] = dob;
@@ -296,6 +264,9 @@ class UserService {
         // Perform update if needed
         if (updateData.isNotEmpty) {
           await docRef.update(updateData);
+          updateData.forEach((key, value) {
+            print("$key==========> $value");
+          });
         }
 
         // Re-fetch the updated user document
@@ -316,6 +287,8 @@ class UserService {
       return null;
     }
   }
+
+  ///get user details by email for edit profile screen
 
   Future<Users?> getUserDetailsByEmail({required String email}) async {
     try {
@@ -348,6 +321,7 @@ class UserService {
     }
   }
 
+  ///check if the user is already exists in the db(Auth purpose)
   Future<bool> isUserExists({required String username}) async {
     try {
       final result = await Future.wait([

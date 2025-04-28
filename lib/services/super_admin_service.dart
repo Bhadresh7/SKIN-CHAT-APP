@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
+import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/modal/view_users.dart';
 
 class SuperAdminService {
@@ -36,9 +37,11 @@ class SuperAdminService {
 
         final newCanPost = !currentCanPost;
 
-        await _store.collection("users").doc(docId).update({
-          "canPost": newCanPost,
-        });
+        await _store.collection("users").doc(docId).update(
+          {
+            "canPost": newCanPost,
+          },
+        );
 
         print("✅ canPost toggled to $newCanPost for $email");
       } else {
@@ -49,13 +52,7 @@ class SuperAdminService {
     }
   }
 
-  ///user stream function for real-time tracking of users
-  Stream userStream() {
-    return _store.collection('users').snapshots();
-  }
-
   ///block users
-
   Future<String> blockUsers({required String uid}) async {
     try {
       await _store.collection('users').doc(uid).update({'isBlocked': true});
@@ -99,6 +96,9 @@ class SuperAdminService {
 
       if (userSnapshot.docs.isNotEmpty) {
         final userData = userSnapshot.docs.first.data();
+        userData.forEach((key,value){
+          print("$key===>$value");
+        });
         return ViewUsers.fromJson(userData);
       } else {
         return null; // Return null if no user found

@@ -10,6 +10,8 @@ import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/user_list_view.dart';
 
+import '../../widgets/common/grid_with_pagination.dart';
+
 class ViewUsersScreen extends StatefulWidget {
   const ViewUsersScreen({super.key});
 
@@ -206,6 +208,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
                   return Padding(
                     padding: EdgeInsets.symmetric(horizontal: 5.w),
                     child: ChoiceChip(
+
                       showCheckmark: false,
                       label: Text(
                         chipLabels[index],

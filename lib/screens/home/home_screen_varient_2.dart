@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -22,38 +24,28 @@ class HomeScreenVarient2 extends StatefulWidget {
 }
 
 class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
-  late TextEditingController messageController;
   late NotificationService service;
 
   @override
   void initState() {
     super.initState();
-
-    messageController = TextEditingController();
     service = NotificationService();
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
     authProvider.listenToRoleChanges(authProvider.email);
-
     authProvider.getUserDetails(email: authProvider.email);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final chatProvider = Provider.of<ChatProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
     print("${shareIntentProvider.sharedValues}");
     final sharedText = shareIntentProvider.sharedValues;
     if (sharedText.isNotEmpty) {
-      messageController.text = sharedText[0];
+      chatProvider.messageController.text = sharedText[0];
     }
-    print("😛😌😴${messageController.text}");
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    messageController.dispose();
+    print("😛😌😴${chatProvider.messageController.text}");
   }
 
   @override
@@ -66,42 +58,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
 
     print("(((((${authProvider.currentUser?.username})))))))");
-
-    /// Show a warning if there is no internet connection
-    if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
-      return PopScope(
-        canPop: false,
-        child: BackgroundScaffold(
-          showDrawer: true,
-          appBar: AppBar(title: const Text("Chat")),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "No internet connection. Please check your network.",
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: AppStyles.subTitle,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 20),
-                CustomButton(
-                  isLoading: internetProvider.isLoading,
-                  prefixWidget: Icon(Icons.refresh),
-                  width: 0.3.sw,
-                  text: "Retry",
-                  onPressed: () async {
-                    await internetProvider.checkConnectivity();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
 
     return PopScope(
       canPop: false,
@@ -121,9 +77,13 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
               StreamBuilder<Map<String, int?>>(
                 stream: authProvider.adminUserCountStream,
                 builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    print(snapshot.error);
+                  }
                   final employeeCount = snapshot.data?["admin"] ?? 0;
                   final candidateCount = snapshot.data?["user"] ?? 0;
-
+                  print("===========$employeeCount============");
+                  print("============$candidateCount=========");
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -153,30 +113,39 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
             StreamBuilder<List<types.Message>>(
               stream: chatProvider.messagesStream,
               builder: (context, snapshot) {
+                final isLoading =
+                    snapshot.connectionState == ConnectionState.waiting;
                 final messages = snapshot.data ?? [];
                 return Chat(
-                  emptyState: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Welcome to Skin Chats",
-                          style: TextStyle(
-                            fontSize: AppStyles.heading,
-                            color: AppStyles.tertiary,
+                  emptyState: isLoading
+                      ? ChatPlaceholder()
+                      : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Welcome to Skin Chats",
+                                style: TextStyle(
+                                  fontSize: AppStyles.heading,
+                                  color: AppStyles.tertiary,
+                                ),
+                              ),
+                              Text(
+                                "Start your journey",
+                                style: TextStyle(color: AppStyles.tertiary),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          "Start your journey",
-                          style: TextStyle(color: AppStyles.tertiary),
-                        ),
-                      ],
-                    ),
-                  ),
                   theme: DefaultChatTheme(
+                    sentMessageBodyTextStyle: TextStyle(
+                      fontSize: AppStyles.msgText,
+                      color: AppStyles.smoke,
+                    ),
+                    receivedMessageBodyTextStyle:
+                        TextStyle(fontSize: AppStyles.msgText),
                     dateDividerMargin: EdgeInsets.all(0.03.sh),
                     dateDividerTextStyle: TextStyle(fontSize: 15),
-                    userNameTextStyle: TextStyle(fontWeight: FontWeight.w700),
                     userAvatarTextStyle: TextStyle(
                       fontWeight: FontWeight.normal,
                       color: AppStyles.smoke,
@@ -197,7 +166,11 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   ),
                   timeFormat: DateFormat("d/MM/yyyy - hh:mm a "),
                   inputOptions: InputOptions(
-                    textEditingController: messageController,
+                    enabled: internetProvider.connectionStatus ==
+                            AppStatus.kDisconnected
+                        ? false
+                        : true,
+                    textEditingController: chatProvider.messageController,
                     sendButtonVisibilityMode: SendButtonVisibilityMode.always,
                   ),
                   onMessageLongPress: (context, message) {
@@ -236,7 +209,8 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
                     chatProvider.sendMessage(message, authProvider);
                     shareIntentProvider.clear();
-                    messageController.clear();
+                    chatProvider.clear();
+                    imagePickerProvider.clear();
                     await service.sendNotificationToUsers(
                       title: authProvider.currentUser!.username,
                       content: message.text,
@@ -255,6 +229,51 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                 );
               },
             ),
+
+            if (internetProvider.connectionStatus == AppStatus.kDisconnected)
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    // fixed: use withOpacity
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.wifi_off, size: 48, color: Colors.white),
+                        SizedBox(height: 16),
+                        Text(
+                          "No Internet Connection",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Please turn on your internet to continue.",
+                          style: TextStyle(color: Colors.white70),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 24),
+                        CustomButton(
+                          text: "Retry",
+                          width: 0.4.sw,
+                          prefixWidget:
+                              Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () async {
+                            await internetProvider.checkConnectivity();
+                          },
+                          isLoading: internetProvider.isLoading,
+                          loadingColor: AppStyles.smoke,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
 
             /// Upload Progress Overlay
             ValueListenableBuilder<double?>(
