@@ -10,11 +10,8 @@ class ChatProvider extends ChangeNotifier {
     print("I'm Initilized");
   }
 
-
   final ChatService _chatService = ChatService();
   final List<types.Message> _messages = [];
-  ///controller
-  TextEditingController messageController = TextEditingController();
 
   List<types.Message> get messages => _messages;
   ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
@@ -58,11 +55,6 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  void clear() {
-    messageController.clear();
-    notifyListeners();
-  }
-
   ///Method to handle the Image type message
 
   Future<void> handleImageMessage(
@@ -103,10 +95,5 @@ class ChatProvider extends ChangeNotifier {
     _chatService.cancelUpload();
     uploadProgressNotifier.value = null;
     notifyListeners();
-  }
-
-  void dispose() {
-    messageController.dispose();
-    super.dispose();
   }
 }

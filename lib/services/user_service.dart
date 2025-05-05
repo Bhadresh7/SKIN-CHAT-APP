@@ -141,62 +141,124 @@ class UserService {
     };
   }
 
+  // Future<Map<String, dynamic>> fetchRoleAndCanPostStatus({
+  //   required String email,
+  // }) async {
+  //   try {
+  //     // Check in super_admins collection
+  //     var doc = await _store
+  //         .collection("super_admins")
+  //         .where("email", isEqualTo: email)
+  //         .limit(1)
+  //         .get()
+  //         .then((snapshot) =>
+  //             snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
+  //
+  //     doc ??= await _store
+  //         .collection("users")
+  //         .where("email", isEqualTo: email)
+  //         .limit(1)
+  //         .get()
+  //         .then((snapshot) =>
+  //             snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
+  //
+  //     if (doc == null) {
+  //       return {
+  //         'status': AppStatus.kUserNotFound,
+  //       };
+  //     }
+  //     print("😍😍😍😍😍😍fetchRoleAndCanPostStatus😍😍😍😍😍😍");
+  //     final mail = doc['email'] ?? "no-email-found";
+  //     final role = doc["role"] ?? "no-role-found";
+  //     final canPost = doc["canPost"] ?? false;
+  //     final isBlocked = doc['isBlocked'] ?? false;
+  //
+  //     print("email =====> $mail");
+  //     print("🔥 Updated User Role: $role");
+  //     print("📝 canPost: $canPost");
+  //
+  //     await LocalStorage.setString("role", role);
+  //     await LocalStorage.setBool("canPost", canPost);
+  //     await LocalStorage.setString('email', mail);
+  //
+  //     if (isBlocked) {
+  //       return {
+  //         'status': AppStatus.kBlocked,
+  //       };
+  //     }
+  //
+  //     return {
+  //       'role': role,
+  //       'canPost': canPost,
+  //       'email': mail,
+  //     };
+  //   } catch (e) {
+  //     print("Error fetching role: ${e.toString()}");
+  //     return {
+  //       'status': AppStatus.kUserNotFound,
+  //     };
+  //   }
+  // }
   Future<Map<String, dynamic>> fetchRoleAndCanPostStatus({
     required String email,
   }) async {
     try {
-      // Check in super_admins collection
-      var doc = await _store
-          .collection("super_admins")
-          .where("email", isEqualTo: email)
-          .limit(1)
-          .get()
-          .then((snapshot) =>
-              snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
+      final queries = [
+        _store
+            .collection("super_admins")
+            .where("email", isEqualTo: email)
+            .limit(1)
+            .get(),
+        _store
+            .collection("users")
+            .where("email", isEqualTo: email)
+            .limit(1)
+            .get(),
+      ];
 
-      doc ??= await _store
-          .collection("users")
-          .where("email", isEqualTo: email)
-          .limit(1)
-          .get()
-          .then((snapshot) =>
-              snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
+      final results = await Future.wait(queries);
 
-      if (doc == null) {
-        return {
-          'status': AppStatus.kUserNotFound,
-        };
+      DocumentSnapshot<Map<String, dynamic>>? doc;
+
+      for (var snapshot in results) {
+        if (snapshot.docs.isNotEmpty) {
+          doc = snapshot.docs.first;
+          break;
+        }
       }
-      print("😍😍😍😍😍😍fetchRoleAndCanPostStatus😍😍😍😍😍😍");
-      final mail = doc['email'] ?? "no-email-found";
-      final role = doc["role"] ?? "no-role-found";
-      final canPost = doc["canPost"] ?? false;
-      final isBlocked = doc['isBlocked'] ?? false;
 
-      print("email =====> $mail");
-      print("🔥 Updated User Role: $role");
-      print("📝 canPost: $canPost");
+      if (doc == null || doc.data() == null) {
+        print("❌ User not found or document is null");
+        return {'status': AppStatus.kUserNotFound};
+      }
 
+      final data = doc.data()!;
+      final mail = data['email'] ?? 'no-email-found';
+      final role = data['role'] ?? 'no-role-found';
+      final canPost = data['canPost'] ?? false;
+      final isBlocked = data['isBlocked'] ?? false;
+
+      print("📥 User Email: $mail");
+      print("🔥 User Role: $role");
+      print("📝 Can Post: $canPost");
+      print("🚫 Is Blocked: $isBlocked");
+
+      await LocalStorage.setString("email", mail);
       await LocalStorage.setString("role", role);
       await LocalStorage.setBool("canPost", canPost);
-      await LocalStorage.setString('email', mail);
 
       if (isBlocked) {
-        return {
-          'status': AppStatus.kBlocked,
-        };
+        return {'status': AppStatus.kBlocked};
       }
 
       return {
+        'email': mail,
         'role': role,
         'canPost': canPost,
-        'email': mail,
       };
     } catch (e) {
-      print("Error fetching role: ${e.toString()}");
-      return {
-        'status': AppStatus.kUserNotFound,
-      };
+      print("❌ Error in fetchRoleAndCanPostStatus: ${e.toString()}");
+      return {'status': AppStatus.kUserNotFound};
     }
   }
 

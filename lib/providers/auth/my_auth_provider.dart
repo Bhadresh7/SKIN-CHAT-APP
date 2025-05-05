@@ -15,6 +15,10 @@ class MyAuthProvider extends ChangeNotifier {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final UserService _service = UserService();
   final NotificationService _notificationService = NotificationService();
+  final usernameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
 
   User? firebaseUser;
   Timer? _timer;
@@ -68,7 +72,6 @@ class MyAuthProvider extends ChangeNotifier {
 
   MyAuthProvider() {
     _loadUserDetails();
-    _initializeEmailVerification();
   }
 
   /// Load user details
@@ -131,44 +134,6 @@ class MyAuthProvider extends ChangeNotifier {
     await LocalStorage.setBool('hasCompletedImageSetup', true);
   }
 
-  // Future<void> setEmail({required String email}) async {
-  //   await LocalStorage.setBool('email', email);
-  // }
-
-  /// Initialize email verification
-  void _initializeEmailVerification() {
-    isEmailVerified = _auth.currentUser?.emailVerified ?? false;
-    if (!isEmailVerified) {
-      _auth.currentUser?.sendEmailVerification();
-      _timer = Timer.periodic(
-          const Duration(seconds: 3), (_) => checkEmailVerified());
-    }
-  }
-
-  Future<void> checkEmailVerified() async {
-    await _auth.currentUser?.reload();
-    if (_auth.currentUser?.emailVerified ?? false) {
-      await LocalStorage.setBool("isLoggedIn", true);
-      await LocalStorage.setBool("isEmailVerified", true);
-
-      // Print to debug
-      print(
-          "🔄 Storing isLoggedIn: ${await LocalStorage.getBool("isLoggedIn")}");
-      print(
-          "🔄 Storing isEmailVerified: ${await LocalStorage.getBool("isEmailVerified")}");
-
-      isLoggedIn = true;
-      isEmailVerified = true;
-
-      _timer?.cancel();
-      notifyListeners();
-    }
-  }
-
-  Future<void> resendEmail() async {
-    await _auth.currentUser?.sendEmailVerification();
-  }
-
   /// Google Authentication
   Future<String> googleAuth() async {
     try {
@@ -201,10 +166,9 @@ class MyAuthProvider extends ChangeNotifier {
       }
       final email = firebaseUser!.email!;
 
+      //check the user is blocked or not
       final roleInfo = await _service.fetchRoleAndCanPostStatus(email: email);
       if (roleInfo['status'] == AppStatus.kBlocked) {
-        // await LocalStorage.setBool("isLoggedIn", false);
-        // await LocalStorage.setBool("isEmailVerified", false);
         await _googleSignIn.disconnect();
         return AppStatus.kBlocked;
       }
@@ -217,11 +181,14 @@ class MyAuthProvider extends ChangeNotifier {
 
       final isEmailExists = await _service.findUserByEmail(email: email);
       print("🔹 Email exists in system: $isEmailExists");
+      if (isEmailExists) {
+        await LocalStorage.setBool("isLoggedIn", true);
+        await LocalStorage.setBool("isEmailVerified", true);
+        await LocalStorage.setBool('hasCompletedBasicDetails', true);
+        await LocalStorage.setBool('hasCompletedImageSetup', true);
 
-      await completeImageSetup();
-      await LocalStorage.setBool("isLoggedIn", true);
-      await LocalStorage.setBool("isEmailVerified", true);
-
+        notifyListeners();
+      }
       print("✅ Role & canPost info: $roleInfo");
 
       _notificationService.storeDeviceToken(uid: firebaseUser!.uid);
@@ -465,5 +432,20 @@ class MyAuthProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  void clearControllers() {
+    usernameController.clear();
+    emailController.clear();
+    passwordController.clear();
+    confirmPasswordController.clear();
+    notifyListeners();
+  }
+
+  void disposeControllers() {
+    usernameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
   }
 }

@@ -7,13 +7,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skin_chat_app/providers/exports.dart';
+import 'package:skin_chat_app/screens/exports.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
-import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
 
 import 'constants/app_styles.dart';
 import 'firebase_options.dart';
 import 'helpers/notification_helpers.dart';
-import 'screens/auth/auth_screen.dart' show AuthScreen;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,16 +43,16 @@ void main() async {
   final email = store.getString("user_email");
   final role = store.getString("role");
   final formUserName = store.getString("userName");
-  final imgCompleted = store.getBool('hasCompletedBasicDetails');
-  final basicDetailsCompleted = store.getBool('hasCompletedImageSetup');
+  final basicDetails = store.getBool('hasCompletedBasicDetails');
+  final imgSetupCompleted = store.getBool('hasCompletedImageSetup');
   final blocked = store.getBool('isBlocked');
 
   print("**********************$formUserName**********************");
   print("👍👍👍👍👍👍$email");
   print("🥳🥳🥳🥳🥳🥳🥳$role");
   print("==========================$login========================");
-  print("imgSetupCompletedStatus: $imgCompleted");
-  print("basicUserDetailsStatus: $basicDetailsCompleted");
+  print("imgSetupCompletedStatus: $imgSetupCompleted");
+  print("basicUserDetailsStatus: $basicDetails");
   print("Blocked: $blocked");
 
   ///Providers

@@ -8,9 +8,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
+
 
     <!-- Combined Queries -->
     <queries>
@@ -36,8 +36,11 @@
         android:name="${applicationName}"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/launcher_icon"
-        android:label="S.K.I.N CHATS"
+        android:label="S.K.I.N APP"
         android:requestLegacyExternalStorage="true">
+
+
+
 
         <activity
             android:name=".MainActivity"
@@ -49,10 +52,13 @@
             android:theme="@style/LaunchTheme"
             android:windowSoftInputMode="adjustResize">
 
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="example.com"
                     android:pathPrefix="/invite"
@@ -100,6 +106,12 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!--firebase messaging -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/your_channel_id" />
+
 
         <!-- Flutter meta-data -->
         <meta-data

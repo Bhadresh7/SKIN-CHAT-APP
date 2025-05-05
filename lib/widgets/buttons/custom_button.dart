@@ -13,6 +13,9 @@ class CustomButton extends StatelessWidget {
   final double? height;
   final EdgeInsetsGeometry? padding;
   final Color? loadingColor;
+  final double? border; // Border width
+  final Color? fontColor; // Font color
+  final Color? borderColor; // Optional new: border color
 
   const CustomButton({
     super.key,
@@ -26,6 +29,9 @@ class CustomButton extends StatelessWidget {
     this.height,
     this.padding,
     this.loadingColor,
+    this.border,
+    this.fontColor,
+    this.borderColor,
   });
 
   @override
@@ -42,9 +48,15 @@ class CustomButton extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: color ?? AppStyles.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: fontColor ?? Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppStyles.borderRadius),
+                side: border != null
+                    ? BorderSide(
+                        color: borderColor ?? Colors.white,
+                        width: border!,
+                      )
+                    : BorderSide.none,
               ),
             ),
             onPressed: isLoading ? null : onPressed,
@@ -72,6 +84,8 @@ class CustomButton extends StatelessWidget {
                           text,
                           style: TextStyle(
                             fontSize: AppStyles.subTitle,
+                            color: fontColor ??
+                                Colors.white, // ✅ custom font color
                           ),
                         ),
                         if (suffixIcon != null)
@@ -80,7 +94,8 @@ class CustomButton extends StatelessWidget {
                             child: Icon(
                               suffixIcon,
                               size: 20.w,
-                              color: Colors.white,
+                              color: fontColor ??
+                                  Colors.white, // ✅ custom icon color too
                             ),
                           ),
                       ],

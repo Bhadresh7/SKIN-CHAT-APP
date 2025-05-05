@@ -8,11 +8,11 @@ import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
+import 'package:skin_chat_app/helpers/password_hashing_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
-import 'package:skin_chat_app/screens/profile/image_setup_screen.dart';
+import 'package:skin_chat_app/screens/exports.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
@@ -30,27 +30,33 @@ class BasicDetailsScreen extends StatefulWidget {
 class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final usernameController = TextEditingController();
-  final aadharController = TextEditingController();
-  final mobileNumberController = TextEditingController();
-  final dateController = TextEditingController();
+  late TextEditingController userNameController;
+  late TextEditingController aadharController;
+  late TextEditingController mobileNumberController;
+  late TextEditingController dateController;
 
   @override
   void initState() {
+    userNameController = TextEditingController();
+    aadharController = TextEditingController();
+    mobileNumberController = TextEditingController();
+    dateController = TextEditingController();
     super.initState();
     final authProvider = context.read<MyAuthProvider>();
-    usernameController.text =
+
+    userNameController.text =
         authProvider.userName ?? authProvider.formUserName;
-    print(usernameController.text);
+    print(userNameController.text);
+    // authProvider.disposeControllers();
   }
 
   @override
   void dispose() {
-    super.dispose();
-    usernameController.dispose();
+    userNameController.dispose();
     aadharController.dispose();
     dateController.dispose();
     mobileNumberController.dispose();
+    super.dispose();
   }
 
   @override
@@ -151,7 +157,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           aadharNo: aadharController.text.trim(),
                           mobileNumber: mobileNumberController.text.trim(),
                           uid: authProvider.uid,
-                          username: usernameController.text.trim(),
+                          username: userNameController.text.trim(),
                           email: authProvider.email,
                           role: basicDetailsProvider.selectedRole!,
                           isGoogle: authProvider.isGoogle ? true : false,
@@ -160,7 +166,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           isAdmin: basicDetailsProvider.selectedRole! == "admin"
                               ? true
                               : false,
-                          password: authProvider.password,
+                          password: PasswordHashingHelper.hashPassword(
+                              password: authProvider.password),
                         );
                         final result = await basicDetailsProvider
                             .saveUserToDbAndLocally(user);
@@ -184,6 +191,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         if (result == AppStatus.kSuccess) {
                           await authProvider.completeBasicDetails();
 
+                          authProvider.clearControllers();
+                          // authProvider.disposeControllers();
                           if (authProvider.isGoogle) {
                             await authProvider.completeImageSetup();
                             MyNavigation.replace(context, HomeScreenVarient2());
@@ -191,27 +200,12 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                             MyNavigation.replace(context, ImageSetupScreen());
                           }
                         }
-
-                        // if (result == AppStatus.kSuccess) {
-                        //   print(user.toString());
-                        //   await authProvider.completeBasicDetails();
-                        //   if (authProvider.isGoogle) {
-                        //     print("""using Google Authentication """);
-                        //     await authProvider.completeBasicDetails();
-                        //     await authProvider.completeImageSetup();
-                        //     MyNavigation.replace(context, HomeScreenVarient2());
-                        //   } else {
-                        //     await authProvider.completeBasicDetails();
-                        //     MyNavigation.replace(context, ImageSetupScreen());
-                        //   }
-                        // } else {
-                        //   print("☠️☠️☠️☠️☠️☠️☠️☠️$result☠️☠️☠️☠️☠️☠️☠️☠️");
-                        // }
                       }
                     },
                   ),
                   InkWell(
-                    onTap: () {},
+                    onTap: () =>
+                        MyNavigation.to(context, TermsAndConditionsScreen()),
                     child: Text(
                       "Terms & Conditions",
                       style: TextStyle(color: AppStyles.links),

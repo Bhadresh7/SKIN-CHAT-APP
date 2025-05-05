@@ -10,6 +10,7 @@ import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/screens/auth/email_verification_screen.dart';
+import 'package:skin_chat_app/screens/auth/login_screen.dart';
 import 'package:skin_chat_app/screens/home/home_screen_varient_2.dart';
 import 'package:skin_chat_app/screens/profile/basic_details_screen.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
@@ -26,34 +27,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  /// controllers
-  late TextEditingController usernameController;
-  late TextEditingController emailController;
-  late TextEditingController passwordController;
-  late TextEditingController confirmPasswordController;
-
-  ///initilization of controllers
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    usernameController = TextEditingController();
-    emailController = TextEditingController();
-    passwordController = TextEditingController();
-    confirmPasswordController = TextEditingController();
-  }
-
-  ///disposing the controllers
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    usernameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     /// formKey
@@ -61,14 +34,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     /// providers
     final authProvider = Provider.of<MyAuthProvider>(context);
-
-    ///clearing controllers
-    void clearController() {
-      usernameController.clear();
-      emailController.clear();
-      passwordController.clear();
-      confirmPasswordController.clear();
-    }
 
     return BackgroundScaffold(
       loading: authProvider.isLoading,
@@ -86,7 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               CustomInputField(
                 name: "username",
                 hintText: "Username",
-                controller: usernameController,
+                controller: authProvider.usernameController,
                 validators: [
                   FormBuilderValidators.required(
                       errorText: "Username is required"),
@@ -97,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               CustomInputField(
                 name: "email",
                 hintText: "Email",
-                controller: emailController,
+                controller: authProvider.emailController,
                 validators: [
                   FormBuilderValidators.email(),
                   FormBuilderValidators.required(
@@ -108,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 isPassword: true,
                 name: "password",
                 hintText: "Password",
-                controller: passwordController,
+                controller: authProvider.passwordController,
                 validators: [
                   FormBuilderValidators.required(
                       errorText: "password is required"),
@@ -120,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 isPassword: true,
                 name: "confirm password",
                 hintText: "Confirm Password",
-                controller: confirmPasswordController,
+                controller: authProvider.confirmPasswordController,
                 validators: [
                   FormBuilderValidators.required(
                       errorText: "Username is required"),
@@ -132,16 +97,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 text: "Register",
                 onPressed: () async {
                   if (formKey.currentState!.validate()) {
-                    if (!(passwordController.text.trim() ==
-                        confirmPasswordController.text.trim())) {
+                    if (!(authProvider.passwordController.text.trim() ==
+                        authProvider.confirmPasswordController.text.trim())) {
                       return ToastHelper.showErrorToast(
                           context: context, message: "Password doesn't match");
                     }
                     final result =
                         await authProvider.signUpWithEmailAndPassword(
-                      username: usernameController.text.trim(),
-                      email: emailController.text.trim(),
-                      password: passwordController.text.trim(),
+                      username: authProvider.usernameController.text.trim(),
+                      email: authProvider.emailController.text.trim(),
+                      password: authProvider.passwordController.text.trim(),
                     );
                     if (context.mounted) {
                       switch (result) {
@@ -169,13 +134,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             context: context,
                             message: "Registeration successful",
                           );
-                          authProvider
-                              .setPassword(passwordController.text.trim());
-                          MyNavigation.replace(
+                          authProvider.setPassword(
+                              authProvider.passwordController.text.trim());
+                          MyNavigation.to(
                             context,
                             EmailVerificationScreen(),
                           );
-                          clearController();
                           break;
                         default:
                           return ToastHelper.showErrorToast(
@@ -198,7 +162,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   final result = await authProvider.googleAuth();
                   print("0000000000000000$result");
                   if (!context.mounted) return;
-
                   switch (result) {
                     case AppStatus.kBlocked:
                       showDialog(
@@ -222,9 +185,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ToastHelper.showSuccessToast(
                           context: context, message: "Login Successful");
 
-                      // Run these after navigating to avoid UI blocking issues
-                      await authProvider.completeBasicDetails();
-                      await authProvider.completeImageSetup();
                       break;
 
                     case AppStatus.kSuccess:
@@ -246,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
 
               InkWell(
-                onTap: () => MyNavigation.back(context),
+                onTap: () => MyNavigation.replace(context, LoginScreen()),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,

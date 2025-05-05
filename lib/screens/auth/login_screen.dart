@@ -175,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   final result = await authProvider.googleAuth();
                   if (!context.mounted) return;
 
-                  print(result);
+                  print("==========$result========");
 
                   switch (result) {
                     case AppStatus.kBlocked:
@@ -197,14 +197,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
 
                     case AppStatus.kEmailAlreadyExists:
-                      MyNavigation.replace(
-                          context, HomeScreenVarient2()); // Navigate first
+                      MyNavigation.replace(context, HomeScreenVarient2());
                       ToastHelper.showSuccessToast(
                           context: context, message: "Login Successful");
 
-                      // Run these after navigating to avoid UI blocking issues
-                      await authProvider.completeBasicDetails();
-                      await authProvider.completeImageSetup();
                       break;
 
                     case AppStatus.kSuccess:

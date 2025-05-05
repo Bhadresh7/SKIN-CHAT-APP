@@ -11,10 +11,14 @@ import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/exports.dart';
+import 'package:skin_chat_app/services/Appversion_service.dart'
+    show AppversionService;
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
+
+import '../../widgets/common/showDeleteDialog.dart' show Showdeletedialog;
 
 class HomeScreenVarient2 extends StatefulWidget {
   const HomeScreenVarient2({super.key});
@@ -25,10 +29,13 @@ class HomeScreenVarient2 extends StatefulWidget {
 
 class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   late NotificationService service;
+  late TextEditingController messageController;
 
   @override
   void initState() {
     super.initState();
+    AppversionService.getAppVersion();
+    messageController = TextEditingController();
     service = NotificationService();
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
     authProvider.listenToRoleChanges(authProvider.email);
@@ -38,14 +45,23 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final chatProvider = Provider.of<ChatProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
     print("${shareIntentProvider.sharedValues}");
     final sharedText = shareIntentProvider.sharedValues;
     if (sharedText.isNotEmpty) {
-      chatProvider.messageController.text = sharedText[0];
+      messageController.text = sharedText[0];
     }
-    print("😛😌😴${chatProvider.messageController.text}");
+    print("😛😌😴${messageController.text}");
+  }
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    super.dispose();
+  }
+
+  void _clearController() {
+    messageController.clear();
   }
 
   @override
@@ -56,6 +72,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final authProvider = Provider.of<MyAuthProvider>(context);
     final imagePickerProvider = Provider.of<ImagePickerProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
+    final superAdminProvider = Provider.of<SuperAdminProvider>(context);
 
     print("(((((${authProvider.currentUser?.username})))))))");
 
@@ -87,7 +104,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("S.K.I.N CHATS"),
+                      Text("S.K.I.N. App"),
                       Row(
                         spacing: 0.02.sw,
                         children: [
@@ -170,11 +187,11 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                             AppStatus.kDisconnected
                         ? false
                         : true,
-                    textEditingController: chatProvider.messageController,
+                    textEditingController: messageController,
                     sendButtonVisibilityMode: SendButtonVisibilityMode.always,
                   ),
                   onMessageLongPress: (context, message) {
-                    _showDeleteDialog(
+                    Showdeletedialog.showDeleteDialog(
                         context, message, chatProvider, authProvider);
                   },
                   onAttachmentPressed: () async {
@@ -189,6 +206,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       if (compressedImage != null) {
                         await chatProvider.handleImageMessage(
                             authProvider, compressedImage);
+                        await service.sendNotificationToUsers(
+                            title: authProvider.currentUser!.uid,
+                            content: "sent an image");
                       } else {
                         debugPrint("Image compression failed.");
                       }
@@ -209,8 +229,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
                     chatProvider.sendMessage(message, authProvider);
                     shareIntentProvider.clear();
-                    chatProvider.clear();
+                    _clearController();
                     imagePickerProvider.clear();
+
                     await service.sendNotificationToUsers(
                       title: authProvider.currentUser!.username,
                       content: message.text,
@@ -332,35 +353,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, dynamic message,
-      ChatProvider chatProvider, MyAuthProvider authProvider) {
-    if (message.author.id != authProvider.uid) {
-      return;
-    }
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Message"),
-        content: const Text("Are you sure you want to delete this message?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () async {
-              await chatProvider.deleteMessage(message.id);
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }

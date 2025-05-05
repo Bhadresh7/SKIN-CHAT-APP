@@ -17,7 +17,6 @@ class BackgroundScaffold extends StatefulWidget {
     this.appBar,
     this.showDrawer = false,
     this.margin,
-    this.showBackgroundImage = false,
   });
 
   final Widget body;
@@ -26,13 +25,14 @@ class BackgroundScaffold extends StatefulWidget {
   final PreferredSizeWidget? appBar;
   final bool showDrawer;
   final EdgeInsetsGeometry? margin;
-  final bool showBackgroundImage;
 
   @override
   State<BackgroundScaffold> createState() => _BackgroundScaffoldState();
 }
 
 class _BackgroundScaffoldState extends State<BackgroundScaffold> {
+  @override
+
   // @override
   // void initState() {
   //   // TODO: implement initState

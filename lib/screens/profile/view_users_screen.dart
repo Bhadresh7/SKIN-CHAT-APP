@@ -10,8 +10,6 @@ import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/user_list_view.dart';
 
-import '../../widgets/common/grid_with_pagination.dart';
-
 class ViewUsersScreen extends StatefulWidget {
   const ViewUsersScreen({super.key});
 
@@ -20,36 +18,44 @@ class ViewUsersScreen extends StatefulWidget {
 }
 
 class _ViewUsersScreenState extends State<ViewUsersScreen> {
-  StreamController<double> progressController = StreamController<double>();
+  late StreamController<double> progressController;
+  final CsvService _csvService = CsvService();
 
-  List<String> chipLabels = ["All", "Employee", "Candidates", "Blocked"];
-  List<String> roles = ["user", "admin"];
-  final CsvService _service = CsvService();
+  final List<String> chipLabels = ["All", "Employee", "Candidates", "Blocked"];
   int selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    progressController = StreamController<double>();
+  }
+
+  @override
+  void dispose() {
+    progressController.close();
+    super.dispose();
+  }
 
   void _confirmDownload(String role) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Confirm Download"),
-          content: Text("Are you sure you want to download the CSV for $role?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _showProgressModal(role);
-              },
-              child:
-                  Text("Confirm", style: TextStyle(color: AppStyles.primary)),
-            ),
-          ],
-        );
-      },
+      builder: (_) => AlertDialog(
+        title: const Text("Confirm Download"),
+        content: Text("Do you want to download the CSV for $role users?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showProgressModal(role);
+            },
+            child: Text("Confirm", style: TextStyle(color: AppStyles.primary)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -59,35 +65,33 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return StreamBuilder<double>(
-          stream: progressController.stream,
-          initialData: 0,
-          builder: (context, snapshot) {
-            double progress = snapshot.data ?? 0.0;
-            return AlertDialog(
-              title: Text("Downloading CSV"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("${(progress * 100).toInt()}%"),
-                  SizedBox(height: 10),
-                  LinearProgressIndicator(value: progress),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (_) => StreamBuilder<double>(
+        stream: progressController.stream,
+        initialData: 0,
+        builder: (_, snapshot) {
+          final progress = snapshot.data ?? 0.0;
+          return AlertDialog(
+            title: const Text("Downloading CSV"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("${(progress * 100).toStringAsFixed(0)}%"),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(value: progress),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
-    _service
+    _csvService
         .fetchUserDetailsAndConvertToCsv(
       role: role,
       progressController: progressController,
     )
-        .then((_) {
-      Navigator.pop(context); // Close the progress dialog when done
+        .then((resultMessage) {
+      Navigator.pop(context);
       progressController.close();
     });
   }
@@ -98,20 +102,20 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
       ),
-      builder: (context) {
+      builder: (_) {
         return Padding(
           padding: EdgeInsets.all(16.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Select Role",
+                "Download CSV by Role",
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16.h),
               ListTile(
                 leading: Icon(Icons.group, color: AppStyles.primary),
-                title: Text("All Users"),
+                title: const Text("All Users"),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmDownload("all");
@@ -119,7 +123,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.person, color: AppStyles.primary),
-                title: Text("Candidate"),
+                title: const Text("Candidate"),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmDownload("user");
@@ -128,7 +132,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
               ListTile(
                 leading:
                     Icon(Icons.admin_panel_settings, color: AppStyles.primary),
-                title: Text("Employee"),
+                title: const Text("Employee"),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmDownload("admin");
@@ -149,13 +153,15 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(0.1.sh),
         child: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
           actions: [
             Padding(
               padding: EdgeInsets.only(top: 0.02.sh),
               child: CustomButton(
                 height: 0.09.sh,
                 width: 0.50.sw,
-                text: "Download csv",
+                text: "Download CSV",
                 onPressed: _showDownloadSheet,
                 suffixIcon: Icons.file_download_outlined,
               ),
@@ -164,38 +170,28 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
         ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           StreamBuilder<Map<String, int?>>(
             stream: authProvider.adminUserCountStream,
-            builder: (context, snapshot) {
-              final employeeCount = snapshot.data?["admin"] ?? 0;
-              final candidateCount = snapshot.data?["user"] ?? 0;
-              final blockedUserCount = snapshot.data?["blocked"] ?? 0;
+            builder: (_, snapshot) {
+              final data = snapshot.data ?? {};
+              final employeeCount = data["admin"] ?? 0;
+              final candidateCount = data["user"] ?? 0;
+              final blockedUserCount = data["blocked"] ?? 0;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Row(
-                      spacing: 0.03.sw,
-                      children: [
-                        Text(
-                          "Employee: $employeeCount",
-                          style: TextStyle(fontSize: AppStyles.bodyText),
-                        ),
-                        Text(
-                          "Candidate: $candidateCount",
-                          style: TextStyle(fontSize: AppStyles.bodyText),
-                        ),
-                        Text(
-                          "Blocked Users: $blockedUserCount",
-                          style: TextStyle(fontSize: AppStyles.bodyText),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Text("Employee: $employeeCount  ",
+                        style: TextStyle(fontSize: AppStyles.bodyText)),
+                    Text("Candidate: $candidateCount  ",
+                        style: TextStyle(fontSize: AppStyles.bodyText)),
+                    Text("Blocked: $blockedUserCount",
+                        style: TextStyle(fontSize: AppStyles.bodyText)),
+                  ],
+                ),
               );
             },
           ),
@@ -208,7 +204,6 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
                   return Padding(
                     padding: EdgeInsets.symmetric(horizontal: 5.w),
                     child: ChoiceChip(
-
                       showCheckmark: false,
                       label: Text(
                         chipLabels[index],
@@ -220,7 +215,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
                       ),
                       selected: selectedIndex == index,
                       selectedColor: AppStyles.primary,
-                      onSelected: (bool selected) {
+                      onSelected: (_) {
                         setState(() {
                           selectedIndex = index;
                         });
@@ -232,8 +227,9 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
             ),
           ),
           Expanded(
-            child: UserListView(filter: chipLabels[selectedIndex]),
-            // child: GridWithPagination(filter: chipLabels[selectedIndex]),
+            child: UserListView(
+              filter: chipLabels[selectedIndex],
+            ),
           ),
         ],
       ),

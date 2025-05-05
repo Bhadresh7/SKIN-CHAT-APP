@@ -25,12 +25,14 @@ class MyNavigation {
   }
 
   static void replace(BuildContext context, Widget screen) {
+    if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-          pageBuilder: (context, animation1, animation2) => screen),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, animation1, animation2) => screen,
+      ),
     );
   }
 }

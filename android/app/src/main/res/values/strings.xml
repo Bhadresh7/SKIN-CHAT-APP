@@ -1,0 +1,4 @@
+<resources>
+    <!-- Define your channel ID here -->
+    <string name="your_channel_id">your_channel_id</string>
+</resources>

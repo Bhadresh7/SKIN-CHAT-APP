@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/modal/view_users.dart';
 
 class SuperAdminService {
@@ -96,7 +95,7 @@ class SuperAdminService {
 
       if (userSnapshot.docs.isNotEmpty) {
         final userData = userSnapshot.docs.first.data();
-        userData.forEach((key,value){
+        userData.forEach((key, value) {
           print("$key===>$value");
         });
         return ViewUsers.fromJson(userData);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
@@ -9,12 +11,18 @@ import '../../services/super_admin_service.dart';
 class SuperAdminProvider with ChangeNotifier {
   final SuperAdminService _service = SuperAdminService();
   bool _isSuperAdmin = false;
+
   bool get isSuperAdmin => _isSuperAdmin;
   bool _loading = false;
+
   bool get loading => _loading;
   ViewUsers? _viewUsers;
 
   ViewUsers? get viewUsers => _viewUsers;
+
+  Stream<DocumentSnapshot> blockedUsersStream({required String uid}) {
+    return _store.collection('users').doc(uid).snapshots();
+  }
 
   void setLoadingState(bool value) {
     _loading = value;
@@ -51,15 +59,12 @@ class SuperAdminProvider with ChangeNotifier {
     }
   }
 
-
-
   Future<String> blockUsers({required String uid}) async {
     try {
       setLoadingState(true);
       notifyListeners();
 
-
-      final blockedUsers= await _service.blockUsers(uid: uid);
+      final blockedUsers = await _service.blockUsers(uid: uid);
       print("=========$blockedUsers========");
       return blockedUsers;
     } catch (e) {
@@ -78,7 +83,9 @@ class SuperAdminProvider with ChangeNotifier {
   DocumentSnapshot? _lastDocument;
 
   List<DocumentSnapshot> get users => _users;
+
   bool get isLoading => _isLoading;
+
   bool get hasMore => _hasMore;
 
   Future<void> fetchUsers(String filter, {bool reset = false}) async {

@@ -9,19 +9,17 @@ plugins {
 }
 
 
-
-
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
     // Printing out the keystore values to the console for debugging purposes
-    println "Keystore Properties:"
-    println "Key Alias: ${keystoreProperties['keyAlias']}"
-    println "Key Password: ${keystoreProperties['keyPassword']}"
-    println "Store File: ${keystoreProperties['storeFile']}"
-    println "Store Password: ${keystoreProperties['storePassword']}"
+    println "Loaded Keystore Properties"
+//    println "Key Alias: ${keystoreProperties['keyAlias']}"
+//    println "Key Password: ${keystoreProperties['keyPassword']}"
+//    println "Store File: ${keystoreProperties['storeFile']}"
+//    println "Store Password: ${keystoreProperties['storePassword']}"
 } else {
     println "Key properties file not found!"
 
@@ -65,7 +63,7 @@ android {
             signingConfig = signingConfigs.release
             minifyEnabled = true
             shrinkResources = true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'),'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
