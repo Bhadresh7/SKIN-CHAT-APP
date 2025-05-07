@@ -39,7 +39,7 @@ class MyAuthProvider extends ChangeNotifier {
   Users? _currentUser;
 
   Users? get currentUser => _currentUser;
-  final bool _isBlocked = false;
+  bool _isBlocked = false;
 
   bool get isBlocked => _isBlocked;
 
@@ -76,6 +76,7 @@ class MyAuthProvider extends ChangeNotifier {
 
   /// Load user details
   Future<void> _loadUserDetails() async {
+    _isBlocked = await LocalStorage.getBool("isBlocked") ?? false;
     _role = await LocalStorage.getString("role") ?? "no-role-found";
     _canPost = await LocalStorage.getBool("canPost") ?? false;
     isLoggedIn = await LocalStorage.getBool("isLoggedIn") ?? false;
@@ -280,7 +281,7 @@ class MyAuthProvider extends ChangeNotifier {
       await LocalStorage.setBool('isEmailVerified', true);
       await LocalStorage.setBool('hasCompletedBasicDetails', true);
       await LocalStorage.setBool('hasCompletedImageSetup', true);
-
+      _notificationService.storeDeviceToken(uid: user.uid);
       return AppStatus.kSuccess;
     } on FirebaseAuthException catch (e) {
       print(e.code);
@@ -379,9 +380,12 @@ class MyAuthProvider extends ChangeNotifier {
   Future<void> _updateUserData(Map<String, dynamic> data) async {
     _role = data["role"] ?? "no-role-found";
     _canPost = data["canPost"] ?? false;
+    _isBlocked = data["isBlocked"] ?? false;
 
     await LocalStorage.setString("role", _role);
     await LocalStorage.setBool("canPost", _canPost);
+    await LocalStorage.setBool("isBlocked", _isBlocked);
+    print("FROM THE PROVIDER BLOCKED STATUS:=$_isBlocked");
 
     notifyListeners(); // Updates UI
   }
@@ -410,12 +414,11 @@ class MyAuthProvider extends ChangeNotifier {
     try {
       // Sign out from Firebase
       await _auth.signOut();
-
+      await _service.deleteTokenOnSignOut(uid: uid);
       // Disconnect Google if connected
       if (await _googleSignIn.isSignedIn()) {
         await _googleSignIn.disconnect();
       }
-
       // Clear local data
       await Future.wait(<Future>[
         LocalStorage.clear(),

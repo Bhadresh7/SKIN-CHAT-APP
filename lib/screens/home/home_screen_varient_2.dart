@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_sharing_intent/model/sharing_file.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
@@ -42,16 +44,61 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     authProvider.getUserDetails(email: authProvider.email);
   }
 
+  bool _hasHandledSharedFile = false; // Add this in your State class
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    messageController = TextEditingController();
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
-    print("${shareIntentProvider.sharedValues}");
-    final sharedText = shareIntentProvider.sharedValues;
-    if (sharedText.isNotEmpty) {
-      messageController.text = sharedText[0];
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
+    final sharedFiles = shareIntentProvider.sharedFiles;
+
+    if (!_hasHandledSharedFile &&
+        sharedFiles != null &&
+        sharedFiles.isNotEmpty) {
+      final firstFile = sharedFiles[0];
+
+      if (firstFile.type == SharedMediaType.IMAGE && firstFile.value != null) {
+        final imagePath = firstFile.value!;
+        final imageFile = File(imagePath);
+
+        _hasHandledSharedFile = true;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text('Send this image?'),
+              content: Image.file(imageFile),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _hasHandledSharedFile = false;
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    chatProvider.handleImageMessage(authProvider, imageFile);
+                    shareIntentProvider.clear();
+                    _hasHandledSharedFile = false;
+                  },
+                  child: Text('Send'),
+                ),
+              ],
+            ),
+          );
+        });
+      } else if (firstFile.type == SharedMediaType.TEXT &&
+          firstFile.value != null) {
+        messageController.text = firstFile.value!;
+        _hasHandledSharedFile = true;
+      }
     }
-    print("😛😌😴${messageController.text}");
   }
 
   @override
@@ -72,9 +119,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final authProvider = Provider.of<MyAuthProvider>(context);
     final imagePickerProvider = Provider.of<ImagePickerProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
-    final superAdminProvider = Provider.of<SuperAdminProvider>(context);
 
     print("(((((${authProvider.currentUser?.username})))))))");
+    // print("********${authProvider.isBlocked}********");
 
     return PopScope(
       canPop: false,
@@ -257,7 +304,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.6),
-                    // fixed: use withOpacity
                     alignment: Alignment.center,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,

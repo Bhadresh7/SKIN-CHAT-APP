@@ -10,7 +10,6 @@ class ShareIntentProvider extends ChangeNotifier {
 
   List<String> sharedValues = [];
 
-
   ShareIntentProvider() {
     _initializeSharingIntent();
   }
@@ -40,6 +39,7 @@ class ShareIntentProvider extends ChangeNotifier {
     if (sharedValues != newSharedValues) {
       sharedFiles = files;
       sharedValues = newSharedValues;
+      print("🔥🔥🔥${sharedValues}");
       debugPrint("FROM PROVIDER=========>${sharedValues[0]}");
       notifyListeners();
     }

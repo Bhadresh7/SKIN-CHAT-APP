@@ -417,4 +417,13 @@ class UserService {
 
     return query.docs.isNotEmpty;
   }
+
+  Future<void> deleteTokenOnSignOut({required String uid}) async {
+    try {
+      await _store.collection('tokens').doc(uid).delete();
+      print("***********      TOKEN DELETED SUCCESSFULLY     ********");
+    } catch (e) {
+      print('Error deleting token: $e');
+    }
+  }
 }

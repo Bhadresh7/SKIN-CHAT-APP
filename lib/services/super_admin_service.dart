@@ -55,6 +55,8 @@ class SuperAdminService {
   Future<String> blockUsers({required String uid}) async {
     try {
       await _store.collection('users').doc(uid).update({'isBlocked': true});
+
+      await _store.collection('tokens').doc(uid).delete();
       return AppStatus.kSuccess;
     } catch (e) {
       print(e.toString());

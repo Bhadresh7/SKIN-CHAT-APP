@@ -65,6 +65,7 @@ class SuperAdminProvider with ChangeNotifier {
       notifyListeners();
 
       final blockedUsers = await _service.blockUsers(uid: uid);
+
       print("=========$blockedUsers========");
       return blockedUsers;
     } catch (e) {

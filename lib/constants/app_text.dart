@@ -9,7 +9,6 @@ Eminent professionals who have excelled in their respective field are invited as
 S.K.I.N also endeavors to bring about synergy between Industries, Govt Officials, Administrators, Educational institutions and SME, by inviting experts from various industries to share their knowledge & Information among the Professionals, to enhance potential and to utilize the services of its members.
 
 S.K.I.N constantly endeavors to redefine the benchmarks and delivers programs for Professional and People Excellence through well-defined people processes, thereby facilitating the professionals to bring about Organizational Development at par with international standards.""";
-
   static final String privacyPolicy = """
 Privacy Policy
 
@@ -76,5 +75,13 @@ This policy is effective as of 2025-04-03.
 Contact Us
 
 If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at skinforum.dev@gmail.com.
+
+DISCLAIMER
+
+S.K.I.N. Career Wing (4000+ members) is a sub-unit of S.K.I.N. Forum registered under the trust act. We provide information only from genuine and known sources of industry/agency.
+
+S.K.I.N. is not responsible for authenticity, wages, fraudulent practices, or any other aspect of employment without limitation. It is the responsibility of users to perform due diligence in researching employers and recruitment agencies when applying for and thoroughly research the facts and reputation of each organization to which they are applying.
+
+We are sharing job information mostly taken from industry, FB pages, websites, social media adverts, and known sources from industries. If any agency or person wants to publish their jobs here, please join as a member in S.K.I.N. Forum.
 """;
 }
