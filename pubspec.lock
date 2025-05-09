@@ -495,7 +495,7 @@ packages:
     source: hosted
     version: "0.14.3"
   flutter_link_previewer:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_link_previewer
       sha256: "007069e60f42419fb59872beb7a3cc3ea21e9f1bdff5d40239f376fa62ca9f20"
@@ -934,7 +934,7 @@ packages:
     source: hosted
     version: "3.2.0"
   path:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
@@ -1101,6 +1101,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.5"
+  receive_intent:
+    dependency: "direct main"
+    description:
+      name: receive_intent
+      sha256: "8e6b6edd1f4127265c1f19bfd53e8e92dd65f32cc9b377247bb7876a655479c8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.7"
   scroll_to_index:
     dependency: transitive
     description:

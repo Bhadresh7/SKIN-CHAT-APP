@@ -39,8 +39,9 @@ class ShareIntentProvider extends ChangeNotifier {
     if (sharedValues != newSharedValues) {
       sharedFiles = files;
       sharedValues = newSharedValues;
-      print("🔥🔥🔥${sharedValues}");
+      print("🔥🔥🔥$sharedValues");
       debugPrint("FROM PROVIDER=========>${sharedValues[0]}");
+      print(sharedValues);
       notifyListeners();
     }
   }

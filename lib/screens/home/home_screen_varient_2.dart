@@ -44,34 +44,33 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     authProvider.getUserDetails(email: authProvider.email);
   }
 
-  bool _hasHandledSharedFile = false; // Add this in your State class
+  bool _hasHandledSharedFile = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    messageController = TextEditingController();
+
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
     final sharedFiles = shareIntentProvider.sharedFiles;
 
+    // ✅ Check for null and non-empty list
     if (!_hasHandledSharedFile &&
         sharedFiles != null &&
         sharedFiles.isNotEmpty) {
-      final firstFile = sharedFiles[0];
+      final sendingContent = sharedFiles[0];
+      final isUrl = sendingContent.type == SharedMediaType.URL;
 
-      if (firstFile.type == SharedMediaType.IMAGE && firstFile.value != null) {
-        final imagePath = firstFile.value!;
-        final imageFile = File(imagePath);
+      _hasHandledSharedFile = true;
 
-        _hasHandledSharedFile = true;
-
+      if (!isUrl) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
               title: Text('Send this image?'),
-              content: Image.file(imageFile),
+              content: Image.file(File(sendingContent.value!)),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -83,7 +82,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    chatProvider.handleImageMessage(authProvider, imageFile);
+                    chatProvider.handleImageMessage(
+                      authProvider,
+                      File(sendingContent.value!),
+                    );
                     shareIntentProvider.clear();
                     _hasHandledSharedFile = false;
                   },
@@ -93,10 +95,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
             ),
           );
         });
-      } else if (firstFile.type == SharedMediaType.TEXT &&
-          firstFile.value != null) {
-        messageController.text = firstFile.value!;
-        _hasHandledSharedFile = true;
+      } else {
+        messageController.text = sendingContent.value!;
+        _hasHandledSharedFile = false;
       }
     }
   }
