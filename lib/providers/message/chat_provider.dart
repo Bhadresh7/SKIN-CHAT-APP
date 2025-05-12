@@ -11,9 +11,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   final ChatService _chatService = ChatService();
-  final List<types.Message> _messages = [];
 
-  List<types.Message> get messages => _messages;
   ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
 
   ///stream of messages from realtime database
@@ -24,8 +22,6 @@ class ChatProvider extends ChangeNotifier {
   Future<void> deleteMessage(String messageKey) async {
     await _chatService.deleteMessage(messageKey: messageKey);
 
-    // Remove from local list and notify UI
-    messages.removeWhere((msg) => msg.id == messageKey);
     notifyListeners();
   }
 
@@ -46,7 +42,7 @@ class ChatProvider extends ChangeNotifier {
           userName: provider.userName ?? provider.formUserName,
         );
 
-        _messages.insert(0, newMessage);
+        // _messages.insert(0, newMessage);
       }
     } catch (e) {
       print("❌ Error in sendMessage: $e");
@@ -73,7 +69,7 @@ class ChatProvider extends ChangeNotifier {
         },
       );
 
-      final newMessage = types.ImageMessage(
+      types.ImageMessage(
         author: types.User(id: provider.uid),
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: "${provider.userName ?? provider.formUserName}.jpg",
@@ -81,7 +77,6 @@ class ChatProvider extends ChangeNotifier {
         uri: imageUrl,
       );
 
-      _messages.insert(0, newMessage);
       uploadProgressNotifier.value = null;
       notifyListeners();
     } catch (e) {
@@ -109,21 +104,6 @@ class ChatProvider extends ChangeNotifier {
         },
       );
 
-      // Create a new CustomMessage with image URL and caption
-      final newMessage = types.CustomMessage(
-        author: types.User(id: provider.uid),
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        metadata: {
-          'type': 'image_with_caption',
-          'imageUrl': imageUrl,
-          'caption': caption ?? '',
-          'fileName': "${provider.userName ?? provider.formUserName}.jpg",
-        },
-      );
-
-      _messages.insert(0, newMessage);
-
       // Reset the progress and notify listeners
       uploadProgressNotifier.value = null;
       notifyListeners();
@@ -131,16 +111,6 @@ class ChatProvider extends ChangeNotifier {
       print(e);
       // Consider adding error handling here
       uploadProgressNotifier.value = null;
-      notifyListeners();
-    }
-  }
-
-  void handleMessagePreview(
-      types.TextMessage message, types.PreviewData previewData) {
-    final index = _messages.indexWhere((m) => m.id == message.id);
-    if (index != -1) {
-      final updatedMessage = message.copyWith(previewData: previewData);
-      _messages[index] = updatedMessage;
       notifyListeners();
     }
   }

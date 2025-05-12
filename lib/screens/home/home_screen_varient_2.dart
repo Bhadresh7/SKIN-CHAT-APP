@@ -241,16 +241,20 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     snapshot.connectionState == ConnectionState.waiting;
                 final messages = snapshot.data ?? [];
                 return Chat(
-                  // onPreviewDataFetched:
-                  //     (message, types.PreviewData previewData) {
-                  //   final index =
-                  //       messages.indexWhere((m) => m.id == message.id);
-                  //   if (index != -1) {
-                  //     message.copyWith(previewData: previewData);
-                  //     print("%%%%%%%%%%%%%%%%%${previewData.title}");
-                  //     print(previewData.link);
-                  //   }
-                  // },
+                  onPreviewDataFetched:
+                      (message, types.PreviewData previewData) {
+                    final index =
+                        messages.indexWhere((m) => m.id == message.id);
+                    print(index);
+                    print("==0000000000000----------------");
+                    if (index != -1) {
+                      final updatedMessage =
+                          message.copyWith(previewData: previewData);
+                      // setState(() {
+                      //   messages[index] = updatedMessage;
+                      // });
+                    }
+                  },
                   typingIndicatorOptions: TypingIndicatorOptions(
                     animationSpeed: Duration(milliseconds: 500),
                   ),
