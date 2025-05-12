@@ -2,25 +2,25 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_sharing_intent/model/sharing_file.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
-import 'package:skin_chat_app/providers/exports.dart';
-import 'package:skin_chat_app/services/Appversion_service.dart'
-    show AppversionService;
+import 'package:skin_chat_app/providers/message/share_content_provider.dart';
+import 'package:skin_chat_app/services/Appversion_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
+import 'package:skin_chat_app/widgets/common/showDeleteDialog.dart';
 
-import '../../widgets/common/showDeleteDialog.dart' show Showdeletedialog;
+import '../../providers/exports.dart';
 
 class HomeScreenVarient2 extends StatefulWidget {
   const HomeScreenVarient2({super.key});
@@ -45,47 +45,94 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   }
 
   bool _hasHandledSharedFile = false;
+  bool _hasFetchedLinkMetadata = false;
 
   @override
   void didChangeDependencies() {
+    final TextEditingController _captionController = TextEditingController();
+
     super.didChangeDependencies();
 
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
+    final shareContentProvider =
+        Provider.of<SharedContentProvider>(context, listen: false);
     final sharedFiles = shareIntentProvider.sharedFiles;
 
-    // ✅ Check for null and non-empty list
+    print("==============================");
+    print("SHARED FILES ==>$sharedFiles");
+    print("==============================");
+
+    // Only process shared content if we haven't handled it yet and there's actual content
     if (!_hasHandledSharedFile &&
         sharedFiles != null &&
         sharedFiles.isNotEmpty) {
       final sendingContent = sharedFiles[0];
       final isUrl = sendingContent.type == SharedMediaType.URL;
 
+      // Mark as handled to prevent multiple dialogs/actions
       _hasHandledSharedFile = true;
 
       if (!isUrl) {
+        // Handle image sharing
         WidgetsBinding.instance.addPostFrameCallback((_) {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
               title: Text('Send this image?'),
-              content: Image.file(File(sendingContent.value!)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.file(
+                      File(sendingContent.value!),
+                      height: 300,
+                    ),
+                    if (shareContentProvider.imageMetadata != null)
+                      Container(
+                        height: 200,
+                        margin: EdgeInsets.only(top: 16),
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: TextField(
+                          controller: _captionController
+                            ..text = shareContentProvider.imageMetadata!,
+                          maxLines: null,
+                          textAlign: TextAlign.justify,
+                          style: TextStyle(fontSize: 14),
+                          decoration: InputDecoration.collapsed(
+                            hintText: 'Add a caption...',
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
               actions: [
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     _hasHandledSharedFile = false;
+                    shareIntentProvider.clear();
                   },
                   child: Text('Cancel'),
                 ),
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
-                    chatProvider.handleImageMessage(
-                      authProvider,
-                      File(sendingContent.value!),
-                    );
+                    File imgFile = File(sendingContent.value!);
+                    final editedCaption = _captionController.text.trim();
+                    if (editedCaption.isNotEmpty) {
+                      chatProvider.handleImageWithTextMessage(
+                        authProvider,
+                        imgFile,
+                        editedCaption,
+                      );
+                    }
                     shareIntentProvider.clear();
                     _hasHandledSharedFile = false;
                   },
@@ -96,8 +143,19 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
           );
         });
       } else {
-        messageController.text = sendingContent.value!;
-        _hasHandledSharedFile = false;
+        // Handle URL sharing
+        if (!_hasFetchedLinkMetadata) {
+          _hasFetchedLinkMetadata = true;
+
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) async {
+              final url = sendingContent.value!;
+              await shareContentProvider.fetchLinkMetadata(url);
+              messageController.text = url;
+              _hasHandledSharedFile = false;
+            },
+          );
+        }
       }
     }
   }
@@ -120,6 +178,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final authProvider = Provider.of<MyAuthProvider>(context);
     final imagePickerProvider = Provider.of<ImagePickerProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
+    final shareContentProvider = Provider.of<SharedContentProvider>(context);
 
     print("(((((${authProvider.currentUser?.username})))))))");
     // print("********${authProvider.isBlocked}********");
@@ -182,6 +241,19 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     snapshot.connectionState == ConnectionState.waiting;
                 final messages = snapshot.data ?? [];
                 return Chat(
+                  // onPreviewDataFetched:
+                  //     (message, types.PreviewData previewData) {
+                  //   final index =
+                  //       messages.indexWhere((m) => m.id == message.id);
+                  //   if (index != -1) {
+                  //     message.copyWith(previewData: previewData);
+                  //     print("%%%%%%%%%%%%%%%%%${previewData.title}");
+                  //     print(previewData.link);
+                  //   }
+                  // },
+                  typingIndicatorOptions: TypingIndicatorOptions(
+                    animationSpeed: Duration(milliseconds: 500),
+                  ),
                   emptyState: isLoading
                       ? ChatPlaceholder()
                       : Center(
@@ -254,9 +326,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       if (compressedImage != null) {
                         await chatProvider.handleImageMessage(
                             authProvider, compressedImage);
-                        await service.sendNotificationToUsers(
-                            title: authProvider.currentUser!.uid,
-                            content: "sent an image");
+                        // await service.sendNotificationToUsers(
+                        //     title: authProvider.currentUser!.uid,
+                        //     content: "sent an image");
                       } else {
                         debugPrint("Image compression failed.");
                       }
@@ -280,10 +352,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     _clearController();
                     imagePickerProvider.clear();
 
-                    await service.sendNotificationToUsers(
-                      title: authProvider.currentUser!.username,
-                      content: message.text,
-                    );
+                    // await service.sendNotificationToUsers(
+                    //   title: authProvider.currentUser!.username,
+                    //   content: message.text,
+                    // );
                   },
                   user: types.User(
                     firstName:

@@ -16,9 +16,6 @@ export 'auth/forget_password.dart';
 ///login screen
 export 'auth/login_screen.dart';
 
-///otp screen
-export 'auth/otp_screen.dart';
-
 ///registeration screen
 export 'auth/register_screen.dart';
 

@@ -8,6 +8,8 @@ class ShareIntentProvider extends ChangeNotifier {
   StreamSubscription<List<SharedFile>>? _sharingIntentSubscription;
   List<SharedFile>? sharedFiles;
 
+  // Intent
+
   List<String> sharedValues = [];
 
   ShareIntentProvider() {

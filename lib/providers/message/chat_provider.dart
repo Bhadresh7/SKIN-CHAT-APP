@@ -90,6 +90,61 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> handleImageWithTextMessage(
+    MyAuthProvider provider,
+    File img,
+    String? caption,
+  ) async {
+    try {
+      uploadProgressNotifier.value = 0.0;
+
+      // Use the new uploadImageAndSendWithCaption method
+      final imageUrl = await _chatService.uploadImageAndSendWithCaption(
+        img,
+        caption ?? '',
+        provider.uid,
+        provider.userName ?? provider.formUserName,
+        (progress) {
+          uploadProgressNotifier.value = progress;
+        },
+      );
+
+      // Create a new CustomMessage with image URL and caption
+      final newMessage = types.CustomMessage(
+        author: types.User(id: provider.uid),
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        metadata: {
+          'type': 'image_with_caption',
+          'imageUrl': imageUrl,
+          'caption': caption ?? '',
+          'fileName': "${provider.userName ?? provider.formUserName}.jpg",
+        },
+      );
+
+      _messages.insert(0, newMessage);
+
+      // Reset the progress and notify listeners
+      uploadProgressNotifier.value = null;
+      notifyListeners();
+    } catch (e) {
+      print(e);
+      // Consider adding error handling here
+      uploadProgressNotifier.value = null;
+      notifyListeners();
+    }
+  }
+
+  void handleMessagePreview(
+      types.TextMessage message, types.PreviewData previewData) {
+    final index = _messages.indexWhere((m) => m.id == message.id);
+    if (index != -1) {
+      final updatedMessage = message.copyWith(previewData: previewData);
+      _messages[index] = updatedMessage;
+      notifyListeners();
+    }
+  }
+
   /// Method to cancel upload
   void cancelUpload() {
     _chatService.cancelUpload();

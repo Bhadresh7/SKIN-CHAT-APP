@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
+import 'package:skin_chat_app/providers/super_admin/super_admin_provider_2.dart';
 import 'package:skin_chat_app/screens/profile/user_details_screen.dart';
 
 class UserListView extends StatefulWidget {
@@ -14,23 +16,16 @@ class UserListView extends StatefulWidget {
   const UserListView({super.key, required this.filter});
 
   @override
-  State<UserListView> createState() => _GridViewsVarientState();
+  State<UserListView> createState() => _UserListViewState();
 }
 
-class _GridViewsVarientState extends State<UserListView> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+class _UserListViewState extends State<UserListView> {
   final ScrollController _scrollController = ScrollController();
-  final List<DocumentSnapshot> _users = [];
-  bool _isLoading = false;
-  bool _hasMore = true;
-  final int _documentLimit = 10;
-  DocumentSnapshot? _lastDocument;
 
   @override
   void initState() {
     super.initState();
-    _getUsers();
+    _initAndLoadUsers();
     _scrollController.addListener(_onScroll);
   }
 
@@ -38,7 +33,7 @@ class _GridViewsVarientState extends State<UserListView> {
   void didUpdateWidget(covariant UserListView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.filter != widget.filter) {
-      _refreshUserList();
+      _handleFilterChange();
     }
   }
 
@@ -48,74 +43,22 @@ class _GridViewsVarientState extends State<UserListView> {
     super.dispose();
   }
 
+  void _initAndLoadUsers() {
+    // Initialize and load users when the widget is first created
+    final provider = Provider.of<SuperAdminProvider2>(context, listen: false);
+    provider.initUsers(widget.filter);
+  }
+
+  void _handleFilterChange() {
+    // Change filter when the filter prop changes
+    final provider = Provider.of<SuperAdminProvider2>(context, listen: false);
+    provider.changeFilter(widget.filter);
+  }
+
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-            _scrollController.position.maxScrollExtent &&
-        !_isLoading &&
-        _hasMore) {
-      _getUsers();
-    }
-  }
-
-  void _refreshUserList() {
-    setState(() {
-      _users.clear();
-      _lastDocument = null;
-      _hasMore = true;
-    });
-    _getUsers();
-  }
-
-  Query<Map<String, dynamic>> _getQuery() {
-    Query<Map<String, dynamic>> query = _firestore.collection('users');
-    switch (widget.filter) {
-      case "Employee":
-        query = query.where('role', isEqualTo: 'admin');
-        break;
-      case "Candidates":
-        query = query.where('role', isEqualTo: 'user');
-        break;
-      case "Blocked":
-        query = query.where('isBlocked', isEqualTo: true);
-        break;
-    }
-    return query.orderBy('username').limit(_documentLimit);
-  }
-
-  Future<void> _getUsers() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    Query query = _getQuery();
-    if (_lastDocument != null) {
-      query = query.startAfterDocument(_lastDocument!);
-    }
-
-    final snapshot = await query.get();
-    if (snapshot.docs.isNotEmpty) {
-      _lastDocument = snapshot.docs.last;
-      _users.addAll(snapshot.docs);
-    } else {
-      _hasMore = false;
-    }
-
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _updateUserLocally(
-      String userId, Map<String, dynamic> updates) async {
-    final index = _users.indexWhere((doc) => doc.id == userId);
-    if (index != -1) {
-      final userData = Map<String, dynamic>.from(
-          _users[index].data() as Map<String, dynamic>);
-      updates.forEach((key, value) => userData[key] = value);
-
-      final newSnapshot =
-          await _users[index].reference.get(); // Fetch updated document
-      _users[index] = newSnapshot;
-
-      setState(() {});
-    }
+    // Handle pagination when scrolling to the bottom
+    final provider = Provider.of<SuperAdminProvider2>(context, listen: false);
+    provider.onScroll(_scrollController);
   }
 
   void _confirmAction(
@@ -153,6 +96,8 @@ class _GridViewsVarientState extends State<UserListView> {
     required String role,
     required String email,
   }) {
+    final provider = Provider.of<SuperAdminProvider2>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
@@ -187,11 +132,7 @@ class _GridViewsVarientState extends State<UserListView> {
                     canPost ? "Revoke Access" : "Grant Access",
                     "Are you sure you want to ${canPost ? 'revoke' : 'grant'} posting access for $userName?",
                     () {
-                      _firestore
-                          .collection('users')
-                          .doc(userId)
-                          .update({'canPost': !canPost});
-                      _updateUserLocally(userId, {'canPost': !canPost});
+                      provider.togglePostingAccess(userId, !canPost);
                     },
                   );
                 },
@@ -211,11 +152,7 @@ class _GridViewsVarientState extends State<UserListView> {
                   isBlocked ? "Unblock User" : "Block User",
                   "Are you sure you want to ${isBlocked ? 'unblock' : 'block'} $userName?",
                   () {
-                    _firestore
-                        .collection('users')
-                        .doc(userId)
-                        .update({'isBlocked': !isBlocked});
-                    _updateUserLocally(userId, {'isBlocked': !isBlocked});
+                    provider.toggleBlockStatus(userId, !isBlocked);
                   },
                 );
               },
@@ -276,10 +213,12 @@ class _GridViewsVarientState extends State<UserListView> {
                               style: TextStyle(
                                   fontSize: AppStyles.heading,
                                   overflow: TextOverflow.ellipsis)),
-                          Text(email,
-                              style: TextStyle(
-                                  fontSize: AppStyles.bodyText,
-                                  overflow: TextOverflow.ellipsis)),
+                          Text(
+                            email,
+                            style: TextStyle(
+                                fontSize: AppStyles.bodyText,
+                                overflow: TextOverflow.ellipsis),
+                          ),
                         ],
                       ),
                     ),
@@ -326,18 +265,29 @@ class _GridViewsVarientState extends State<UserListView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_users.isEmpty && _isLoading)
-      return const Center(child: CircularProgressIndicator());
-    if (_users.isEmpty) return const Center(child: Text("No Users Found"));
-
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: _users.length +
-          ((_hasMore && _users.length >= _documentLimit) ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _users.length)
+    return Consumer<SuperAdminProvider2>(
+      builder: (context, provider, _) {
+        // Show loading indicator when initially loading and users list is empty
+        if (provider.isEmpty && provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
-        return _buildUserTile(_users[index]);
+        }
+
+        // Show empty message when no users are found
+        if (provider.isEmpty) {
+          return const Center(child: Text("No Users Found"));
+        }
+
+        // Build the list of users with pagination
+        return ListView.builder(
+          controller: _scrollController,
+          itemCount: provider.users.length + (provider.hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == provider.users.length) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return _buildUserTile(provider.users[index]);
+          },
+        );
       },
     );
   }

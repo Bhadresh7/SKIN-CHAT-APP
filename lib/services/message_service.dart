@@ -10,7 +10,6 @@ class ChatService {
 
   UploadTask? get currentUploadTask => _currentUploadTask;
 
-
   /// Listen for real-time messages, sorted by timestamp (newest first)
   Stream<List<types.Message>> getMessagesStream() {
     return _databaseRef.orderByChild("ts").onValue.map((event) {
@@ -20,40 +19,42 @@ class ChatService {
       if (rawData is! Map) return [];
 
       final messages = rawData.entries
-          .map((entry) {
-            final messageData = entry.value;
-            if (messageData is! Map) return null;
-            print(messageData);
-            final msg = messageData["msg"]?.toString() ?? "";
-            final isImage =
-                msg.startsWith("https://firebasestorage.googleapis.com");
+          .map(
+            (entry) {
+              final messageData = entry.value;
+              if (messageData is! Map) return null;
+              print(messageData);
+              final msg = messageData["msg"]?.toString() ?? "";
+              final isImage =
+                  msg.startsWith("https://firebasestorage.googleapis.com");
 
-            final author = types.User(
-              id: messageData["id"].toString(),
-              firstName: messageData["name"]?.toString() ?? "Unknown",
-            );
-
-            final timestamp =
-                messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-
-            if (isImage) {
-              return types.ImageMessage(
-                id: entry.key,
-                author: author,
-                createdAt: timestamp,
-                name: "Image",
-                size: 0,
-                uri: msg,
+              final author = types.User(
+                id: messageData["id"].toString(),
+                firstName: messageData["name"]?.toString() ?? "Unknown",
               );
-            } else {
-              return types.TextMessage(
-                id: entry.key,
-                author: author,
-                createdAt: timestamp,
-                text: msg,
-              );
-            }
-          })
+
+              final timestamp =
+                  messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
+
+              if (isImage) {
+                return types.ImageMessage(
+                  id: entry.key,
+                  author: author,
+                  createdAt: timestamp,
+                  name: "Image",
+                  size: 0,
+                  uri: msg,
+                );
+              } else {
+                return types.TextMessage(
+                  id: entry.key,
+                  author: author,
+                  createdAt: timestamp,
+                  text: msg,
+                );
+              }
+            },
+          )
           .whereType<types.Message>()
           .toList();
 
@@ -124,6 +125,58 @@ class ChatService {
         userId: userId,
         userName: userName,
       );
+
+      return imageUrl;
+    } finally {
+      _currentUploadTask = null;
+    }
+  }
+
+  /// Method to upload an image and send it with a caption text
+  /// This handles when a user sends both an image and text together
+  Future<String> uploadImageAndSendWithCaption(
+    File imageFile,
+    String caption,
+    String userId,
+    String userName,
+    void Function(double)? onProgress,
+  ) async {
+    final fileName = "$userName-${DateTime.now().millisecondsSinceEpoch}.jpg";
+    final storageRef =
+        FirebaseStorage.instance.ref().child("chat_images/$fileName");
+
+    // Assign to _currentUploadTask so we can later cancel it if needed
+    _currentUploadTask = storageRef.putFile(imageFile);
+
+    // Listen for progress
+    _currentUploadTask!.snapshotEvents.listen((TaskSnapshot snapshot) {
+      final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+      if (onProgress != null) {
+        onProgress(progress); // progress will be between 0.0 to 1.0
+      }
+      print("Upload progress: ${(progress * 100).toStringAsFixed(2)}%");
+    });
+
+    try {
+      TaskSnapshot completedSnapshot = await _currentUploadTask!;
+      final imageUrl = await completedSnapshot.ref.getDownloadURL();
+
+      // First approach: Send image and caption as separate messages
+      // 1. Send the image first
+      await sendMessage(
+        message: imageUrl,
+        userId: userId,
+        userName: userName,
+      );
+
+      // 2. If there's a caption, send it as a follow-up message
+      if (caption.trim().isNotEmpty) {
+        await sendMessage(
+          message: caption,
+          userId: userId,
+          userName: userName,
+        );
+      }
 
       return imageUrl;
     } finally {
