@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/modal/custom_message_modal.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
@@ -60,114 +61,115 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
         Provider.of<SharedContentProvider>(context, listen: false);
     final sharedFiles = shareIntentProvider.sharedFiles;
 
-    // if (authProvider.canPost) {
-    //   messageController.clear();
-    // }
+    if (authProvider.canPost) {
+      messageController.clear();
+    }
 
     print("==============================");
     print("SHARED FILES ==>$sharedFiles");
     print("==============================");
 
     // Only process shared content if we haven't handled it yet and there's actual content
-    if (!_hasHandledSharedFile &&
-        sharedFiles != null &&
-        sharedFiles.isNotEmpty) {
-      final sendingContent = sharedFiles[0];
-      final isUrl = sendingContent.type == SharedMediaType.URL;
 
-      // Mark as handled to prevent multiple dialogs/actions
-      _hasHandledSharedFile = true;
+    if (authProvider.canPost) {
+      if (!_hasHandledSharedFile &&
+          sharedFiles != null &&
+          sharedFiles.isNotEmpty) {
+        final sendingContent = sharedFiles[0];
+        final isUrl = sendingContent.type == SharedMediaType.URL;
 
-      print("url${isUrl}--${sendingContent}");
+        // Mark as handled to prevent multiple dialogs/actions
+        _hasHandledSharedFile = true;
 
-      if (!isUrl) {
-        // Handle image sharing
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text('Send this image?'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.file(
-                      File(sendingContent.value!),
-                      height: 300,
-                    ),
-                    if (shareContentProvider.imageMetadata != null)
-                      Container(
-                        height: 200,
-                        margin: EdgeInsets.only(top: 16),
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: TextField(
-                          controller: captionController
-                            ..text = shareContentProvider.imageMetadata!,
-                          maxLines: null,
-                          textAlign: TextAlign.justify,
-                          style: TextStyle(fontSize: 14),
-                          decoration: InputDecoration.collapsed(
-                            hintText: 'Add a caption...',
+        print("url${isUrl}--${sendingContent}");
+
+        if (!isUrl) {
+          // Handle image sharing
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: Text('Send this image?'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.file(
+                        File(sendingContent.value!),
+                        height: 300,
+                      ),
+                      if (shareContentProvider.imageMetadata != null)
+                        Container(
+                          height: 200,
+                          margin: EdgeInsets.only(top: 16),
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextField(
+                            controller: captionController
+                              ..text = shareContentProvider.imageMetadata!,
+                            maxLines: null,
+                            textAlign: TextAlign.justify,
+                            style: TextStyle(fontSize: 14),
+                            decoration: InputDecoration.collapsed(
+                              hintText: 'Add a caption...',
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _hasHandledSharedFile = false;
+                      shareIntentProvider.clear();
+                    },
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      File imgFile = File(sendingContent.value!);
+                      final editedCaption = captionController.text.trim();
+                      if (editedCaption.isNotEmpty) {
+                        chatProvider.handleImageWithTextMessage(
+                          authProvider,
+                          imgFile,
+                          editedCaption,
+                        );
+                      } else {
+                        chatProvider.handleImageMessage(authProvider, imgFile);
+                      }
+                      shareIntentProvider.clear();
+                      _hasHandledSharedFile = false;
+                    },
+                    child: Text('Send'),
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _hasHandledSharedFile = false;
-                    shareIntentProvider.clear();
-                  },
-                  child: Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    File imgFile = File(sendingContent.value!);
-                    final editedCaption = captionController.text.trim();
-                    if (editedCaption.isNotEmpty) {
-                      chatProvider.handleImageWithTextMessage(
-                        authProvider,
-                        imgFile,
-                        editedCaption,
-                      );
-                    }
-                    shareIntentProvider.clear();
-                    _hasHandledSharedFile = false;
-                  },
-                  child: Text('Send'),
-                ),
-              ],
-            ),
-          );
-        });
-      } else {
-        // Handle URL sharing
-        if (!_hasFetchedLinkMetadata) {
-          final url = sendingContent.value!;
-          _hasFetchedLinkMetadata = true;
-          print("controller int - ${messageController}");
-          print("url555555555555555555555555${url}");
-          messageController.text = url;
-          // WidgetsBinding.instance.addPostFrameCallback(
-          //   (_) async {
-          //
-          //
-          //     await shareContentProvider.fetchLinkMetadata(url);
-          //     shareIntentProvider.clear();
-          _hasHandledSharedFile = false;
-          _hasFetchedLinkMetadata = false;
-          //   },
-          // );
+            );
+          });
+        } else {
+          // Handle URL sharing
+          if (!_hasFetchedLinkMetadata) {
+            final url = sendingContent.value!;
+            _hasFetchedLinkMetadata = true;
+            print("controller int - ${messageController}");
+            print("url555555555555555555555555${url}");
+            messageController.text = url;
+            _hasHandledSharedFile = false;
+            _hasFetchedLinkMetadata = false;
+          }
         }
       }
+    } else {
+      shareContentProvider.clear();
+      shareIntentProvider.clear();
+      return;
     }
   }
 
@@ -337,18 +339,81 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
                     if (pickedImagePath == AppStatus.kSuccess &&
                         imagePickerProvider.selectedImage != null) {
-                      final compressedImage = await imagePickerProvider
-                          .compressImage(imagePickerProvider.selectedImage!);
+                      final TextEditingController textController =
+                          TextEditingController();
 
-                      if (compressedImage != null) {
-                        await chatProvider.handleImageMessage(
-                            authProvider, compressedImage);
-                        await service.sendNotificationToUsers(
-                            title: authProvider.currentUser!.uid,
-                            content: "sent an image");
-                      } else {
-                        debugPrint("Image compression failed.");
-                      }
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Send this image?'),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.file(
+                                  File(imagePickerProvider.selectedImage!.path),
+                                  height: 300,
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: textController,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Enter a message (optional)',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  maxLines: 5,
+                                ),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                MyNavigation.back(context);
+                                imagePickerProvider.clear();
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                MyNavigation.back(context);
+
+                                final compressedImage =
+                                    await imagePickerProvider.compressImage(
+                                        imagePickerProvider.selectedImage!);
+
+                                if (compressedImage != null &&
+                                    textController.text.isEmpty) {
+                                  await chatProvider.handleImageMessage(
+                                    authProvider,
+                                    compressedImage,
+                                  );
+
+                                  await service.sendNotificationToUsers(
+                                    title: authProvider.currentUser!.username,
+                                    content: "sent an image",
+                                  );
+
+                                  imagePickerProvider.clear();
+                                } else {
+                                  await chatProvider.handleImageWithTextMessage(
+                                    authProvider,
+                                    compressedImage!,
+                                    textController.text.trim(),
+                                  );
+                                  await service.sendNotificationToUsers(
+                                    title: authProvider.currentUser!.username,
+                                    content: "sent an image "
+                                        " ${textController.text.trim()}",
+                                  );
+                                  imagePickerProvider.clear();
+                                }
+                              },
+                              child: const Text('Send'),
+                            ),
+                          ],
+                        ),
+                      );
                     } else {
                       debugPrint("No image selected.");
                     }
@@ -356,7 +421,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   customMessageBuilder: (message, {required messageWidth}) {
                     return CustomMessageWidget(
                       messageData: message.metadata ?? {},
-                      messageWidth: messageWidth.toDouble(),
+                      messageWidth: 1.sw,
                     );
                   },
                   messages: messages,
@@ -455,7 +520,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
               valueListenable: chatProvider.uploadProgressNotifier,
               builder: (context, progress, child) {
                 if (progress == null) {
-                  return const SizedBox.shrink(); // Hide if there's no progress
+                  return const SizedBox.shrink();
                 }
 
                 return Align(
