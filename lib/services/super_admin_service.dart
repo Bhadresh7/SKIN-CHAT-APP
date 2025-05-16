@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
+import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/modal/view_users.dart';
 
 class SuperAdminService {
@@ -57,6 +58,9 @@ class SuperAdminService {
       await _store.collection('users').doc(uid).update({'isBlocked': true});
 
       await _store.collection('tokens').doc(uid).delete();
+
+      await LocalStorage.clear();
+
       return AppStatus.kSuccess;
     } catch (e) {
       print(e.toString());

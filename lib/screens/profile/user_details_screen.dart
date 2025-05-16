@@ -3,13 +3,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
+import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/super_admin/super_admin_provider.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
-
-import '../../constants/app_status.dart';
 
 class UserDetailsScreen extends StatefulWidget {
   const UserDetailsScreen({super.key, required this.email});

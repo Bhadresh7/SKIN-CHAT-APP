@@ -12,12 +12,13 @@ import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
+import 'package:skin_chat_app/modal/custom_message_modal.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
-import 'package:skin_chat_app/services/Appversion_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
+import 'package:skin_chat_app/widgets/common/custom_message_widget.dart';
 import 'package:skin_chat_app/widgets/common/showDeleteDialog.dart';
 
 import '../../providers/exports.dart';
@@ -36,7 +37,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   @override
   void initState() {
     super.initState();
-    AppversionService.getAppVersion();
     messageController = TextEditingController();
     service = NotificationService();
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
@@ -49,7 +49,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
   @override
   void didChangeDependencies() {
-    final TextEditingController _captionController = TextEditingController();
+    final TextEditingController captionController = TextEditingController();
 
     super.didChangeDependencies();
 
@@ -59,6 +59,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final shareContentProvider =
         Provider.of<SharedContentProvider>(context, listen: false);
     final sharedFiles = shareIntentProvider.sharedFiles;
+
+    // if (authProvider.canPost) {
+    //   messageController.clear();
+    // }
 
     print("==============================");
     print("SHARED FILES ==>$sharedFiles");
@@ -73,6 +77,8 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
       // Mark as handled to prevent multiple dialogs/actions
       _hasHandledSharedFile = true;
+
+      print("url${isUrl}--${sendingContent}");
 
       if (!isUrl) {
         // Handle image sharing
@@ -99,7 +105,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: TextField(
-                          controller: _captionController
+                          controller: captionController
                             ..text = shareContentProvider.imageMetadata!,
                           maxLines: null,
                           textAlign: TextAlign.justify,
@@ -125,7 +131,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   onPressed: () async {
                     Navigator.pop(context);
                     File imgFile = File(sendingContent.value!);
-                    final editedCaption = _captionController.text.trim();
+                    final editedCaption = captionController.text.trim();
                     if (editedCaption.isNotEmpty) {
                       chatProvider.handleImageWithTextMessage(
                         authProvider,
@@ -145,16 +151,21 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
       } else {
         // Handle URL sharing
         if (!_hasFetchedLinkMetadata) {
+          final url = sendingContent.value!;
           _hasFetchedLinkMetadata = true;
-
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) async {
-              final url = sendingContent.value!;
-              await shareContentProvider.fetchLinkMetadata(url);
-              messageController.text = url;
-              _hasHandledSharedFile = false;
-            },
-          );
+          print("controller int - ${messageController}");
+          print("url555555555555555555555555${url}");
+          messageController.text = url;
+          // WidgetsBinding.instance.addPostFrameCallback(
+          //   (_) async {
+          //
+          //
+          //     await shareContentProvider.fetchLinkMetadata(url);
+          //     shareIntentProvider.clear();
+          _hasHandledSharedFile = false;
+          _hasFetchedLinkMetadata = false;
+          //   },
+          // );
         }
       }
     }
@@ -170,6 +181,16 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     messageController.clear();
   }
 
+  String? extractFirstUrl(String text) {
+    final urlRegex = RegExp(
+      r'(?:(?:https?|ftp)://)?(?:[\w-]+\.)+[a-z]{2,}(?:/\S*)?',
+      caseSensitive: false,
+    );
+
+    final match = urlRegex.firstMatch(text);
+    return match?.group(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     /// Providers
@@ -181,6 +202,11 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final shareContentProvider = Provider.of<SharedContentProvider>(context);
 
     print("(((((${authProvider.currentUser?.username})))))))");
+    print("?????????????????????????????????????????????????????????/");
+    print(shareContentProvider.linkMetadata?.title);
+    print(shareContentProvider.linkMetadata?.description);
+    print(shareContentProvider.linkMetadata?.image);
+    print("?????????????????????????????????????????????????????????/");
     // print("********${authProvider.isBlocked}********");
 
     return PopScope(
@@ -237,27 +263,14 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
             StreamBuilder<List<types.Message>>(
               stream: chatProvider.messagesStream,
               builder: (context, snapshot) {
+                final isData = snapshot.hasData;
+                print("---========${isData}");
                 final isLoading =
                     snapshot.connectionState == ConnectionState.waiting;
                 final messages = snapshot.data ?? [];
+                print("888888888${messages}");
+
                 return Chat(
-                  onPreviewDataFetched:
-                      (message, types.PreviewData previewData) {
-                    final index =
-                        messages.indexWhere((m) => m.id == message.id);
-                    print(index);
-                    print("==0000000000000----------------");
-                    if (index != -1) {
-                      final updatedMessage =
-                          message.copyWith(previewData: previewData);
-                      // setState(() {
-                      //   messages[index] = updatedMessage;
-                      // });
-                    }
-                  },
-                  typingIndicatorOptions: TypingIndicatorOptions(
-                    animationSpeed: Duration(milliseconds: 500),
-                  ),
                   emptyState: isLoading
                       ? ChatPlaceholder()
                       : Center(
@@ -330,15 +343,21 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       if (compressedImage != null) {
                         await chatProvider.handleImageMessage(
                             authProvider, compressedImage);
-                        // await service.sendNotificationToUsers(
-                        //     title: authProvider.currentUser!.uid,
-                        //     content: "sent an image");
+                        await service.sendNotificationToUsers(
+                            title: authProvider.currentUser!.uid,
+                            content: "sent an image");
                       } else {
                         debugPrint("Image compression failed.");
                       }
                     } else {
                       debugPrint("No image selected.");
                     }
+                  },
+                  customMessageBuilder: (message, {required messageWidth}) {
+                    return CustomMessageWidget(
+                      messageData: message.metadata ?? {},
+                      messageWidth: messageWidth.toDouble(),
+                    );
                   },
                   messages: messages,
                   onSendPressed: (message) async {
@@ -351,15 +370,27 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       return;
                     }
 
-                    chatProvider.sendMessage(message, authProvider);
+                    final url = extractFirstUrl(message.text);
+
+                    final customMessage = CustomMessageModal(
+                      img: null,
+                      url: url,
+                      text: message.text,
+                    );
+
+                    chatProvider.sendMessage(
+                      customMessage,
+                      authProvider,
+                    );
                     shareIntentProvider.clear();
                     _clearController();
+                    shareContentProvider.clear();
                     imagePickerProvider.clear();
 
-                    // await service.sendNotificationToUsers(
-                    //   title: authProvider.currentUser!.username,
-                    //   content: message.text,
-                    // );
+                    await service.sendNotificationToUsers(
+                      title: authProvider.currentUser!.username,
+                      content: customMessage.text.toString(),
+                    );
                   },
                   user: types.User(
                     firstName:

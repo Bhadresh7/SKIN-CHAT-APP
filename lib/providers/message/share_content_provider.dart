@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import 'package:receive_intent/receive_intent.dart' as receive_intent;
+import 'package:skin_chat_app/modal/preview_data_modal.dart';
 
 class SharedContentProvider with ChangeNotifier {
   String? _receivedText;
   String? _receivedImagePath;
   Metadata? _linkMetadata;
   bool _isLoadingMetadata = false;
+
+  PreviewDataModal? previewDataModal;
 
   String? get receivedText => _receivedText;
 
@@ -98,6 +101,13 @@ class SharedContentProvider with ChangeNotifier {
 
     try {
       final metadata = await MetadataFetch.extract(url);
+      previewDataModal = PreviewDataModal(
+        title: metadata?.title ?? "",
+        description: metadata?.description ?? "",
+        image: metadata?.image ?? "",
+        url: metadata?.url ?? "",
+      );
+      print(previewDataModal.toString());
       _linkMetadata = metadata;
     } catch (e) {
       debugPrint("Metadata fetch error: $e");
@@ -119,91 +129,13 @@ class SharedContentProvider with ChangeNotifier {
   void clear() {
     _receivedText = null;
     _receivedImagePath = null;
-    _linkMetadata = null;
+    // _linkMetadata = null;
     _isLoadingMetadata = false;
     notifyListeners();
   }
-}
 
-// import 'package:flutter/material.dart';
-// import 'package:metadata_fetch/metadata_fetch.dart';
-// import 'package:receive_intent/receive_intent.dart' as receive_intent;
-//
-// class SharedContentProvider with ChangeNotifier {
-//   Metadata? _linkMetadata;
-//   bool _isLoadingMetadata = false;
-//   MetaData? _imgMetadata;
-//
-//   Metadata? get linkMetadata => _linkMetadata;
-//
-//   MetaData? get imgMetadata => _imgMetadata;
-//
-//   bool get isLoadingMetadata => _isLoadingMetadata;
-//
-//   SharedContentProvider() {
-//     _initIntentHandling();
-//   }
-//
-//   void _initIntentHandling() {
-//     // Listen for intents when the app is already running
-//     receive_intent.ReceiveIntent.receivedIntentStream.listen(_handleIntent);
-//
-//     // Handle intent when the app is started with a shared intent
-//     receive_intent.ReceiveIntent.getInitialIntent().then(_handleIntent);
-//   }
-//
-//   // Handle the incoming intent and extract metadata from the shared URL
-//   void _handleIntent(receive_intent.Intent? intent) {
-//     if (intent == null) return;
-//
-//     final sharedText = intent.extra?['android.intent.extra.TEXT']?.toString();
-//     if (sharedText != null && _isValidUrl(sharedText)) {
-//       print("Received URL: $sharedText"); // Print the received URL
-//       fetchLinkMetadata(sharedText);
-//     }
-//   }
-//
-//   // Check if the shared content is a valid URL
-//   bool _isValidUrl(String text) {
-//     try {
-//       final uri = Uri.parse(text);
-//       return uri.hasScheme && uri.hasAuthority;
-//     } catch (_) {
-//       return false;
-//     }
-//   }
-//
-//   // Fetch metadata for the URL
-//   Future<void> fetchLinkMetadata(String url) async {
-//     _isLoadingMetadata = true;
-//     notifyListeners();
-//
-//     try {
-//       print(
-//           "Fetching metadata for URL: $url"); // Print before fetching metadata
-//       final metadata = await MetadataFetch.extract(url);
-//
-//       print("==========================");
-//       print(metadata?.description);
-//       print(metadata?.title);
-//       print(metadata?.url);
-//       print(metadata?.image);
-//       print("===========================");
-//
-//       _linkMetadata = metadata;
-//
-//       print("Metadata fetched: $metadata"); // Print the fetched metadata
-//     } catch (e) {
-//       debugPrint("Metadata fetch error: $e");
-//     } finally {
-//       _isLoadingMetadata = false;
-//       notifyListeners();
-//     }
-//   }
-//
-//   void clear() {
-//     _linkMetadata = null;
-//     _isLoadingMetadata = false;
-//     notifyListeners();
-//   }
-// }
+  void clearMetadata() {
+    // _linkMetadata = null;
+    notifyListeners();
+  }
+}

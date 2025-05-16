@@ -2,11 +2,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/exports.dart';
+import 'package:skin_chat_app/providers/version/app_version_provider.dart';
 import 'package:skin_chat_app/screens/exports.dart';
 
 class BackgroundScaffold extends StatefulWidget {
@@ -32,67 +32,16 @@ class BackgroundScaffold extends StatefulWidget {
 
 class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
-
-  // @override
-  // void initState() {
-  //   // TODO: implement initState
-  //   super.initState();
-  //   final role = Provider.of<UserRoleProvider>(context, listen: false);
-  //   role.loadUserRole();
-  // }
-  // late InternetConnectionHelper _internetHelper;
-  // bool _isConnected = true;
-  //
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _internetHelper = InternetConnectionHelper();
-  //   _internetHelper.startListening();
-  //   _internetHelper.connectionStatusStream.listen(
-  //     (status) {
-  //       if (mounted) {
-  //         setState(() {
-  //           _isConnected = status == InternetConnectionStatus.connected;
-  //         });
-  //       }
-  //     },
-  //   );
-  // }
-
-  // @override
-  // void dispose() {
-  //   super.dispose();
-  //   _internetHelper.dispose();
-  // }
+  void initState() {
+    super.initState();
+    Future.microtask(() =>
+        Provider.of<AppVersionProvider>(context, listen: false)
+            .fetchAppVersion());
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
-    // final basicUserDetailsProvider =
-    //     Provider.of<BasicUserDetailsProvider>(context);
-    // print(authProvider.currentUser?.username);
-    // final userRoleProvider = Provider.of<UserRoleProvider>(context);
-
-    // if (!_isConnected) {
-    //   return Scaffold(
-    //     body: Center(
-    //       child: Column(
-    //         mainAxisAlignment: MainAxisAlignment.center,
-    //         children: [
-    //           Lottie.asset(
-    //             AppAssets.noInternet,
-    //             width: 300.sp,
-    //           ),
-    //           SizedBox(height: 10.sp),
-    //           Text(
-    //             "No Internet connection",
-    //             style: TextStyle(fontSize: AppStyles.heading),
-    //           )
-    //         ],
-    //       ),
-    //     ),
-    //   );
-    // }
 
     return SafeArea(
       child: Scaffold(
@@ -102,8 +51,21 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                 child: ListView(
                   children: [
                     UserAccountsDrawerHeader(
-                      currentAccountPicture: Image.asset(
-                        AppAssets.profileIcon,
+                      currentAccountPicture: CircleAvatar(
+                        child: ClipOval(
+                          child: Image.network(
+                            authProvider.currentUser?.imageUrl ?? "",
+                            fit: BoxFit.cover,
+                            width: 90,
+                            height: 90,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.account_circle_outlined,
+                                size: 40,
+                              );
+                            },
+                          ),
+                        ),
                       ),
                       accountEmail: Text(authProvider.email),
                       accountName:
@@ -141,7 +103,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                       },
                     ),
                     ListTile(
-                      title: const Text(' App version Beta 1.0 '),
+                      title: Text(
+                          ' App version Beta ${context.read<AppVersionProvider>().appVersion}'),
                       onTap: () {
                         // MyNavigation.to(context, AboutUsScreen());
                       },

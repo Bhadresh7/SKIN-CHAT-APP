@@ -1,39 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skin_chat_app/providers/exports.dart' show MyAuthProvider;
-import 'package:skin_chat_app/screens/exports.dart'
-    show
-        LoginScreen,
-        EmailVerificationScreen,
-        BasicDetailsScreen,
-        ImageSetupScreen,
-        HomeScreenVarient2;
+import 'package:skin_chat_app/providers/auth/my_auth_provider.dart'
+    show MyAuthProvider;
 
-// class AuthScreen extends StatelessWidget {
-//   const AuthScreen({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final authProvider = context.watch<MyAuthProvider>();
-//     return _getScreenBasedOnAuth(authProvider);
-//   }
-//
-//   Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
-//     if (!authProvider.isLoggedIn || authProvider.isBlocked) {
-//       return const LoginScreen();
-//     }
-//     if (!authProvider.isEmailVerified) {
-//       return const EmailVerificationScreen();
-//     }
-//     if (!authProvider.hasCompletedBasicDetails) {
-//       return const BasicDetailsScreen();
-//     }
-//     if (!authProvider.hasCompletedImageSetup) {
-//       return const ImageSetupScreen();
-//     }
-//     return HomeScreenVarient2();
-//   }
-// }
+import '../exports.dart';
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -42,36 +13,52 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  bool _cleanupDone = false;
-
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
 
-    if (authProvider.isBlocked && !_cleanupDone) {
-      _cleanupDone = true;
+    if (authProvider.isBlocked) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await authProvider.signOut();
-        await authProvider.clearUserDetails();
+        // Show a dialog explaining why they're being logged out
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Text("Account Blocked"),
+            content: Text(
+              "Your account has been blocked by an administrator. "
+              "Please contact support for more information.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await authProvider.signOut();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          ),
+        );
       });
     }
 
     return _getScreenBasedOnAuth(authProvider);
   }
+}
 
-  Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
-    if (!authProvider.isLoggedIn || authProvider.isBlocked) {
-      return const LoginScreen();
-    }
-    if (!authProvider.isEmailVerified) {
-      return const EmailVerificationScreen();
-    }
-    if (!authProvider.hasCompletedBasicDetails) {
-      return const BasicDetailsScreen();
-    }
-    if (!authProvider.hasCompletedImageSetup) {
-      return const ImageSetupScreen();
-    }
-    return HomeScreenVarient2();
+Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
+  if (!authProvider.isLoggedIn || authProvider.isBlocked) {
+    return const LoginScreen();
   }
+  if (!authProvider.isEmailVerified) {
+    return const EmailVerificationScreen();
+  }
+  if (!authProvider.hasCompletedBasicDetails) {
+    return const BasicDetailsScreen();
+  }
+  if (!authProvider.hasCompletedImageSetup) {
+    return const ImageSetupScreen();
+  }
+  return HomeScreenVarient2();
 }

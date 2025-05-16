@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/helpers/local_storage.dart';
-import 'package:skin_chat_app/services/user_service.dart';
 import 'package:skin_chat_app/modal/users.dart';
+import 'package:skin_chat_app/services/user_service.dart';
 
 class BasicUserDetailsProvider extends ChangeNotifier {
   final UserService _service = UserService();
@@ -32,7 +32,7 @@ class BasicUserDetailsProvider extends ChangeNotifier {
       if (result == AppStatus.kEmailAlreadyExists) {
         return AppStatus.kEmailAlreadyExists;
       }
-      if(result == AppStatus.kaadharNoExists){
+      if (result == AppStatus.kaadharNoExists) {
         return AppStatus.kaadharNoExists;
       }
       await LocalStorage.setString("role", user.role);

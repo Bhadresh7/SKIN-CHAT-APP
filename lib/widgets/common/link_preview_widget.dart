@@ -1,40 +1,57 @@
-// import 'package:flutter/material.dart';
-// import 'package:metadata_fetch/metadata_fetch.dart';
-//
-// class LinkPreviewWidget extends StatelessWidget {
-//   final String url;
-//
-//   const LinkPreviewWidget({required this.url, super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return FutureBuilder<Metadata?>(
-//       future: MetadataFetch.extract(url),
-//       builder: (context, snapshot) {
-//         if (!snapshot.hasData || snapshot.data == null) return SizedBox();
-//         final meta = snapshot.data!;
-//         return Card(
-//           margin: const EdgeInsets.only(top: 8),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               if (meta.image != null)
-//                 Image.network(meta.image!,
-//                     height: 180, width: double.infinity, fit: BoxFit.cover),
-//               Padding(
-//                 padding: const EdgeInsets.all(8.0),
-//                 child: Text(meta.title ?? url,
-//                     style: const TextStyle(fontWeight: FontWeight.bold)),
-//               ),
-//               if (meta.description != null)
-//                 Padding(
-//                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-//                   child: Text(meta.description!),
-//                 ),
-//             ],
-//           ),
-//         );
-//       },
-//     );
-//   }
-// }
+import 'package:flutter/material.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+
+class LinkPreviewWidget extends StatelessWidget {
+  final types.TextMessage message;
+
+  const LinkPreviewWidget({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final previewData = message.previewData;
+    if (previewData == null) return SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (previewData.image != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              previewData.image!.toString(),
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+        if (previewData.title != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              previewData.title!,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        if (previewData.description != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(
+              previewData.description!,
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            message.text,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
