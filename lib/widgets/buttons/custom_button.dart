@@ -13,9 +13,10 @@ class CustomButton extends StatelessWidget {
   final double? height;
   final EdgeInsetsGeometry? padding;
   final Color? loadingColor;
-  final double? border; // Border width
-  final Color? fontColor; // Font color
-  final Color? borderColor; // Optional new: border color
+  final double? border;
+  final Color? fontColor;
+  final Color? borderColor;
+  final bool enabled;
 
   const CustomButton({
     super.key,
@@ -32,6 +33,7 @@ class CustomButton extends StatelessWidget {
     this.border,
     this.fontColor,
     this.borderColor,
+    this.enabled = true,
   });
 
   @override
@@ -59,7 +61,7 @@ class CustomButton extends StatelessWidget {
                     : BorderSide.none,
               ),
             ),
-            onPressed: isLoading ? null : onPressed,
+            onPressed: (isLoading || !enabled) ? null : onPressed,
             child: isLoading
                 ? SizedBox(
                     width: 24.w,
@@ -84,8 +86,7 @@ class CustomButton extends StatelessWidget {
                           text,
                           style: TextStyle(
                             fontSize: AppStyles.subTitle,
-                            color: fontColor ??
-                                Colors.white, // ✅ custom font color
+                            color: fontColor ?? AppStyles.smoke,
                           ),
                         ),
                         if (suffixIcon != null)

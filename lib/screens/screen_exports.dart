@@ -1,7 +1,6 @@
-///screens library
+///about screen
 library;
 
-///about screen
 export 'about/about_us_screen.dart';
 
 ///auth screen

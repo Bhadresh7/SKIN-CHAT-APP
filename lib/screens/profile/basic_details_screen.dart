@@ -12,7 +12,7 @@ import 'package:skin_chat_app/helpers/password_hashing_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/screens/exports.dart';
+import 'package:skin_chat_app/screens/screen_exports.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
@@ -46,7 +46,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
 
     userNameController.text =
         authProvider.userName ?? authProvider.formUserName;
-    print(userNameController.text);
+    print("BASIC USER DETAILS ${userNameController.text}");
     // authProvider.disposeControllers();
   }
 
@@ -80,9 +80,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 children: [
                   Lottie.asset(AppAssets.login, height: 0.3.sh),
                   CustomInputField(
-                    controller: TextEditingController(
-                        text: context.read<MyAuthProvider>().userName ??
-                            context.read<MyAuthProvider>().formUserName),
+                    controller: userNameController,
                     name: "name",
                     hintText: "name",
                     validators: [
@@ -104,7 +102,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                       options: [
                         FormBuilderFieldOption(
                           value: "admin",
-                          child: Text("Employee",
+                          child: Text("Employer",
                               style: TextStyle(fontSize: AppStyles.subTitle)),
                         ),
                         FormBuilderFieldOption(
@@ -190,9 +188,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         // Proceed only if success
                         if (result == AppStatus.kSuccess) {
                           await authProvider.completeBasicDetails();
-
-                          authProvider.clearControllers();
-                          // authProvider.disposeControllers();
                           if (authProvider.isGoogle) {
                             await authProvider.completeImageSetup();
                             MyNavigation.replace(context, HomeScreenVarient2());

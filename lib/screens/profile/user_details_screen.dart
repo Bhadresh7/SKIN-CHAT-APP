@@ -1,6 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
@@ -61,11 +62,26 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
               spacing: 0.03.sh,
               children: [
                 Center(
-                  child: SvgPicture.asset(
-                    AppAssets.profile,
-                    height: 0.2.sh,
-                    width: 0.2.sw,
-                  ),
+                  child: (user?.img == null || user!.img!.isEmpty)
+                      ? SvgPicture.asset(
+                          AppAssets.profile,
+                          height: 0.2.sh,
+                          width: 0.2.sw,
+                        )
+                      : ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: user.img!,
+                            height: 0.25.sh,
+                            width: 0.50.sw,
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) =>
+                                SvgPicture.asset(
+                              AppAssets.profile,
+                              height: 0.2.sh,
+                              width: 0.2.sw,
+                            ),
+                          ),
+                        ),
                 ),
                 Text(
                   'User Details',

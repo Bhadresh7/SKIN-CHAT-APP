@@ -20,10 +20,6 @@ class SuperAdminProvider with ChangeNotifier {
 
   ViewUsers? get viewUsers => _viewUsers;
 
-  Stream<DocumentSnapshot> blockedUsersStream({required String uid}) {
-    return _store.collection('users').doc(uid).snapshots();
-  }
-
   void setLoadingState(bool value) {
     _loading = value;
     notifyListeners();
@@ -123,7 +119,7 @@ class SuperAdminProvider with ChangeNotifier {
   Future<List<DocumentSnapshot>> _fetchUsersFromFirestore(String filter) async {
     Query<Map<String, dynamic>> query = _store.collection('users').limit(10);
 
-    if (filter == "Employee") {
+    if (filter == "Employer") {
       query = query.where('role', isEqualTo: 'admin');
     } else if (filter == "Candidates") {
       query = query.where('role', isEqualTo: 'user');

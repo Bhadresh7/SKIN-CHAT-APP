@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -65,7 +64,7 @@ class MyAuthProvider extends ChangeNotifier {
 
   Future<bool> get isOauth async => await _googleSignIn.isSignedIn();
 
-  Stream<Map<String, int?>> get adminUserCountStream =>
+  Stream<Map<String, dynamic>> get adminUserCountStream =>
       _service.userAndAdminCountStream;
 
   List<Users> allUsers = [];
@@ -97,19 +96,22 @@ class MyAuthProvider extends ChangeNotifier {
 
     notifyListeners();
 
+    await getUserDetails(email: email);
+    notifyListeners();
+
     // Start listening for real-time updates
     _service.fetchRoleAndSaveLocally(email: email).listen(
       (data) async {
-        if (_role != data["role"] || _canPost != data["canPost"]) {
-          _role = data["role"];
-          _canPost = data["canPost"];
-
-          // Only update local storage if values have changed
+        _canPost = data["canPost"] ?? false;
+        _role = data["role"] ?? "";
+        _isBlocked = data["isBlocked"] ?? false;
+        if (!_isBlocked) {
           await LocalStorage.setString("role", _role);
           await LocalStorage.setBool("canPost", _canPost);
-
-          print("======>>>>> Live update - Role: $_role, CanPost: $_canPost");
-
+          await LocalStorage.setBool("isBlocked", _isBlocked);
+          notifyListeners();
+        } else {
+          await signOut();
           notifyListeners();
         }
       },
@@ -165,12 +167,14 @@ class MyAuthProvider extends ChangeNotifier {
         print("❌ Firebase User is NULL after authentication");
         return AppStatus.kFailed;
       }
-      final email = firebaseUser!.email!;
+
+      _currentUser = await getUserDetails(email: email);
 
       //check the user is blocked or not
       final roleInfo = await _service.fetchRoleAndCanPostStatus(email: email);
+
       if (roleInfo['status'] == AppStatus.kBlocked) {
-        await _googleSignIn.disconnect();
+        await signOut();
         return AppStatus.kBlocked;
       }
 
@@ -192,8 +196,11 @@ class MyAuthProvider extends ChangeNotifier {
       }
       print("✅ Role & canPost info: $roleInfo");
 
-      _notificationService.storeDeviceToken(uid: firebaseUser!.uid);
+      _notificationService.storeDeviceToken(uid: uid);
 
+      _canPost = roleInfo['canPost'];
+      _role = roleInfo['role'];
+      notifyListeners();
       await LocalStorage.setBool("canPost", roleInfo['canPost'] ?? false);
       await LocalStorage.setString("role", roleInfo['role'] ?? "");
 
@@ -238,7 +245,7 @@ class MyAuthProvider extends ChangeNotifier {
       if (user == null) return AppStatus.kFailed;
 
       await user.sendEmailVerification();
-      _notificationService.storeDeviceToken(uid: user.uid);
+      _notificationService.storeDeviceToken(uid: uid);
       await LocalStorage.setString("userName", username);
       _formUserName = username;
       await LocalStorage.setBool('isLoggedIn', true);
@@ -263,13 +270,14 @@ class MyAuthProvider extends ChangeNotifier {
     try {
       setLoadingState(value: true);
 
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      User? user = userCredential.user;
-      if (user == null) return AppStatus.kUserNotFound;
+      // User? user = userCredential.user;
+      _currentUser = await _service.getUserDetailsByEmail(email: email);
+      if (_currentUser == null) return AppStatus.kUserNotFound;
 
       final result = await _service.fetchRoleAndCanPostStatus(email: email);
 
@@ -277,11 +285,17 @@ class MyAuthProvider extends ChangeNotifier {
         return AppStatus.kBlocked;
       }
 
+      _role = result['role'];
+      _canPost = result['canPost'];
+
+      print("PPPPPPPPPPPPPPPPPPP$_role");
+      print("OOOOOOOOOOOO$_canPost");
+
       await LocalStorage.setBool("isLoggedIn", true);
       await LocalStorage.setBool('isEmailVerified', true);
       await LocalStorage.setBool('hasCompletedBasicDetails', true);
       await LocalStorage.setBool('hasCompletedImageSetup', true);
-      _notificationService.storeDeviceToken(uid: user.uid);
+      _notificationService.storeDeviceToken(uid: uid);
       return AppStatus.kSuccess;
     } on FirebaseAuthException catch (e) {
       print(e.code);
@@ -315,6 +329,10 @@ class MyAuthProvider extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    usernameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -348,48 +366,6 @@ class MyAuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  final FirebaseFirestore _store = FirebaseFirestore.instance;
-
-  /// Listen to user role updates in real-time
-  void listenToRoleChanges(String email) {
-    _store
-        .collection("super_admins")
-        .where("email", isEqualTo: email)
-        .limit(1)
-        .snapshots()
-        .listen((superAdminSnapshot) async {
-      if (superAdminSnapshot.docs.isNotEmpty) {
-        _updateUserData(superAdminSnapshot.docs.first.data());
-        return;
-      }
-
-      _store
-          .collection("users")
-          .where("email", isEqualTo: email)
-          .limit(1)
-          .snapshots()
-          .listen((userSnapshot) async {
-        if (userSnapshot.docs.isNotEmpty) {
-          _updateUserData(userSnapshot.docs.first.data());
-        }
-      });
-    });
-  }
-
-  /// Update local storage and notify UI
-  Future<void> _updateUserData(Map<String, dynamic> data) async {
-    _role = data["role"] ?? "no-role-found";
-    _canPost = data["canPost"] ?? false;
-    _isBlocked = data["isBlocked"] ?? false;
-
-    await LocalStorage.setString("role", _role);
-    await LocalStorage.setBool("canPost", _canPost);
-    await LocalStorage.setBool("isBlocked", _isBlocked);
-    print("FROM THE PROVIDER BLOCKED STATUS:=$_isBlocked");
-
-    notifyListeners(); // Updates UI
-  }
-
   Future<Users?> getUserDetails({required String email}) async {
     try {
       final user = await _service.getUserDetailsByEmail(email: email);
@@ -413,8 +389,8 @@ class MyAuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     try {
       // Sign out from Firebase
-      await _auth.signOut();
       await _service.deleteTokenOnSignOut(uid: uid);
+      await _auth.signOut();
       // Disconnect Google if connected
       if (await _googleSignIn.isSignedIn()) {
         await _googleSignIn.disconnect();
@@ -443,12 +419,5 @@ class MyAuthProvider extends ChangeNotifier {
     passwordController.clear();
     confirmPasswordController.clear();
     notifyListeners();
-  }
-
-  void disposeControllers() {
-    usernameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
   }
 }

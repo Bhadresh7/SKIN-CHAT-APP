@@ -7,13 +7,11 @@ import 'package:skin_chat_app/services/user_service.dart';
 class BasicUserDetailsProvider extends ChangeNotifier {
   final UserService _service = UserService();
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
   String? _selectedRole;
+
   String? get selectedRole => _selectedRole;
-
-  Users? _currentUser;
-
-  Users? get currentUser => _currentUser;
 
   void selectRole({required String? role}) {
     _selectedRole = role;

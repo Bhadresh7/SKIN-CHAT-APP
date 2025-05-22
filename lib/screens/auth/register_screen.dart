@@ -54,7 +54,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: authProvider.usernameController,
                 validators: [
                   FormBuilderValidators.required(
-                      errorText: "Username is required"),
+                    errorText: "Username is required",
+                  ),
                   FormBuilderValidators.minLength(3,
                       errorText: "Must be at least 3 characters"),
                 ],
@@ -88,7 +89,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: authProvider.confirmPasswordController,
                 validators: [
                   FormBuilderValidators.required(
-                      errorText: "Username is required"),
+                    errorText: "password is required",
+                  ),
                   FormBuilderValidators.minLength(6,
                       errorText: "Must be at least 6 characters"),
                 ],

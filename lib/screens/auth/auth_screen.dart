@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart'
     show MyAuthProvider;
 
-import '../exports.dart';
+import '../screen_exports.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -13,13 +13,15 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  bool _hasHandledBlock = false;
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
 
-    if (authProvider.isBlocked) {
+    if (authProvider.isBlocked && !_hasHandledBlock) {
+      _hasHandledBlock = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        // Show a dialog explaining why they're being logged out
         await showDialog(
           context: context,
           barrierDismissible: false,

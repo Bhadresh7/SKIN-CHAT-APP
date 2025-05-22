@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/constants/app_text.dart';
-import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
+import 'package:skin_chat_app/constants/constants_export.dart'
+    show AppStyles, AppText;
+import 'package:skin_chat_app/widgets/common_exports.dart'
+    show BackgroundScaffold;
 
 class TermsAndConditionsScreen extends StatelessWidget {
   const TermsAndConditionsScreen({super.key});

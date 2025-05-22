@@ -10,7 +10,7 @@ import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
 import 'package:skin_chat_app/providers/super_admin/super_admin_provider_2.dart';
 import 'package:skin_chat_app/providers/version/app_version_provider.dart';
-import 'package:skin_chat_app/screens/exports.dart';
+import 'package:skin_chat_app/screens/auth/auth_screen.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 
 import 'constants/app_styles.dart';

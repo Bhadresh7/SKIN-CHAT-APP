@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -199,7 +200,11 @@ class _UserListViewState extends State<UserListView> {
                   children: [
                     img.isNotEmpty
                         ? CircleAvatar(
-                            radius: 50, backgroundImage: NetworkImage(img))
+                            radius: 50,
+                            backgroundImage: CachedNetworkImageProvider(
+                              img,
+                            ),
+                          )
                         : CircleAvatar(
                             radius: 50,
                             child: SvgPicture.asset(AppAssets.profile)),

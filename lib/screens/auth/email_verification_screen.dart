@@ -5,7 +5,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/auth/email_verification_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/screens/exports.dart';
+import 'package:skin_chat_app/screens/screen_exports.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 
@@ -25,9 +25,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     print("FROM THE UI: -----> ${provider.isEmailVerified}");
 
-    if (provider.isEmailVerified) {
+    if (provider.isEmailVerified || authProvider.isEmailVerified) {
       Future.microtask(() {
         MyNavigation.replace(context, BasicDetailsScreen());
+        authProvider.clearControllers();
       });
     }
 

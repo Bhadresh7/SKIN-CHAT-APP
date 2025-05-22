@@ -7,6 +7,7 @@ class ViewUsers {
     required this.aadharNo,
     required this.mobileNumber,
     required this.dob,
+    this.img,
   });
 
   final String uid;
@@ -16,6 +17,7 @@ class ViewUsers {
   final String aadharNo;
   final String mobileNumber;
   final String dob;
+  final String? img;
 
   factory ViewUsers.fromJson(Map<String, dynamic> data) {
     return ViewUsers(
@@ -26,6 +28,7 @@ class ViewUsers {
       aadharNo: data['aadharNo'] ?? '',
       mobileNumber: data['mobileNumber'] ?? '',
       dob: data['dob'] ?? '',
+      img: data['imageUrl'] ?? '',
     );
   }
 }

@@ -60,7 +60,7 @@ class ImagePickerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Compress the image
+      // Step 1: Compress image
       File? compressedImage = await compressImage(selectedImage!);
       if (compressedImage == null) {
         isUploading = false;
@@ -68,32 +68,50 @@ class ImagePickerProvider extends ChangeNotifier {
         return AppStatus.kFailed;
       }
 
-      // Create a storage reference
+      // Step 2: Upload to Firebase Storage
       String filePath = "profile_images/$userId.jpg";
       Reference storageRef = FirebaseStorage.instance.ref().child(filePath);
-
-      // Upload the compressed file
       UploadTask uploadTask = storageRef.putFile(compressedImage);
 
-      // Show upload progress (optional)
+      // Optional: Show upload progress
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
         double progress = snapshot.bytesTransferred / snapshot.totalBytes;
         print("📤 Upload Progress: ${(progress * 100).toStringAsFixed(2)}%");
       });
 
       TaskSnapshot snapshot = await uploadTask;
-
-      // Get download URL
       String downloadUrl = await snapshot.ref.getDownloadURL();
 
-      await FirebaseFirestore.instance.collection("users").doc(userId).update({
-        "imageUrl": downloadUrl,
-      });
+      // Step 3: Check both collections in parallel
+      final usersRef =
+          FirebaseFirestore.instance.collection("users").doc(userId);
+      final superAdminsRef =
+          FirebaseFirestore.instance.collection("super_admins").doc(userId);
+
+      final results = await Future.wait([usersRef.get(), superAdminsRef.get()]);
+
+      final usersDoc = results[0];
+      final superAdminsDoc = results[1];
+
+      DocumentReference? docToUpdate;
+      if (usersDoc.exists) {
+        docToUpdate = usersRef;
+      } else if (superAdminsDoc.exists) {
+        docToUpdate = superAdminsRef;
+      } else {
+        print(
+            "❌ User not found in either 'users' or 'super_admins' collection.");
+        return "";
+      }
+
+      // Step 4: Update Firestore document
+      await docToUpdate.update({"imageUrl": downloadUrl});
+      print("✅ imageUrl updated for $userId: $downloadUrl");
 
       return downloadUrl;
     } catch (e) {
       print("❌ Error uploading image: $e");
-      return AppStatus.kFailed;
+      return "";
     } finally {
       isUploading = false;
       notifyListeners();

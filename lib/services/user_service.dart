@@ -118,18 +118,25 @@ class UserService {
 // Function to process user data and save it locally
   Future<Map<String, dynamic>> _processUserData(
       Map<String, dynamic> data) async {
+    // print("FROM ASYNC STREAM -------${data['isBlocked']}");
+
     final role = data["role"] ?? "no-role-found";
     final canPost = data["canPost"] ?? false;
+    final isBlocked = data['isBlocked'] ?? false;
+
+    print("FROM SERVICE ----------$isBlocked");
 
     print("🔥 Updated User Role =>>>>>>>>>>: $role");
     print("📝 canPost: $canPost");
 
     await LocalStorage.setString("role", role);
     await LocalStorage.setBool("canPost", canPost);
+    await LocalStorage.setBool("isBlocked", isBlocked);
 
     return {
       "role": role,
       "canPost": canPost,
+      "isBlocked": isBlocked,
     };
   }
 
@@ -141,64 +148,6 @@ class UserService {
     };
   }
 
-  // Future<Map<String, dynamic>> fetchRoleAndCanPostStatus({
-  //   required String email,
-  // }) async {
-  //   try {
-  //     // Check in super_admins collection
-  //     var doc = await _store
-  //         .collection("super_admins")
-  //         .where("email", isEqualTo: email)
-  //         .limit(1)
-  //         .get()
-  //         .then((snapshot) =>
-  //             snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
-  //
-  //     doc ??= await _store
-  //         .collection("users")
-  //         .where("email", isEqualTo: email)
-  //         .limit(1)
-  //         .get()
-  //         .then((snapshot) =>
-  //             snapshot.docs.isNotEmpty ? snapshot.docs.first : null);
-  //
-  //     if (doc == null) {
-  //       return {
-  //         'status': AppStatus.kUserNotFound,
-  //       };
-  //     }
-  //     print("😍😍😍😍😍😍fetchRoleAndCanPostStatus😍😍😍😍😍😍");
-  //     final mail = doc['email'] ?? "no-email-found";
-  //     final role = doc["role"] ?? "no-role-found";
-  //     final canPost = doc["canPost"] ?? false;
-  //     final isBlocked = doc['isBlocked'] ?? false;
-  //
-  //     print("email =====> $mail");
-  //     print("🔥 Updated User Role: $role");
-  //     print("📝 canPost: $canPost");
-  //
-  //     await LocalStorage.setString("role", role);
-  //     await LocalStorage.setBool("canPost", canPost);
-  //     await LocalStorage.setString('email', mail);
-  //
-  //     if (isBlocked) {
-  //       return {
-  //         'status': AppStatus.kBlocked,
-  //       };
-  //     }
-  //
-  //     return {
-  //       'role': role,
-  //       'canPost': canPost,
-  //       'email': mail,
-  //     };
-  //   } catch (e) {
-  //     print("Error fetching role: ${e.toString()}");
-  //     return {
-  //       'status': AppStatus.kUserNotFound,
-  //     };
-  //   }
-  // }
   Future<Map<String, dynamic>> fetchRoleAndCanPostStatus({
     required String email,
   }) async {
@@ -280,9 +229,6 @@ class UserService {
               (doc) => doc.data().containsKey('role') && doc['role'] == 'user')
           .length;
 
-      print(
-          "Admins: $adminCount, Users: $userCount, Blocked: $blockedUserCount");
-
       return {
         'admin': adminCount,
         'user': userCount,
@@ -302,48 +248,69 @@ class UserService {
     try {
       User? user = FirebaseAuth.instance.currentUser;
 
-      // Check if the user exists
-      var querySnapshot = await _store
-          .collection("users")
-          .where("aadharNo", isEqualTo: aadharNumber)
-          .limit(1)
-          .get();
-
-      if (user != null) {
+      if (user != null && name != null) {
         await user.updateDisplayName(name);
         await user.reload();
       }
-      if (querySnapshot.docs.isNotEmpty) {
-        var docRef = querySnapshot.docs.first.reference;
 
-        // Prepare fields to update
-        Map<String, dynamic> updateData = {};
-        if (imgUrl != null) updateData["imageUrl"] = imgUrl;
-        if (name != null) updateData["username"] = name;
-        if (mobile != null) updateData["mobileNumber"] = mobile;
-        if (dob != null) updateData["dob"] = dob;
+      // Firestore queries for both collections
+      final results = await Future.wait([
+        _store
+            .collection("users")
+            .where("aadharNo", isEqualTo: aadharNumber)
+            .limit(1)
+            .get(),
+        _store
+            .collection("super_admins")
+            .where("aadharNo", isEqualTo: aadharNumber)
+            .limit(1)
+            .get(),
+      ]);
 
-        // Perform update if needed
-        if (updateData.isNotEmpty) {
-          await docRef.update(updateData);
-          updateData.forEach((key, value) {
-            print("$key==========> $value");
-          });
-        }
+      // Identify which collection had the user
+      final userSnapshot = results[0];
+      final superAdminSnapshot = results[1];
 
-        // Re-fetch the updated user document
-        var updatedDoc = await docRef.get();
-        var data = updatedDoc.data();
+      QuerySnapshot foundSnapshot;
+      String collectionName;
 
-        if (data != null) {
-          return Users.fromFirestore(data); // Adjust based on your model
-        } else {
-          return null; // Unexpected: no data found after update
-        }
+      if (userSnapshot.docs.isNotEmpty) {
+        foundSnapshot = userSnapshot;
+        collectionName = "users";
+      } else if (superAdminSnapshot.docs.isNotEmpty) {
+        foundSnapshot = superAdminSnapshot;
+        collectionName = "super_admins";
       } else {
-        print("User with Aadhaar number $aadharNumber not found");
+        print(
+            "User with Aadhaar number $aadharNumber not found in either collection.");
         return null;
       }
+
+      // Prepare update
+      final docRef = foundSnapshot.docs.first.reference;
+
+      Map<String, dynamic> updateData = {};
+      if (imgUrl != null) updateData["imageUrl"] = imgUrl;
+      if (name != null) updateData["username"] = name;
+      if (mobile != null) updateData["mobileNumber"] = mobile;
+      if (dob != null) updateData["dob"] = dob;
+
+      // Perform update
+      if (updateData.isNotEmpty) {
+        await docRef.update(updateData);
+        updateData.forEach((key, value) {
+          print("[$collectionName] $key => $value");
+        });
+      }
+
+      // Return updated user object
+      final updatedDoc = await docRef.get();
+      final data = updatedDoc.data() as Map<String, dynamic>;
+      print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$data");
+      if (data.isNotEmpty) {
+        return Users.fromFirestore(data);
+      }
+      return null;
     } catch (e) {
       print("Error updating user profile: $e");
       return null;
@@ -420,10 +387,23 @@ class UserService {
 
   Future<void> deleteTokenOnSignOut({required String uid}) async {
     try {
+      print(">>>>>>>>>>>>>>>>>>>>>$uid");
+      QuerySnapshot snapshot = await _store
+          .collection("tokens")
+          .where("id", isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print(
+            "'''''''''''''''''''''''''''''''RESPONSE IS EMPTY''''''''''''''''''''''''");
+        return;
+      }
+
       await _store.collection('tokens').doc(uid).delete();
-      print("***********      TOKEN DELETED SUCCESSFULLY     ********");
+      print("+++++++++++++++ TOKEN DELETED SUCCESSFULLY +++++++++++++++++++++");
     } catch (e) {
-      print('Error deleting token: $e');
+      print("Error deleting token: $e");
     }
   }
 }

@@ -25,87 +25,90 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
     final imagePickerProvider = context.watch<ImagePickerProvider>();
 
-    return BackgroundScaffold(
-      body: Column(
-        children: [
-          if (imagePickerProvider.selectedImage == null)
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: () {
-                  MyNavigation.replace(context, HomeScreenVarient2());
-                },
-                child: Text(
-                  "Skip",
-                  style: TextStyle(
-                    color: AppStyles.tertiary,
-                    fontSize: AppStyles.heading,
+    return PopScope(
+      canPop: false,
+      child: BackgroundScaffold(
+        body: Column(
+          children: [
+            if (imagePickerProvider.selectedImage == null)
+              Align(
+                alignment: Alignment.topRight,
+                child: TextButton(
+                  onPressed: () {
+                    MyNavigation.replace(context, HomeScreenVarient2());
+                  },
+                  child: Text(
+                    "Skip",
+                    style: TextStyle(
+                      color: AppStyles.tertiary,
+                      fontSize: AppStyles.heading,
+                    ),
                   ),
                 ),
               ),
-            ),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      String status = await imagePickerProvider.pickImage();
-                      debugPrint("Image Pick Status: $status");
-                      setState(() {});
-                    },
-                    child: imagePickerProvider.selectedImage == null
-                        ? SvgPicture.asset(
-                            AppAssets.profile,
-                            width: 0.7.sw,
-                          )
-                        : CircleAvatar(
-                            radius: 0.4.sw,
-                            backgroundImage: imagePickerProvider
-                                        .selectedImage !=
-                                    null
-                                ? FileImage(imagePickerProvider.selectedImage!)
-                                : null, // ✅ Prevent error
-                            child: imagePickerProvider.selectedImage == null
-                                ? Icon(Icons.person, size: 50)
-                                : null,
-                          ),
-                  ),
-                  CustomButton(
-                    text: "Next",
-                    isLoading: imagePickerProvider.isUploading,
-                    onPressed: () async {
-                      if (imagePickerProvider.selectedImage == null) {
-                        ToastHelper.showErrorToast(
-                          context: context,
-                          message: "Please select a profile image",
-                        );
-                        return;
-                      }
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        String status = await imagePickerProvider.pickImage();
+                        debugPrint("Image Pick Status: $status");
+                        setState(() {});
+                      },
+                      child: imagePickerProvider.selectedImage == null
+                          ? SvgPicture.asset(
+                              AppAssets.profile,
+                              width: 0.7.sw,
+                            )
+                          : CircleAvatar(
+                              radius: 0.4.sw,
+                              backgroundImage:
+                                  imagePickerProvider.selectedImage != null
+                                      ? FileImage(
+                                          imagePickerProvider.selectedImage!)
+                                      : null, // ✅ Prevent error
+                              child: imagePickerProvider.selectedImage == null
+                                  ? Icon(Icons.person, size: 50)
+                                  : null,
+                            ),
+                    ),
+                    CustomButton(
+                      text: "Next",
+                      isLoading: imagePickerProvider.isUploading,
+                      onPressed: () async {
+                        if (imagePickerProvider.selectedImage == null) {
+                          ToastHelper.showErrorToast(
+                            context: context,
+                            message: "Please select a profile image",
+                          );
+                          return;
+                        }
 
-                      String userId = authProvider.uid;
-                      String? imageUrl = await imagePickerProvider
-                          .uploadImageToFirebase(userId);
+                        String userId = authProvider.uid;
+                        String? imageUrl = await imagePickerProvider
+                            .uploadImageToFirebase(userId);
 
-                      if (imageUrl == null) {
-                        ToastHelper.showErrorToast(
-                          context: context,
-                          message: "No image is selected",
-                        );
-                        return;
-                      }
+                        if (imageUrl == null) {
+                          ToastHelper.showErrorToast(
+                            context: context,
+                            message: "No image is selected",
+                          );
+                          return;
+                        }
 
-                      authProvider.completeImageSetup();
-                      MyNavigation.replace(context, HomeScreenVarient2());
-                    },
-                    width: 90.w,
-                  ),
-                ],
+                        authProvider.completeImageSetup();
+                        MyNavigation.replace(context, HomeScreenVarient2());
+                      },
+                      width: 90.w,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

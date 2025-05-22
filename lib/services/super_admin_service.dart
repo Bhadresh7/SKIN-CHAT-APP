@@ -75,7 +75,7 @@ class SuperAdminService {
   }) async {
     Query<Map<String, dynamic>> query = _store.collection('users').limit(limit);
 
-    if (filter == "Employee") {
+    if (filter == "Employer") {
       query = query.where('role', isEqualTo: 'admin');
     } else if (filter == "Candidates") {
       query = query.where('role', isEqualTo: 'user');

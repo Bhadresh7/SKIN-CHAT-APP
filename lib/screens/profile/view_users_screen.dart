@@ -21,7 +21,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
   late StreamController<double> progressController;
   final CsvService _csvService = CsvService();
 
-  final List<String> chipLabels = ["All", "Employee", "Candidates", "Blocked"];
+  final List<String> chipLabels = ["All", "Employer", "Candidates", "Blocked"];
   int selectedIndex = 0;
 
   @override
@@ -132,7 +132,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
               ListTile(
                 leading:
                     Icon(Icons.admin_panel_settings, color: AppStyles.primary),
-                title: const Text("Employee"),
+                title: const Text("Employer"),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmDownload("admin");
@@ -172,7 +172,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StreamBuilder<Map<String, int?>>(
+          StreamBuilder<Map<String, dynamic>>(
             stream: authProvider.adminUserCountStream,
             builder: (_, snapshot) {
               final data = snapshot.data ?? {};
@@ -184,7 +184,7 @@ class _ViewUsersScreenState extends State<ViewUsersScreen> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
-                    Text("Employee: $employeeCount  ",
+                    Text("Employer: $employeeCount  ",
                         style: TextStyle(fontSize: AppStyles.bodyText)),
                     Text("Candidate: $candidateCount  ",
                         style: TextStyle(fontSize: AppStyles.bodyText)),

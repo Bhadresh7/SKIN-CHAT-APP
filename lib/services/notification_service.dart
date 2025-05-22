@@ -112,21 +112,36 @@ class NotificationService {
       print("🕊️ Token: $token");
 
       if (token != null && token.isNotEmpty) {
-        DocumentSnapshot doc = await _store.collection('tokens').doc(uid).get();
+        // Check if a document with this 'id' already exists
+        QuerySnapshot snapshot = await _store
+            .collection('tokens')
+            .where('id', isEqualTo: uid)
+            .limit(1)
+            .get();
 
-        if (doc.exists) {
+        if (snapshot.docs.isNotEmpty) {
+          var doc = snapshot.docs.first;
           String? existingToken = doc.get('token');
+
           if (existingToken == token) {
             print("✅ Token already exists and is up to date.");
             return AppStatus.kSuccess;
           }
+
+          // Update the token if it's different
+          await _store.collection('tokens').doc(uid).update({
+            "token": token,
+          });
+          print("🔄 Token updated for existing user.");
+          return AppStatus.kSuccess;
         }
 
+        // If no document exists, add a new one
         await _store.collection('tokens').doc(uid).set({
           "id": uid,
           "token": token,
         });
-        print("✅ Token stored/updated successfully.");
+        print("✅ Token stored successfully for new user.");
         return AppStatus.kSuccess;
       }
 

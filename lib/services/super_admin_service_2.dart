@@ -7,7 +7,7 @@ class SuperAdminService2 {
   Query<Map<String, dynamic>> _getFilteredQuery(String filter) {
     Query<Map<String, dynamic>> query = _firestore.collection('users');
     switch (filter) {
-      case "Employee":
+      case "Employer":
         query = query.where('role', isEqualTo: 'admin');
         break;
       case "Candidates":

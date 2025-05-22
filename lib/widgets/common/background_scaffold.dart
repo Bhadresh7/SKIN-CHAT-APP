@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
@@ -7,7 +8,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/version/app_version_provider.dart';
-import 'package:skin_chat_app/screens/exports.dart';
+import 'package:skin_chat_app/screens/screen_exports.dart';
 
 class BackgroundScaffold extends StatefulWidget {
   const BackgroundScaffold({
@@ -42,6 +43,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
+    print(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>${authProvider.currentUser?.username}<<<<<<<<<<<<<<<<<<");
 
     return SafeArea(
       child: Scaffold(
@@ -52,24 +55,28 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                   children: [
                     UserAccountsDrawerHeader(
                       currentAccountPicture: CircleAvatar(
-                        child: ClipOval(
-                          child: Image.network(
-                            authProvider.currentUser?.imageUrl ?? "",
-                            fit: BoxFit.cover,
-                            width: 90,
-                            height: 90,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.account_circle_outlined,
-                                size: 40,
-                              );
-                            },
-                          ),
-                        ),
+                        radius: 30,
+                        child: authProvider.currentUser?.imageUrl != null &&
+                                authProvider.currentUser!.imageUrl!.isNotEmpty
+                            ? ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl:
+                                      authProvider.currentUser?.imageUrl ??
+                                          authProvider.imgUrl ??
+                                          "",
+                                  fit: BoxFit.cover,
+                                  width: 90,
+                                  height: 90,
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.person),
+                                ),
+                              )
+                            : const Icon(Icons.person, size: 40),
                       ),
                       accountEmail: Text(authProvider.email),
-                      accountName:
-                          Text(authProvider.currentUser?.username ?? "User"),
+                      accountName: Text(authProvider.currentUser?.username ??
+                          authProvider.userName ??
+                          "User"),
                     ),
                     ListTile(
                       trailing: Icon(Icons.arrow_forward_ios),
@@ -135,11 +142,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                                 ),
                                 TextButton(
                                   onPressed: () async {
+                                    MyNavigation.offAll(context, LoginScreen());
                                     await authProvider.signOut();
-                                    if (context.mounted) {
-                                      MyNavigation.replace(
-                                          context, LoginScreen());
-                                    }
                                   },
                                   child: Text("yes"),
                                 ),

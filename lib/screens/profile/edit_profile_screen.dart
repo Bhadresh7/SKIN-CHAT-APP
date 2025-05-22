@@ -10,7 +10,7 @@ import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 
 import '../../constants/app_status.dart';
 import '../../providers/image/image_picker_provider.dart';
-import '../../widgets/exports.dart';
+import '../../widgets/common_exports.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -81,7 +81,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           }
 
           return BackgroundScaffold(
-            loading: imagePickerProvider.isUploading,
+            loading: imagePickerProvider.isUploading ||
+                basicUserDetailsProvider.isLoading,
             appBar: AppBar(),
             body: SingleChildScrollView(
               child: Form(
@@ -180,32 +181,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           );
 
-                          if (confirm == true) {
-                            final result = await basicUserDetailsProvider
-                                .updateUserProfile(
-                              aadharNumber: aadharController.text.trim(),
-                              mobile: mobileNumberController.text.trim(),
-                              dob: dateController.text.trim(),
-                              name: usernameController.text.trim(),
-                              imgUrl: await imagePickerProvider
-                                  .uploadImageToFirebase(
-                                provider.uid,
-                              ),
-                            );
+                          if (confirm != true) return;
 
-                            switch (result) {
-                              case AppStatus.kFailed:
-                                return ToastHelper.showErrorToast(
-                                    context: context,
-                                    message: "Aadhar number is not found");
-                              case AppStatus.kSuccess:
-                                ToastHelper.showSuccessToast(
-                                    context: context,
-                                    message: "Updated Successfully");
-                                await provider.getUserDetails(
-                                    email: provider.email);
-                                break;
-                            }
+                          // Upload image only if new image is selected
+                          String? imageUrl = provider.currentUser!.imageUrl;
+                          if (imagePickerProvider.selectedImage != null) {
+                            print(
+                                "IMAGE URL -------------------------$imageUrl");
+                            imageUrl = await imagePickerProvider
+                                .uploadImageToFirebase(provider.uid);
+                          }
+
+                          final result =
+                              await basicUserDetailsProvider.updateUserProfile(
+                            aadharNumber: aadharController.text.trim(),
+                            mobile: mobileNumberController.text.trim(),
+                            dob: dateController.text.trim(),
+                            name: usernameController.text.trim(),
+                            imgUrl: imageUrl,
+                          );
+
+                          if (result == AppStatus.kFailed) {
+                            return ToastHelper.showErrorToast(
+                              context: context,
+                              message: "Aadhar number is not found",
+                            );
+                          }
+
+                          if (result == AppStatus.kSuccess) {
+                            ToastHelper.showSuccessToast(
+                              context: context,
+                              message: "Updated Successfully",
+                            );
+                            await provider.getUserDetails(
+                                email: provider.email);
+                            imagePickerProvider
+                                .clear(); // Optional: Clear the selected image after update
                           }
                         }
                       },

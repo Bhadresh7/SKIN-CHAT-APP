@@ -14,6 +14,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/modal/custom_message_modal.dart';
+import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
@@ -21,8 +22,6 @@ import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
 import 'package:skin_chat_app/widgets/common/custom_message_widget.dart';
 import 'package:skin_chat_app/widgets/common/showDeleteDialog.dart';
-
-import '../../providers/exports.dart';
 
 class HomeScreenVarient2 extends StatefulWidget {
   const HomeScreenVarient2({super.key});
@@ -40,13 +39,18 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     super.initState();
     messageController = TextEditingController();
     service = NotificationService();
-    final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
-    authProvider.listenToRoleChanges(authProvider.email);
-    authProvider.getUserDetails(email: authProvider.email);
+
+    _loadUser();
+  }
+
+  void _loadUser() async {
+    final provider = Provider.of<MyAuthProvider>(context, listen: false);
+    await provider.getUserDetails(email: provider.email);
   }
 
   bool _hasHandledSharedFile = false;
   bool _hasFetchedLinkMetadata = false;
+  bool _hasControllerInited = false;
 
   @override
   void didChangeDependencies() {
@@ -54,17 +58,25 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
     super.didChangeDependencies();
 
-    final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
+    final shareIntentProvider =
+        Provider.of<ShareIntentProvider>(context, listen: false);
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final authProvider = Provider.of<MyAuthProvider>(context, listen: false);
     final shareContentProvider =
         Provider.of<SharedContentProvider>(context, listen: false);
     final sharedFiles = shareIntentProvider.sharedFiles;
 
-    if (authProvider.canPost) {
-      messageController.clear();
+    if (authProvider.canPost && !_hasControllerInited) {
+      messageController = TextEditingController();
+      _hasControllerInited = true;
+      print("✅ Controller initialized");
     }
 
+    if (!authProvider.canPost && _hasControllerInited) {
+      messageController.dispose();
+      _hasControllerInited = false;
+      print("❌ Controller disposed");
+    }
     print("==============================");
     print("SHARED FILES ==>$sharedFiles");
     print("==============================");
@@ -158,7 +170,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
           if (!_hasFetchedLinkMetadata) {
             final url = sendingContent.value!;
             _hasFetchedLinkMetadata = true;
-            print("controller int - ${messageController}");
+            print("controller int - $messageController");
             print("url555555555555555555555555${url}");
             messageController.text = url;
             _hasHandledSharedFile = false;
@@ -167,15 +179,17 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
         }
       }
     } else {
-      shareContentProvider.clear();
-      shareIntentProvider.clear();
+      // shareContentProvider.clear();
+      // shareIntentProvider.clear();
       return;
     }
   }
 
   @override
   void dispose() {
-    messageController.dispose();
+    Future.microtask(() {
+      messageController.dispose();
+    });
     super.dispose();
   }
 
@@ -203,14 +217,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
     final shareContentProvider = Provider.of<SharedContentProvider>(context);
 
-    print("(((((${authProvider.currentUser?.username})))))))");
-    print("?????????????????????????????????????????????????????????/");
-    print(shareContentProvider.linkMetadata?.title);
-    print(shareContentProvider.linkMetadata?.description);
-    print(shareContentProvider.linkMetadata?.image);
-    print("?????????????????????????????????????????????????????????/");
-    // print("********${authProvider.isBlocked}********");
-
     return PopScope(
       canPop: false,
       child: BackgroundScaffold(
@@ -226,7 +232,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                 child: Image.asset(AppAssets.logo),
               ),
               SizedBox(width: 0.02.sw),
-              StreamBuilder<Map<String, int?>>(
+              StreamBuilder<Map<String, dynamic>>(
                 stream: authProvider.adminUserCountStream,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -234,8 +240,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   }
                   final employeeCount = snapshot.data?["admin"] ?? 0;
                   final candidateCount = snapshot.data?["user"] ?? 0;
-                  print("===========$employeeCount============");
-                  print("============$candidateCount=========");
+                  final blocked = snapshot.data?["blocked"];
+                  // final isBlocked = snapshot.data?["isBlocked"] ?? false;
+                  // print("#####################$blocked");
+                  // print("===========$employeeCount============");
+                  // print("============$candidateCount=========");
+                  // print("&&&&&&&&&&&&&&&&&&&&&&&$isBlocked");
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -244,7 +254,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                         spacing: 0.02.sw,
                         children: [
                           Text(
-                            "Employee: $employeeCount",
+                            "Employer: $employeeCount",
                             style: TextStyle(fontSize: AppStyles.bodyText),
                           ),
                           Text(
@@ -266,11 +276,11 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
               stream: chatProvider.messagesStream,
               builder: (context, snapshot) {
                 final isData = snapshot.hasData;
-                print("---========${isData}");
+                // print("---========$isData");
                 final isLoading =
                     snapshot.connectionState == ConnectionState.waiting;
                 final messages = snapshot.data ?? [];
-                print("888888888${messages}");
+                // print("888888888$messages");
 
                 return Chat(
                   emptyState: isLoading
@@ -464,9 +474,8 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   ),
                   showUserNames: true,
                   showUserAvatars: true,
-                  customBottomWidget: context.watch<MyAuthProvider>().canPost
-                      ? null
-                      : const SizedBox.shrink(),
+                  customBottomWidget:
+                      authProvider.canPost ? null : const SizedBox.shrink(),
                 );
               },
             ),
