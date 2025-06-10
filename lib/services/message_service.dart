@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:skin_chat_app/modal/custom_message_modal.dart';
+import 'package:skin_chat_app/models/custom_message_modal.dart';
 
 class ChatService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("chats");
@@ -11,122 +11,6 @@ class ChatService {
 
   UploadTask? get currentUploadTask => _currentUploadTask;
 
-  /// Listen for real-time messages, sorted by timestamp (newest first)
-  // Stream<List<types.CustomMessage>> getMessagesStream() {
-  //   return _databaseRef.orderByChild("ts").onValue.map((event) {
-  //     if (event.snapshot.value == null) return [];
-  //
-  //     final rawData = event.snapshot.value;
-  //     if (rawData is! Map) return [];
-  //
-  //     final messages = rawData.entries
-  //         .map(
-  //           (entry) {
-  //             final messageData = entry.value;
-  //             if (messageData is! Map) return null;
-  //             print(messageData);
-  //             final msg = messageData["msg"]?.toString() ?? "";
-  //             final isImage =
-  //                 msg.startsWith("https://firebasestorage.googleapis.com");
-  //
-  //             final previewLink = messageData['meta'];
-  //             types.PreviewData? previewData;
-  //
-  //             if (previewLink is Map) {
-  //               previewData = types.PreviewData(
-  //                 title: previewLink['title'],
-  //                 description: previewLink['description'],
-  //                 image: previewLink['image'],
-  //                 link: previewLink['link'],
-  //               );
-  //             }
-  //
-  //             print(previewLink);
-  //             print("================================");
-  //
-  //             final author = types.User(
-  //               id: messageData["id"].toString(),
-  //               firstName: messageData["name"]?.toString() ?? "Unknown",
-  //             );
-  //
-  //             final timestamp =
-  //                 messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-  //
-  //             if (isImage) {
-  //               return types.ImageMessage(
-  //                 id: entry.key,
-  //                 author: author,
-  //                 createdAt: timestamp,
-  //                 name: "Image",
-  //                 size: 0,
-  //                 uri: msg,
-  //               );
-  //             } else {
-  //               return types.TextMessage(
-  //                 id: entry.key,
-  //                 author: author,
-  //                 createdAt: timestamp,
-  //                 text: msg,
-  //               );
-  //             }
-  //           },
-  //         )
-  //         .whereType<types.CustomMessage>()
-  //         .toList();
-  //
-  //     // 🔽 Sort by createdAt timestamp (latest first)
-  //     messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-  //
-  //     print("22222222222222222222222${messages}");
-  //     return messages;
-  //   });
-  // }
-
-  // Stream<List<types.CustomMessage>> getMessagesStream() {
-  //   return _databaseRef.orderByChild("ts").onValue.map((event) {
-  //     if (event.snapshot.value == null) return [];
-  //
-  //     final rawData = event.snapshot.value;
-  //     if (rawData is! Map) return [];
-  //
-  //     final messages = rawData.entries
-  //         .map((entry) {
-  //           final messageData = entry.value;
-  //           if (messageData is! Map) return null;
-  //
-  //           final author = types.User(
-  //             id: messageData["id"].toString(),
-  //             name: messageData["name"]?.toString() ?? "Unknown",
-  //           );
-  //
-  //           final timestamp =
-  //               messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-  //
-  //           final msg = messageData["msg"];
-  //           if (msg is! Map) return null;
-  //
-  //           final customMessage = types.CustomMessage(
-  //             id: entry.key,
-  //             createdAt: timestamp,
-  //             metadata: {
-  //               "text": msg["text"],
-  //               "url": msg["url"],
-  //               "img": msg["img"],
-  //             },
-  //             authorId: author.id,
-  //           );
-  //
-  //           return customMessage;
-  //         })
-  //         .whereType<types.CustomMessage>()
-  //         .toList();
-  //
-  //     // 🔽 Sort by createdAt timestamp (latest first)
-  //     // messages.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-  //
-  //     return messages;
-  //   });
-  // }
   Stream<List<types.Message>> getMessagesStream() {
     return _databaseRef.orderByChild("ts").onValue.map((event) {
       if (event.snapshot.value == null) return [];

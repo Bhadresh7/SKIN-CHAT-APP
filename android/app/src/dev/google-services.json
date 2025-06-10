@@ -1,0 +1,107 @@
+{
+  "project_info": {
+    "project_number": "976863239460",
+    "firebase_url": "https://oa-sixjar-default-rtdb.firebaseio.com",
+    "project_id": "oa-sixjar",
+    "storage_bucket": "oa-sixjar.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976863239460:android:8b51e05075e8bceeeae7b1",
+        "android_client_info": {
+          "package_name": "com.chat.skin_chat_app.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "976863239460-suu19ep3tb706egt7lide1g2ruhfcoik.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTXr_-7bYXUM5yOWPIPGPcS4bjRIN-Px4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "976863239460-suu19ep3tb706egt7lide1g2ruhfcoik.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "976863239460-3tue1o1csr8apbb1leibv70d5si5agch.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.oa.sixjar"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976863239460:android:71d62914562441a7eae7b1",
+        "android_client_info": {
+          "package_name": "com.oa.sixjar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "976863239460-0j2molmutf35am0d3vmnvbnq5uc3mkkv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.oa.sixjar",
+            "certificate_hash": "c93b8ccc07c2aba34a23cabb2c91300b3c218e3b"
+          }
+        },
+        {
+          "client_id": "976863239460-dnkqemojc90vbk1767gk82drndift5pk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.oa.sixjar",
+            "certificate_hash": "d3d94c6cda871ceec309046fdd63ca8961e76c78"
+          }
+        },
+        {
+          "client_id": "976863239460-obvmjj17q3snt37bighvhv0fvu5f4m35.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.oa.sixjar",
+            "certificate_hash": "615cc20a9baa87565c067c967aeaa79f16faea2a"
+          }
+        },
+        {
+          "client_id": "976863239460-suu19ep3tb706egt7lide1g2ruhfcoik.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTXr_-7bYXUM5yOWPIPGPcS4bjRIN-Px4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "976863239460-suu19ep3tb706egt7lide1g2ruhfcoik.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "976863239460-3tue1o1csr8apbb1leibv70d5si5agch.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.oa.sixjar"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

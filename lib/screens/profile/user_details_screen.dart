@@ -70,9 +70,9 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                         )
                       : ClipOval(
                           child: CachedNetworkImage(
-                            imageUrl: user.img!,
-                            height: 0.25.sh,
-                            width: 0.50.sw,
+                            imageUrl: user.img ?? "",
+                            height: 0.20.sh,
+                            width: 0.20.sh,
                             fit: BoxFit.cover,
                             errorWidget: (context, url, error) =>
                                 SvgPicture.asset(

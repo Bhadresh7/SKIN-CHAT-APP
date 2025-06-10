@@ -35,10 +35,10 @@
     </queries>
 
     <application
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/launcher_icon"
-        android:label="S.K.I.N APP"
         android:requestLegacyExternalStorage="true">
 
 

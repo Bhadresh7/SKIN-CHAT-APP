@@ -175,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   final result = await authProvider.googleAuth();
                   if (!context.mounted) return;
 
-                  print("==========$result========");
+                  print("FROM LOGIN UI =====> $result");
 
                   switch (result) {
                     case AppStatus.kBlocked:
@@ -188,7 +188,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 "Please contact the Admin for more information"),
                             actions: [
                               TextButton(
-                                onPressed: () => MyNavigation.back(context),
+                                onPressed: () async {
+                                  MyNavigation.back(context);
+                                  await authProvider.signOut();
+                                },
                                 child: Text("ok"),
                               )
                             ],
@@ -210,11 +213,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     case AppStatus.kFailed:
                       ToastHelper.showErrorToast(
                           context: context, message: "Login Failed");
+                      await authProvider.signOut();
                       break;
 
                     default:
                       print("Google Auth Result: $result");
-                      // MyNavigation.replace(context, HomeScreenVarient2());
                       ToastHelper.showErrorToast(
                           context: context, message: result);
                       break;

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/helpers/local_storage.dart';
-import 'package:skin_chat_app/modal/view_users.dart';
+import 'package:skin_chat_app/models/view_users.dart';
 
 import '../../services/super_admin_service.dart';
 

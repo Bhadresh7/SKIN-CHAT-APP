@@ -10,6 +10,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/password_hashing_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
+import 'package:skin_chat_app/models/users.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/screens/screen_exports.dart';
@@ -17,8 +18,6 @@ import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
 import 'package:skin_chat_app/widgets/inputs/date_input_field.dart';
-
-import '../../modal/users.dart';
 
 class BasicDetailsScreen extends StatefulWidget {
   const BasicDetailsScreen({super.key});
@@ -170,13 +169,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         final result = await basicDetailsProvider
                             .saveUserToDbAndLocally(user);
 
-                        // handle email exists
-                        if (result == AppStatus.kEmailAlreadyExists) {
-                          return ToastHelper.showErrorToast(
-                            context: context,
-                            message: AppStatus.kEmailAlreadyExists,
-                          );
-                        }
                         //Handle aadhar exists
                         if (result == AppStatus.kaadharNoExists) {
                           return ToastHelper.showErrorToast(
@@ -194,6 +186,11 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           } else {
                             MyNavigation.replace(context, ImageSetupScreen());
                           }
+                        } else {
+                          return ToastHelper.showErrorToast(
+                            context: context,
+                            message: "Cannot save the user",
+                          );
                         }
                       }
                     },

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
-import 'package:skin_chat_app/modal/preview_data_modal.dart';
+import 'package:skin_chat_app/models/preview_data_modal.dart';
 
 class FetchMeta {
   PreviewDataModal? previewDataModal;

@@ -40,15 +40,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _loadUserData() async {
     final provider = Provider.of<MyAuthProvider>(context, listen: false);
-    await provider.getUserDetails(email: provider.email);
-
-    final user = provider.currentUser;
-    if (user != null) {
-      usernameController.text = user.username;
-      aadharController.text = user.aadharNo;
-      mobileNumberController.text = user.mobileNumber;
-      dateController.text = user.dob;
-    }
+    usernameController.text = provider.currentUser?.username ?? "user";
+    aadharController.text = provider.currentUser?.aadharNo ?? "";
+    mobileNumberController.text = provider.currentUser?.mobileNumber ?? "";
+    dateController.text = provider.currentUser?.dob ?? "";
   }
 
   @override
@@ -154,7 +149,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     DateInputField(
                       controller: dateController,
                       initialValue: DateFormaterHelper.formatedDate(
-                          value: provider.currentUser!.dob),
+                          value: provider.currentUser?.dob ?? ""),
                     ),
                     CustomButton(
                       text: "Update",

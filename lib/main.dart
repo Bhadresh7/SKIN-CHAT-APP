@@ -1,65 +1,40 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:skin_chat_app/providers/exports.dart';
-import 'package:skin_chat_app/providers/message/share_content_provider.dart';
-import 'package:skin_chat_app/providers/super_admin/super_admin_provider_2.dart';
-import 'package:skin_chat_app/providers/version/app_version_provider.dart';
-import 'package:skin_chat_app/screens/auth/auth_screen.dart';
-import 'package:skin_chat_app/services/notification_service.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 
 import 'constants/app_styles.dart';
-import 'firebase_options.dart';
 import 'helpers/notification_helpers.dart';
+import 'providers/exports.dart';
+import 'providers/message/share_content_provider.dart';
+import 'providers/super_admin/super_admin_provider_2.dart';
+import 'providers/version/app_version_provider.dart';
+import 'screens/auth/auth_screen.dart';
+import 'services/notification_service.dart';
 
-void main() async {
+Future<void> runMainApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setPreferredOrientations(
-    [
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.portraitUp,
-    ],
-  );
+  await HiveService.init();
 
-  ///init the env
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.portraitUp,
+  ]);
+
+  /// Load environment variables
   await dotenv.load(fileName: ".env");
 
-  ///init firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  ///init notification service
+  /// Init notification service
   final NotificationService service = NotificationService();
   await service.initializeNotifications();
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await NotificationHelpers().requestNotificationPermission();
 
-  ///local storage
-  SharedPreferences store = await SharedPreferences.getInstance();
-  final login = store.getBool("isLoggedIn");
-  final email = store.getString("user_email");
-  final role = store.getString("role");
-  final formUserName = store.getString("userName");
-  final basicDetails = store.getBool('hasCompletedBasicDetails');
-  final imgSetupCompleted = store.getBool('hasCompletedImageSetup');
-  final blocked = store.getBool('isBlocked');
-
-  print("**********************$formUserName**********************");
-  print("👍👍👍👍👍👍$email");
-  print("🥳🥳🥳🥳🥳🥳🥳$role");
-  print("==========================$login========================");
-  print("imgSetupCompletedStatus: $imgSetupCompleted");
-  print("basicUserDetailsStatus: $basicDetails");
-  print("Blocked: $blocked");
-
-  ///Providers
+  /// Start the app
   runApp(
     MultiProvider(
       providers: [
@@ -75,7 +50,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SuperAdminProvider2()),
         ChangeNotifierProvider(create: (_) => AppVersionProvider()),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
@@ -98,25 +73,9 @@ class MyApp extends StatelessWidget {
             scaffoldBackgroundColor: Colors.white,
           ),
           debugShowCheckedModeBanner: false,
-          home: const MyHomePage(title: "Hello there"),
+          home: const AuthScreen(),
         );
       },
     );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return AuthScreen();
   }
 }

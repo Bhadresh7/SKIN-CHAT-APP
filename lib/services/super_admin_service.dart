@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skin_chat_app/constants/app_db_constants.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/helpers/local_storage.dart';
-import 'package:skin_chat_app/modal/view_users.dart';
+import 'package:skin_chat_app/models/view_users.dart';
 
 class SuperAdminService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
@@ -10,7 +11,7 @@ class SuperAdminService {
   Future<bool> findSuperAdminByEmail({required String email}) async {
     try {
       var querySnapshot = await _store
-          .collection('super_admins')
+          .collection(AppDbConstants.kSuperAdminCollection)
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
@@ -25,7 +26,7 @@ class SuperAdminService {
   Future<void> togglePosting({required String email}) async {
     try {
       final snapshot = await _store
-          .collection("users")
+          .collection(AppDbConstants.kUserCollection)
           .where("email", isEqualTo: email)
           .limit(1)
           .get();
@@ -37,7 +38,10 @@ class SuperAdminService {
 
         final newCanPost = !currentCanPost;
 
-        await _store.collection("users").doc(docId).update(
+        await _store
+            .collection(AppDbConstants.kUserCollection)
+            .doc(docId)
+            .update(
           {
             "canPost": newCanPost,
           },
@@ -55,7 +59,10 @@ class SuperAdminService {
   ///block users
   Future<String> blockUsers({required String uid}) async {
     try {
-      await _store.collection('users').doc(uid).update({'isBlocked': true});
+      await _store
+          .collection(AppDbConstants.kUserCollection)
+          .doc(uid)
+          .update({'isBlocked': true});
 
       await _store.collection('tokens').doc(uid).delete();
 
@@ -73,7 +80,8 @@ class SuperAdminService {
     DocumentSnapshot? lastDocument,
     int limit = 10,
   }) async {
-    Query<Map<String, dynamic>> query = _store.collection('users').limit(limit);
+    Query<Map<String, dynamic>> query =
+        _store.collection(AppDbConstants.kUserCollection).limit(limit);
 
     if (filter == "Employer") {
       query = query.where('role', isEqualTo: 'admin');
@@ -94,7 +102,7 @@ class SuperAdminService {
   Future<ViewUsers?> getAllUsers({required String email}) async {
     try {
       final userSnapshot = await _store
-          .collection('users')
+          .collection(AppDbConstants.kUserCollection)
           .where('email', isEqualTo: email)
           .limit(1)
           .get();

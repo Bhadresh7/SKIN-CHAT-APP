@@ -66,6 +66,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    flavorDimensions += "default"
+
+    productFlavors {
+        create("dev") {
+            dimension = "default"
+            resValue "string", "app_name", "dev"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix "-dev"
+        }
+        create("prod") {
+            dimension = "default"
+            resValue "string", "app_name", "S.K.I.N App"
+            applicationIdSuffix = ""
+        }
+    }
+
+
+
 }
 
 flutter {

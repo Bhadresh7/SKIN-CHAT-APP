@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:skin_chat_app/constants/app_db_constants.dart';
 
 class CsvService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -47,7 +48,8 @@ class CsvService {
         if (permission.isPermanentlyDenied) openAppSettings();
       }
 
-      Query<Map<String, dynamic>> query = _firestore.collection('users');
+      Query<Map<String, dynamic>> query =
+          _firestore.collection(AppDbConstants.kUserCollection);
 
       if (role != "all") {
         query = query.where('role', isEqualTo: role);

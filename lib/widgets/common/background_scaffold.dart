@@ -43,8 +43,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
-    print(
-        ">>>>>>>>>>>>>>>>>>>>>>>>>>${authProvider.currentUser?.username}<<<<<<<<<<<<<<<<<<");
+    // print(
+    //     ">>>>>>>>>>>>>>>>>>>>>>>>>>${authProvider.currentUser?.username}<<<<<<<<<<<<<<<<<<");
 
     return SafeArea(
       child: Scaffold(
@@ -94,7 +94,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                         MyNavigation.to(context, EditProfileScreen());
                       },
                     ),
-                    if (authProvider.role == AppStatus.kSuperAdmin)
+                    if (authProvider.currentUser?.role == AppStatus.kSuperAdmin)
                       ListTile(
                         trailing: Icon(Icons.arrow_forward_ios),
                         title: const Text(' View User '),
@@ -112,9 +112,6 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                     ListTile(
                       title: Text(
                           ' App version Beta ${context.read<AppVersionProvider>().appVersion}'),
-                      onTap: () {
-                        // MyNavigation.to(context, AboutUsScreen());
-                      },
                     ),
                     ListTile(
                       leading: Icon(

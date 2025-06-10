@@ -50,17 +50,16 @@ class _AuthScreenState extends State<AuthScreen> {
 }
 
 Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
+  print("####################${authProvider.isBlocked}");
   if (!authProvider.isLoggedIn || authProvider.isBlocked) {
     return const LoginScreen();
-  }
-  if (!authProvider.isEmailVerified) {
+  } else if (!authProvider.isEmailVerified) {
     return const EmailVerificationScreen();
-  }
-  if (!authProvider.hasCompletedBasicDetails) {
+  } else if (!authProvider.hasCompletedBasicDetails) {
     return const BasicDetailsScreen();
-  }
-  if (!authProvider.hasCompletedImageSetup) {
+  } else if (!authProvider.hasCompletedImageSetup) {
     return const ImageSetupScreen();
+  } else {
+    return HomeScreenVarient2();
   }
-  return HomeScreenVarient2();
 }

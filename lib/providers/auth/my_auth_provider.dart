@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:hive/hive.dart';
+import 'package:skin_chat_app/constants/app_hive_constants.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/helpers/local_storage.dart';
-import 'package:skin_chat_app/modal/users.dart';
+import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/services/user_service.dart';
 
@@ -75,6 +78,12 @@ class MyAuthProvider extends ChangeNotifier {
 
   /// Load user details
   Future<void> _loadUserDetails() async {
+    _currentUser =
+        HiveService.userBox.get(AppHiveConstants.kCurrentUserDetails);
+    print("++++++++++++++++++++++++++++++++++");
+    print(_currentUser.toString());
+    print("++++++++++++++++++++++++++++++++++");
+
     _isBlocked = await LocalStorage.getBool("isBlocked") ?? false;
     _role = await LocalStorage.getString("role") ?? "no-role-found";
     _canPost = await LocalStorage.getBool("canPost") ?? false;
@@ -88,34 +97,32 @@ class MyAuthProvider extends ChangeNotifier {
     hasCompletedImageSetup =
         await LocalStorage.getBool('hasCompletedImageSetup') ?? false;
 
-    print("👍 isLoggedIn: $isLoggedIn");
-    print("🔥 isEmailVerified: $isEmailVerified");
-    print("🔹 Role from LocalStorage: $_role");
-    print("🔹 CanPost from LocalStorage: $_canPost");
-    print("🥰 Google Login Status LocalStorage: $isGoogle");
+    if (_currentUser?.email.isNotEmpty ?? false) {
+      _service.fetchRoleAndSaveLocally(email: _currentUser?.email ?? "").listen(
+        (data) async {
+          print("Stream update received: $data");
+          _currentUser?.canPost = data["canPost"] ?? false;
+          _currentUser?.role = data["role"] ?? "";
+          _currentUser?.isBlocked = data["isBlocked"] ?? false;
+          _currentUser?.save();
 
-    notifyListeners();
+          print("========================");
+          print(_currentUser?.email ?? "");
+          print("========================");
 
-    await getUserDetails(email: email);
-    notifyListeners();
-
-    // Start listening for real-time updates
-    _service.fetchRoleAndSaveLocally(email: email).listen(
-      (data) async {
-        _canPost = data["canPost"] ?? false;
-        _role = data["role"] ?? "";
-        _isBlocked = data["isBlocked"] ?? false;
-        if (!_isBlocked) {
-          await LocalStorage.setString("role", _role);
-          await LocalStorage.setBool("canPost", _canPost);
-          await LocalStorage.setBool("isBlocked", _isBlocked);
           notifyListeners();
-        } else {
-          await signOut();
-          notifyListeners();
-        }
-      },
-    );
+
+          if (_currentUser!.isBlocked) {
+            await signOut();
+            notifyListeners();
+          }
+        },
+        onError: (e) {
+          print("Stream error: $e");
+        },
+      );
+      notifyListeners();
+    }
   }
 
   void setPassword(String newPassword) {
@@ -138,13 +145,16 @@ class MyAuthProvider extends ChangeNotifier {
   }
 
   /// Google Authentication
+
   Future<String> googleAuth() async {
     try {
       setLoadingState(value: true);
       notifyListeners();
 
       print("🔹 Google Sign-In Process Started");
-
+      if (_googleSignIn.currentUser != null) {
+        await _googleSignIn.disconnect();
+      }
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         print("❌ Google sign-in canceled by user");
@@ -168,54 +178,38 @@ class MyAuthProvider extends ChangeNotifier {
         return AppStatus.kFailed;
       }
 
-      _currentUser = await getUserDetails(email: email);
+      isGoogle = true;
+      await LocalStorage.setBool("isGoogle", true);
+      notifyListeners();
+      _currentUser =
+          await _service.getUserDetailsByEmail(email: googleUser.email);
 
-      //check the user is blocked or not
-      final roleInfo = await _service.fetchRoleAndCanPostStatus(email: email);
+      HiveService.saveUserToHive(user: _currentUser);
 
-      if (roleInfo['status'] == AppStatus.kBlocked) {
-        await signOut();
+      if (_currentUser?.isBlocked ?? false) {
         return AppStatus.kBlocked;
       }
 
-      print("✅ Firebase User Signed In: ${firebaseUser!.email}");
-      isGoogle = true;
-
-      await LocalStorage.setBool("isGoogle", true);
-      notifyListeners();
-
-      final isEmailExists = await _service.findUserByEmail(email: email);
-      print("🔹 Email exists in system: $isEmailExists");
-      if (isEmailExists) {
+      if (_currentUser != null) {
         await LocalStorage.setBool("isLoggedIn", true);
         await LocalStorage.setBool("isEmailVerified", true);
         await LocalStorage.setBool('hasCompletedBasicDetails', true);
         await LocalStorage.setBool('hasCompletedImageSetup', true);
-
-        notifyListeners();
       }
-      print("✅ Role & canPost info: $roleInfo");
+
+      await LocalStorage.setBool("canPost", _canPost);
+      await LocalStorage.setString("role", _role ?? "");
 
       _notificationService.storeDeviceToken(uid: uid);
-
-      _canPost = roleInfo['canPost'];
-      _role = roleInfo['role'];
       notifyListeners();
-      await LocalStorage.setBool("canPost", roleInfo['canPost'] ?? false);
-      await LocalStorage.setString("role", roleInfo['role'] ?? "");
 
-      print("🔹 Stored isGoogle: ${await LocalStorage.getBool('isGoogle')}");
-      print("🔹 Stored canPost: ${await LocalStorage.getBool('canPost')}");
-      print("🔹 Stored role: ${await LocalStorage.getString('role')}");
-
-      return isEmailExists ? AppStatus.kEmailAlreadyExists : AppStatus.kSuccess;
+      return _currentUser != null
+          ? AppStatus.kEmailAlreadyExists
+          : AppStatus.kSuccess;
     } catch (e) {
       print("❌ Error during Google Auth: ${e.toString()}");
-
       isGoogle = false;
       await LocalStorage.setBool("isGoogle", false);
-      notifyListeners();
-
       return AppStatus.kFailed;
     } finally {
       setLoadingState(value: false);
@@ -232,7 +226,7 @@ class MyAuthProvider extends ChangeNotifier {
     try {
       setLoadingState(value: true);
 
-      final result = await _service.isUserExists(username: username);
+      final result = await _service.isUserNameExists(username: username);
 
       if (result) {
         return AppStatus.kUserNameAlreadyExists;
@@ -275,7 +269,6 @@ class MyAuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      // User? user = userCredential.user;
       _currentUser = await _service.getUserDetailsByEmail(email: email);
       if (_currentUser == null) return AppStatus.kUserNotFound;
 
@@ -388,6 +381,14 @@ class MyAuthProvider extends ChangeNotifier {
   /// Sign Out
   Future<void> signOut() async {
     try {
+      var box = await Hive.openBox<Users>(AppHiveConstants.kUserBox);
+      await box.clear();
+
+      if (box.isEmpty) {
+        print("User Details Cleared");
+      } else {
+        print("User Details not Cleared");
+      }
       // Sign out from Firebase
       await _service.deleteTokenOnSignOut(uid: uid);
       await _auth.signOut();
@@ -401,7 +402,6 @@ class MyAuthProvider extends ChangeNotifier {
         clearUserDetails(),
       ]);
 
-      // Reset user state
       _currentUser = null;
       _role = null;
 

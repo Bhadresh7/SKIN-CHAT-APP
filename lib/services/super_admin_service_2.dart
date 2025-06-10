@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skin_chat_app/constants/app_db_constants.dart';
 
 class SuperAdminService2 {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final int _documentLimit = 10;
 
   Query<Map<String, dynamic>> _getFilteredQuery(String filter) {
-    Query<Map<String, dynamic>> query = _firestore.collection('users');
+    Query<Map<String, dynamic>> query =
+        _firestore.collection(AppDbConstants.kUserCollection);
     switch (filter) {
       case "Employer":
         query = query.where('role', isEqualTo: 'admin');
@@ -31,19 +33,22 @@ class SuperAdminService2 {
 
   Future<void> updateUserBlockStatus(String userId, bool isBlocked) async {
     await _firestore
-        .collection('users')
+        .collection(AppDbConstants.kUserCollection)
         .doc(userId)
         .update({'isBlocked': isBlocked});
   }
 
   Future<void> updateUserPostingAccess(String userId, bool canPost) async {
     await _firestore
-        .collection('users')
+        .collection(AppDbConstants.kUserCollection)
         .doc(userId)
         .update({'canPost': canPost});
   }
 
   Future<DocumentSnapshot> getUserDocument(String userId) async {
-    return await _firestore.collection('users').doc(userId).get();
+    return await _firestore
+        .collection(AppDbConstants.kUserCollection)
+        .doc(userId)
+        .get();
   }
 }

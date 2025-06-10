@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
-import 'package:skin_chat_app/modal/preview_data_modal.dart';
+import 'package:skin_chat_app/models/preview_data_modal.dart';
 import 'package:skin_chat_app/services/fetch_metadata.dart';
 import 'package:skin_chat_app/widgets/common/clikable_text_widget.dart';
 import 'package:skin_chat_app/widgets/common/image_shimmer.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import 'package:receive_intent/receive_intent.dart' as receive_intent;
-import 'package:skin_chat_app/modal/preview_data_modal.dart';
+import 'package:skin_chat_app/models/preview_data_modal.dart';
 
 class SharedContentProvider with ChangeNotifier {
   String? _receivedText;

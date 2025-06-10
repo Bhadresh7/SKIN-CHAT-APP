@@ -1,59 +1,39 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
+import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 
+import '../constants/app_db_constants.dart';
 import '../helpers/local_storage.dart';
-import '../modal/users.dart';
 
 class UserService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
+  final HiveService _service = HiveService();
 
   ///save user details to db
-
   Future<String> saveUser({required Users user}) async {
     try {
-      // Run all queries in parallel for better performance
       final results = await Future.wait([
-        _checkDocumentExists('super_admins', 'email', user.email),
-        _checkDocumentExists('super_admins', 'aadharNo', user.aadharNo),
-        _checkDocumentExists('users', 'email', user.email),
-        _checkDocumentExists('users', 'aadharNo', user.aadharNo),
+        _checkDocumentExists(
+            AppDbConstants.kSuperAdminCollection, user.email, user.aadharNo),
+        _checkDocumentExists(
+            AppDbConstants.kUserCollection, user.email, user.aadharNo),
       ]);
 
-      final isEmailInSuperAdmins = results[0];
-      final isAadharInSuperAdmins = results[1];
-      final isEmailInUsers = results[2];
-      final isAadharInUsers = results[3];
-      print("===================================");
-      print(isEmailInUsers);
-      print(isAadharInUsers);
-      print("===================================");
-      print(isEmailInSuperAdmins);
-      print(isEmailInSuperAdmins);
-      print("===================================");
+      final existsInSuperAdmins = results[0];
+      final existsInUsers = results[1];
 
-      if (isEmailInUsers || isEmailInSuperAdmins) {
-        return AppStatus.kEmailAlreadyExists;
-      }
-      if (isAadharInUsers || isAadharInSuperAdmins) {
+      if (existsInSuperAdmins || existsInUsers) {
         return AppStatus.kaadharNoExists;
-      }
-
-      // Save or update the user document
-      final userRef = _store.collection("users").doc(user.uid);
-      final doc = await userRef.get();
-
-      if (!doc.exists) {
-        await userRef.set(user.toJson());
       } else {
-        await userRef.set({
-          "name": user.username,
-          "email": user.email,
-          "aadhar": user.aadharNo,
-          "createdAt": DateTime.timestamp(),
-        }, SetOptions(merge: true));
+        await _store
+            .collection(AppDbConstants.kUserCollection)
+            .doc(user.uid)
+            .set(user.toJson());
       }
-
       print("✅ User saved successfully.");
       return AppStatus.kSuccess;
     } catch (e) {
@@ -66,7 +46,7 @@ class UserService {
   Future<bool> findUserByEmail({required String email}) async {
     try {
       var query = await _store
-          .collection('super_admins')
+          .collection(AppDbConstants.kSuperAdminCollection)
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
@@ -75,7 +55,7 @@ class UserService {
       }
 
       var querySnapshot = await _store
-          .collection('users')
+          .collection(AppDbConstants.kUserCollection)
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
@@ -83,55 +63,64 @@ class UserService {
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
       print("☠️ Error finding user: ${e.toString()}");
-      return false; // Return false in case of an error
+      return false;
     }
   }
 
   /// fetch the user role in real-time
+
   Stream<Map<String, dynamic>> fetchRoleAndSaveLocally(
       {required String email}) {
     return _store
-        .collection("super_admins")
+        .collection(AppDbConstants.kUserCollection)
         .where("email", isEqualTo: email)
         .limit(1)
         .snapshots()
-        .asyncMap((superAdminSnapshot) async {
-      if (superAdminSnapshot.docs.isNotEmpty) {
-        return await _processUserData(superAdminSnapshot.docs.first.data());
+        .asyncMap((userSnapShots) async {
+      if (userSnapShots.docs.isNotEmpty) {
+        return await _processUserData(userSnapShots.docs.first.data());
       }
 
       // If not found in super_admins, check in the users collection
       return _store
-          .collection("users")
+          .collection(AppDbConstants.kSuperAdminCollection)
           .where("email", isEqualTo: email)
           .limit(1)
           .snapshots()
-          .asyncMap((userSnapshot) async {
-        if (userSnapshot.docs.isNotEmpty) {
-          return await _processUserData(userSnapshot.docs.first.data());
-        }
-        return _defaultUserData();
-      }).first; // Using `first` to get the final result synchronously
+          .asyncMap(
+        (superAdminSnapshots) async {
+          if (superAdminSnapshots.docs.isNotEmpty) {
+            return await _processUserData(
+                superAdminSnapshots.docs.first.data());
+          }
+          return _defaultUserData();
+        },
+      ).first; // Using `first` to get the final result synchronously
     });
   }
 
-// Function to process user data and save it locally
+  // Function to process user data and save it locally
   Future<Map<String, dynamic>> _processUserData(
       Map<String, dynamic> data) async {
-    // print("FROM ASYNC STREAM -------${data['isBlocked']}");
-
     final role = data["role"] ?? "no-role-found";
     final canPost = data["canPost"] ?? false;
     final isBlocked = data['isBlocked'] ?? false;
 
     print("FROM SERVICE ----------$isBlocked");
 
+    final currentUser = HiveService.getCurrentUser();
     print("🔥 Updated User Role =>>>>>>>>>>: $role");
     print("📝 canPost: $canPost");
+    currentUser?.role = role;
+    currentUser?.isBlocked = isBlocked;
+    currentUser?.canPost = canPost;
 
-    await LocalStorage.setString("role", role);
-    await LocalStorage.setBool("canPost", canPost);
-    await LocalStorage.setBool("isBlocked", isBlocked);
+    print(currentUser.toString());
+    HiveService.saveUserToHive(user: currentUser);
+
+    // await LocalStorage.setString("role", role);
+    // await LocalStorage.setBool("canPost", canPost);
+    // await LocalStorage.setBool("isBlocked", isBlocked);
 
     return {
       "role": role,
@@ -140,7 +129,7 @@ class UserService {
     };
   }
 
-// Default user data if no record is found
+  // Default user data if no record is found
   Map<String, dynamic> _defaultUserData() {
     return {
       "role": "no-role-found",
@@ -154,12 +143,12 @@ class UserService {
     try {
       final queries = [
         _store
-            .collection("super_admins")
+            .collection(AppDbConstants.kSuperAdminCollection)
             .where("email", isEqualTo: email)
             .limit(1)
             .get(),
         _store
-            .collection("users")
+            .collection(AppDbConstants.kUserCollection)
             .where("email", isEqualTo: email)
             .limit(1)
             .get(),
@@ -196,11 +185,8 @@ class UserService {
       await LocalStorage.setString("role", role);
       await LocalStorage.setBool("canPost", canPost);
 
-      if (isBlocked) {
-        return {'status': AppStatus.kBlocked};
-      }
-
       return {
+        'isBlocked': isBlocked,
         'email': mail,
         'role': role,
         'canPost': canPost,
@@ -213,7 +199,10 @@ class UserService {
 
   ///Track the count of the users role (admin,user,blocked users)
   Stream<Map<String, int?>> get userAndAdminCountStream {
-    return _store.collection('users').snapshots().map((snapshot) {
+    return _store
+        .collection(AppDbConstants.kUserCollection)
+        .snapshots()
+        .map((snapshot) {
       int blockedUserCount = snapshot.docs
           .where((doc) =>
               doc.data().containsKey('isBlocked') && doc['isBlocked'] == true)
@@ -253,41 +242,26 @@ class UserService {
         await user.reload();
       }
 
-      // Firestore queries for both collections
-      final results = await Future.wait([
-        _store
-            .collection("users")
+      QuerySnapshot snapshot = await _store
+          .collection(AppDbConstants.kUserCollection)
+          .where("aadharNo", isEqualTo: aadharNumber)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        snapshot = await _store
+            .collection(AppDbConstants.kSuperAdminCollection)
             .where("aadharNo", isEqualTo: aadharNumber)
             .limit(1)
-            .get(),
-        _store
-            .collection("super_admins")
-            .where("aadharNo", isEqualTo: aadharNumber)
-            .limit(1)
-            .get(),
-      ]);
+            .get();
 
-      // Identify which collection had the user
-      final userSnapshot = results[0];
-      final superAdminSnapshot = results[1];
-
-      QuerySnapshot foundSnapshot;
-      String collectionName;
-
-      if (userSnapshot.docs.isNotEmpty) {
-        foundSnapshot = userSnapshot;
-        collectionName = "users";
-      } else if (superAdminSnapshot.docs.isNotEmpty) {
-        foundSnapshot = superAdminSnapshot;
-        collectionName = "super_admins";
-      } else {
-        print(
-            "User with Aadhaar number $aadharNumber not found in either collection.");
-        return null;
+        if (snapshot.docs.isEmpty) {
+          print("User with Aadhaar number $aadharNumber not found.");
+          return null;
+        }
       }
 
-      // Prepare update
-      final docRef = foundSnapshot.docs.first.reference;
+      final docRef = snapshot.docs.first.reference;
 
       Map<String, dynamic> updateData = {};
       if (imgUrl != null) updateData["imageUrl"] = imgUrl;
@@ -295,22 +269,13 @@ class UserService {
       if (mobile != null) updateData["mobileNumber"] = mobile;
       if (dob != null) updateData["dob"] = dob;
 
-      // Perform update
       if (updateData.isNotEmpty) {
         await docRef.update(updateData);
-        updateData.forEach((key, value) {
-          print("[$collectionName] $key => $value");
-        });
       }
 
-      // Return updated user object
-      final updatedDoc = await docRef.get();
-      final data = updatedDoc.data() as Map<String, dynamic>;
-      print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO$data");
-      if (data.isNotEmpty) {
-        return Users.fromFirestore(data);
-      }
-      return null;
+      // OPTIONAL: if you really need the updated document, this is read #2
+      final data = (await docRef.get()).data() as Map<String, dynamic>;
+      return Users.fromFirestore(data);
     } catch (e) {
       print("Error updating user profile: $e");
       return null;
@@ -318,11 +283,10 @@ class UserService {
   }
 
   ///get user details by email for edit profile screen
-
   Future<Users?> getUserDetailsByEmail({required String email}) async {
     try {
       final userSnapshot = await _store
-          .collection('users')
+          .collection(AppDbConstants.kUserCollection)
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
@@ -333,7 +297,7 @@ class UserService {
       }
 
       final adminSnapshot = await _store
-          .collection('super_admins')
+          .collection(AppDbConstants.kSuperAdminCollection)
           .where('email', isEqualTo: email)
           .limit(1)
           .get();
@@ -351,16 +315,16 @@ class UserService {
   }
 
   ///check if the user is already exists in the db(Auth purpose)
-  Future<bool> isUserExists({required String username}) async {
+  Future<bool> isUserNameExists({required String username}) async {
     try {
       final result = await Future.wait([
         _store
-            .collection('users')
+            .collection(AppDbConstants.kUserCollection)
             .where('username', isEqualTo: username)
             .limit(1)
             .get(),
         _store
-            .collection('super_admins')
+            .collection(AppDbConstants.kSuperAdminCollection)
             .where('username', isEqualTo: username)
             .limit(1)
             .get(),
@@ -375,10 +339,15 @@ class UserService {
   }
 
   Future<bool> _checkDocumentExists(
-      String collection, String field, String value) async {
+      String collection, String email, String aadharNo) async {
     final query = await _store
         .collection(collection)
-        .where(field, isEqualTo: value)
+        .where(
+          Filter.or(
+            Filter('email', isEqualTo: email),
+            Filter('aadharNo', isEqualTo: aadharNo),
+          ),
+        )
         .limit(1)
         .get();
 
