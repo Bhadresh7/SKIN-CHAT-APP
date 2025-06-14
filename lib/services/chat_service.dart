@@ -1,22 +1,36 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:skin_chat_app/models/custom_message_modal.dart';
+import 'package:skin_chat_app/models/chat_message.dart';
+import 'package:skin_chat_app/models/meta_model.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 
 class ChatService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("chats");
   UploadTask? _currentUploadTask;
 
   UploadTask? get currentUploadTask => _currentUploadTask;
+  final _messageController = StreamController<List<types.Message>>.broadcast();
+  StreamSubscription<DatabaseEvent>? _messageSubscription;
 
-  Stream<List<types.Message>> getMessagesStream() {
-    return _databaseRef.orderByChild("ts").onValue.map((event) {
-      if (event.snapshot.value == null) return [];
+  Stream<List<types.Message>> get messagesStream => _messageController.stream;
+
+  void initMessageListener() {
+    _messageSubscription =
+        _databaseRef.orderByChild("ts").onValue.listen((event) {
+      if (event.snapshot.value == null) {
+        _messageController.add([]);
+        return;
+      }
 
       final rawData = event.snapshot.value;
-      if (rawData is! Map) return [];
+      if (rawData is! Map) {
+        _messageController.add([]);
+        return;
+      }
 
       final messages = rawData.entries
           .map((entry) {
@@ -30,7 +44,6 @@ class ChatService {
 
             final timestamp =
                 messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-
             final msg = messageData["metadata"];
             if (msg is! Map) return null;
 
@@ -49,38 +62,79 @@ class ChatService {
           .toList();
 
       messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-      return messages;
+      _messageController.add(messages);
     });
   }
+
+  void dispose() {
+    _messageSubscription?.cancel();
+    _messageController.close();
+  }
+
+  // Stream<List<types.Message>> getMessagesStream() {
+  //   return _databaseRef.orderByChild("ts").onValue.map((event) {
+  //     if (event.snapshot.value == null) return [];
+  //
+  //     final rawData = event.snapshot.value;
+  //     if (rawData is! Map) return [];
+  //
+  //     final messages = rawData.entries
+  //         .map((entry) {
+  //           final messageData = entry.value;
+  //           if (messageData is! Map) return null;
+  //
+  //           final author = types.User(
+  //             id: messageData["id"].toString(),
+  //             firstName: messageData["name"]?.toString() ?? "Unknown",
+  //           );
+  //
+  //           final timestamp =
+  //               messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
+  //
+  //           final msg = messageData["metadata"];
+  //           if (msg is! Map) return null;
+  //
+  //           return types.CustomMessage(
+  //             id: entry.key,
+  //             author: author,
+  //             createdAt: timestamp,
+  //             metadata: {
+  //               "text": msg["text"],
+  //               "url": msg["url"],
+  //               "img": msg["img"],
+  //             },
+  //           );
+  //         })
+  //         .whereType<types.Message>()
+  //         .toList();
+  //
+  //     messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+  //     return messages;
+  //   });
+  // }
 
   ///delete messages from database
   Future<void> deleteMessage({required String messageKey}) async {
     try {
-      await _databaseRef
-          .child(messageKey)
-          .remove(); // Deletes message from Firebase
+      await _databaseRef.child(messageKey).remove();
     } catch (e) {
       print("Error deleting message: $e");
     }
   }
 
   ///send messages to firebase-realtime database
-  Future<void> sendMessage({
-    required CustomMessageModal message,
-    required String userId,
-    required String userName,
-    // PreviewDataModal? meta,
+  Future<void> sendMessageToRTDB({
+    required ChatMessage message,
   }) async {
-    print("FROM SERVICE ))))))))))))))??????????????${message.toJson()}");
     await _databaseRef.push().set(
       {
-        "id": userId,
-        "name": userName,
-        "metadata": message.toJson(),
+        "id": message.id,
+        "name": message.author.firstName,
+        "metadata": message.metaModel.toJson(),
         "ts": ServerValue.timestamp,
-        // "meta": meta?.toJson()
       },
     );
+    print("Saved successfully --------------------------------");
   }
 
   ///Method to Upload images to firebase-store and store
@@ -111,14 +165,15 @@ class ChatService {
       TaskSnapshot completedSnapshot = await _currentUploadTask!;
       final imageUrl = await completedSnapshot.ref.getDownloadURL();
 
-      final customMessage = CustomMessageModal(img: imageUrl);
-
-      // Save URL to Realtime DB (or Firestore depending on your implementation)
-      await sendMessage(
-        message: customMessage,
-        userId: userId,
-        userName: userName,
+      final customMessage = MetaModel(img: imageUrl);
+      final chatMessage = ChatMessage(
+        author: types.User(id: userId),
+        metaModel: customMessage,
+        id: userId,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
       );
+      // Save URL to Realtime DB (or Firestore depending on your implementation)
+      await sendMessageToRTDB(message: chatMessage);
 
       return imageUrl;
     } finally {
@@ -158,19 +213,27 @@ class ChatService {
       // First approach: Send image and caption as separate messages
 
       if (caption.trim().isNotEmpty) {
-        final customMessage = CustomMessageModal(img: imageUrl, text: caption);
-        await sendMessage(
-          message: customMessage,
-          userId: userId,
-          userName: userName,
+        final customMessage = MetaModel(img: imageUrl, text: caption);
+        final chatMessage = ChatMessage(
+          author: types.User(id: userId),
+          metaModel: customMessage,
+          id: userId,
+          createdAt: DateTime.now().millisecondsSinceEpoch,
         );
+        // Save URL to Realtime DB (or Firestore depending on your implementation)
+        await sendMessageToRTDB(message: chatMessage);
       } else {
-        final customMessage = CustomMessageModal(img: imageUrl);
-        await sendMessage(
-          message: customMessage,
-          userId: userId,
-          userName: userName,
+        final customMessage = MetaModel(
+          img: imageUrl,
         );
+        final chatMessage = ChatMessage(
+          author: types.User(id: userId),
+          metaModel: customMessage,
+          id: userId,
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+        );
+        // Save URL to Realtime DB (or Firestore depending on your implementation)
+        await sendMessageToRTDB(message: chatMessage);
       }
 
       return imageUrl;
@@ -183,5 +246,11 @@ class ChatService {
   void cancelUpload() {
     _currentUploadTask?.cancel();
     _currentUploadTask = null;
+  }
+
+  /// FUNCTIONS TO SHOW THE MESSAGES WHEN THE USER IS OFFLINE
+
+  Future<void> addMessagesToLocalStorage({required ChatMessage message}) async {
+    await HiveService.saveMessage(message);
   }
 }

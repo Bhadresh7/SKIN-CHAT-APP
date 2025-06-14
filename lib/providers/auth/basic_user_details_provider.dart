@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/models/users.dart';
 import 'package:skin_chat_app/services/user_service.dart';
 
@@ -31,9 +30,9 @@ class BasicUserDetailsProvider extends ChangeNotifier {
         return AppStatus.kaadharNoExists;
       }
 
-      await LocalStorage.setString("role", user.role);
-      await LocalStorage.setString("email", user.email);
-      await LocalStorage.setBool("isLoggedIn", true);
+      // await LocalStorage.setString("role", user.role);
+      // await LocalStorage.setString("email", user.email);
+      // await LocalStorage.setBool("isLoggedIn", true);
 
       return AppStatus.kSuccess;
     } catch (e) {

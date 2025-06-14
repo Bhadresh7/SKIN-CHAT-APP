@@ -136,8 +136,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             context: context,
                             message: "Registeration successful",
                           );
-                          authProvider.setPassword(
-                              authProvider.passwordController.text.trim());
+                          // authProvider.setPassword(
+                          //     authProvider.passwordController.text.trim());
                           MyNavigation.to(
                             context,
                             EmailVerificationScreen(),
@@ -161,7 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               OAuthButton(
                 onPressed: () async {
-                  final result = await authProvider.googleAuth();
+                  final result = await authProvider.signInWithGoogle();
                   print("0000000000000000$result");
                   if (!context.mounted) return;
                   switch (result) {

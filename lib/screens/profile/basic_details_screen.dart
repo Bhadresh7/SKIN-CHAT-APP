@@ -43,8 +43,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     super.initState();
     final authProvider = context.read<MyAuthProvider>();
 
-    userNameController.text =
-        authProvider.userName ?? authProvider.formUserName;
+    userNameController.text = authProvider.userName ?? "";
     print("BASIC USER DETAILS ${userNameController.text}");
     // authProvider.disposeControllers();
   }
@@ -62,7 +61,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<MyAuthProvider>(context);
     final basicDetailsProvider = Provider.of<BasicUserDetailsProvider>(context);
-    print(authProvider.password);
     print("GOOGLE STATUS=====>>>>${context.read<MyAuthProvider>().isGoogle}");
 
     return PopScope(
@@ -164,7 +162,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                               ? true
                               : false,
                           password: PasswordHashingHelper.hashPassword(
-                              password: authProvider.password),
+                              password: authProvider.passwordController.text),
                         );
                         final result = await basicDetailsProvider
                             .saveUserToDbAndLocally(user);

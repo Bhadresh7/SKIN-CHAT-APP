@@ -19,30 +19,32 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
 
-    if (authProvider.isBlocked && !_hasHandledBlock) {
+    if (authProvider.currentUser?.isBlocked ?? false) {
       _hasHandledBlock = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: Text("Account Blocked"),
-            content: Text(
-              "Your account has been blocked by an administrator. "
-              "Please contact support for more information.",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await authProvider.signOut();
-                },
-                child: Text("OK"),
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) async {
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: Text("Account Blocked"),
+              content: Text(
+                "Your account has been blocked by an administrator. "
+                "Please contact support for more information.",
               ),
-            ],
-          ),
-        );
-      });
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await authProvider.signOut();
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            ),
+          );
+        },
+      );
     }
 
     return _getScreenBasedOnAuth(authProvider);
@@ -50,8 +52,11 @@ class _AuthScreenState extends State<AuthScreen> {
 }
 
 Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
-  print("####################${authProvider.isBlocked}");
-  if (!authProvider.isLoggedIn || authProvider.isBlocked) {
+  bool isLoggedIn = authProvider.isLoggedIn;
+  bool? isBlocked = authProvider.currentUser?.isBlocked ?? false;
+  print("Blocked status -- ${isBlocked}-- isLoggedIn -- ${isLoggedIn}");
+  if (!isLoggedIn) {
+    print("--------------got to login");
     return const LoginScreen();
   } else if (!authProvider.isEmailVerified) {
     return const EmailVerificationScreen();

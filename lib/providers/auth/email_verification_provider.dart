@@ -2,83 +2,144 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:skin_chat_app/helpers/local_storage.dart'; // Assuming you have a helper class for local storage
+import 'package:skin_chat_app/services/hive_service.dart';
 
 class EmailVerificationProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  bool isEmailVerified = false;
-  bool isLoggedIn = false;
-  Timer? _timer;
+  Timer? _verificationTimer;
 
-  // Constructor to initialize the provider
+  // Getters that read from Hive
+  bool get isEmailVerified => HiveService.isEmailVerified;
+  bool get isLoggedIn => HiveService.isLoggedIn;
+
   EmailVerificationProvider() {
     _initializeEmailVerification();
   }
 
-  /// Initialize email verification check and send verification email if needed
+  /// Initialize email verification process
   void _initializeEmailVerification() {
-    isEmailVerified = _auth.currentUser?.emailVerified ?? false;
-    isLoggedIn = _auth.currentUser != null;
-    print("Initial email verification status: $isEmailVerified");
+    final User? currentUser = _auth.currentUser;
+    if (currentUser == null) return;
 
-    // If the email is not verified, send verification email and start periodic check
-    if (!isEmailVerified) {
-      _auth.currentUser?.sendEmailVerification();
-      _timer = Timer.periodic(
-        const Duration(seconds: 3),
-        (_) => checkEmailVerified(),
-      );
-    } else {
-      // If already verified, store the status in local storage
-      _updateLocalStorage();
+    final bool currentVerificationStatus = currentUser.emailVerified;
+
+    // Update Hive if status changed
+    if (currentVerificationStatus != isEmailVerified) {
+      HiveService.setEmailVerified(currentVerificationStatus);
+      notifyListeners();
+    }
+
+    // Start verification check if not verified
+    if (!currentVerificationStatus) {
+      _sendVerificationEmailIfNeeded();
+      _startVerificationTimer();
     }
   }
 
-  /// Method to check if the email has been verified
-  Future<void> checkEmailVerified() async {
-    await _auth.currentUser?.reload();
-    if (_auth.currentUser?.emailVerified ?? false) {
-      isEmailVerified = true;
-      isLoggedIn = true;
-
-      // Store status in local storage
-      await LocalStorage.setBool("isLoggedIn", true);
-      await LocalStorage.setBool("isEmailVerified", true);
-
-      print(
-          "🔄 Storing isLoggedIn: ${await LocalStorage.getBool("isLoggedIn")}");
-      print(
-          "🔄 Storing isEmailVerified: ${await LocalStorage.getBool("isEmailVerified")}");
-
-      _timer?.cancel();
-      notifyListeners(); // Notify listeners to update the UI
+  /// Send verification email if user exists and email is not verified
+  Future<void> _sendVerificationEmailIfNeeded() async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser != null && !currentUser.emailVerified) {
+        await currentUser.sendEmailVerification();
+        debugPrint("Verification email sent");
+      }
+    } catch (e) {
+      debugPrint("Error sending verification email: $e");
     }
   }
 
-  /// Re-send email verification
-  Future<void> resendEmail() async {
-    await _auth.currentUser?.sendEmailVerification();
+  /// Start timer to periodically check email verification
+  void _startVerificationTimer() {
+    _verificationTimer?.cancel();
+    _verificationTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _checkEmailVerified(),
+    );
   }
 
-  /// Update local storage when status changes
-  Future<void> _updateLocalStorage() async {
-    await LocalStorage.setBool("isLoggedIn", isLoggedIn);
-    await LocalStorage.setBool("isEmailVerified", isEmailVerified);
+  /// Stop the verification timer
+  void _stopVerificationTimer() {
+    _verificationTimer?.cancel();
   }
 
-  /// Dispose of the timer when it's no longer needed
+  /// Check if email has been verified
+  Future<void> _checkEmailVerified() async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        _stopVerificationTimer();
+        return;
+      }
+
+      await currentUser.reload();
+      final bool isVerified = _auth.currentUser?.emailVerified ?? false;
+
+      if (isVerified && !isEmailVerified) {
+        // Email is now verified, update Hive and stop timer
+        await HiveService.setEmailVerified(true);
+        await HiveService.setLoggedIn(true);
+
+        _stopVerificationTimer();
+        notifyListeners();
+
+        debugPrint("Email verification completed");
+      }
+    } catch (e) {
+      debugPrint("Error checking email verification: $e");
+    }
+  }
+
+  /// Manually resend verification email
+  Future<String> resendVerificationEmail() async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        return "No user found";
+      }
+
+      if (currentUser.emailVerified) {
+        return "Email already verified";
+      }
+
+      await currentUser.sendEmailVerification();
+      return "Verification email sent successfully";
+    } catch (e) {
+      debugPrint("Error resending verification email: $e");
+      return "Failed to send verification email";
+    }
+  }
+
+  /// Force check email verification status
+  Future<void> forceCheckVerification() async {
+    await _checkEmailVerified();
+  }
+
+  /// Cancel email verification process and delete account
+  Future<String> cancelEmailVerification() async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        return "No user found";
+      }
+
+      await currentUser.delete();
+      await HiveService.setLoggedIn(false);
+      await HiveService.setEmailVerified(false);
+
+      _stopVerificationTimer();
+      notifyListeners();
+
+      return "Account deleted successfully";
+    } catch (e) {
+      debugPrint("Error canceling email verification: $e");
+      return "Failed to delete account";
+    }
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
+    _stopVerificationTimer();
     super.dispose();
-  }
-
-  /// Cancel email check if the user wants to log out or delete account
-  Future<void> cancelEmailCheck() async {
-    await _auth.currentUser?.delete();
-    await _auth.currentUser?.reload();
-    await LocalStorage.setBool('isLoggedIn', false); // Mark as logged out
-    _timer?.cancel();
-    _initializeEmailVerification(); // Re-initialize email verification
   }
 }

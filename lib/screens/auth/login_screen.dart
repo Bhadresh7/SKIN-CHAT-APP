@@ -159,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       print(emailController.text);
                       print(passwordController.text);
                       final result =
-                          await authProvider.loginWithEmailAndPassword(
+                          await authProvider.signInWithEmailAndPassword(
                         email: emailController.text.trim(),
                         password: passwordController.text.trim(),
                       );
@@ -172,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ORBar(),
               OAuthButton(
                 onPressed: () async {
-                  final result = await authProvider.googleAuth();
+                  final result = await authProvider.signInWithGoogle();
                   if (!context.mounted) return;
 
                   print("FROM LOGIN UI =====> $result");

@@ -94,7 +94,10 @@ class SuperAdminProvider2 extends ChangeNotifier {
     if (index != -1) {
       final newSnapshot = await _service.getUserDocument(userId);
       _users[index] = newSnapshot;
+      print("==================");
       print(newSnapshot.data());
+      print("==================");
+
       notifyListeners();
     }
   }

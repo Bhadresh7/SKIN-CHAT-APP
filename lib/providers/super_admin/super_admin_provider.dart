@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/models/view_users.dart';
 
 import '../../services/super_admin_service.dart';
@@ -29,10 +28,10 @@ class SuperAdminProvider with ChangeNotifier {
     try {
       setLoadingState(true);
       _isSuperAdmin = await _service.findSuperAdminByEmail(email: email);
-      await LocalStorage.setBool('isLoggedIn', true);
-      await LocalStorage.setBool('isEmailVerified', true);
-      await LocalStorage.setString('role', 'super_admin');
-      await LocalStorage.setBool("canPost", true);
+      // await LocalStorage.setBool('isLoggedIn', true);
+      // await LocalStorage.setBool('isEmailVerified', true);
+      // await LocalStorage.setString('role', 'super_admin');
+      // await LocalStorage.setBool("canPost", true);
     } catch (e) {
       print(e.toString());
     } finally {

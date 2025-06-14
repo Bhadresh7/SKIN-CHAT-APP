@@ -29,6 +29,8 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
   @override
   void initState() {
     super.initState();
+    print(
+        "Custom message Widget is called ------------------------------------------");
     _setupMetadata();
   }
 

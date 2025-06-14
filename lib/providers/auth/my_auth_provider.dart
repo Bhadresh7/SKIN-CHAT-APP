@@ -3,217 +3,194 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:hive/hive.dart';
-import 'package:skin_chat_app/constants/app_hive_constants.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/helpers/local_storage.dart';
 import 'package:skin_chat_app/models/users.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/services/user_service.dart';
 
 class MyAuthProvider extends ChangeNotifier {
+  // Core services
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final UserService _service = UserService();
+  final UserService _userService = UserService();
   final NotificationService _notificationService = NotificationService();
+
+  // Controllers
   final usernameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  User? firebaseUser;
-  Timer? _timer;
-
-  bool isLoggedIn = false;
-  bool _isLoading = false;
-  bool isEmailVerified = false;
-  String? _formUserName;
-  String? _role;
-  String _password = '';
-  bool hasCompletedBasicDetails = false;
-  bool hasCompletedImageSetup = false;
-  bool isGoogle = false;
-  bool _canPost = false;
-  int? _adminCount;
-  int? _userCount;
-  String? imgUrl;
+  // State variables
   Users? _currentUser;
+  Timer? _timer;
+  bool _isLoading = false;
+  StreamSubscription? _userStreamSubscription;
 
+  // Getters
   Users? get currentUser => _currentUser;
-  bool _isBlocked = false;
-
-  bool get isBlocked => _isBlocked;
-
-  int get adminCount => _adminCount ?? 0;
-
-  int get userCount => _userCount ?? 0;
-
-  String get password => _password;
-
-  String get email => _auth.currentUser?.email ?? "no email";
-
+  bool get isLoading => _isLoading;
+  bool get isLoggedIn => HiveService.isLoggedIn;
+  bool get isEmailVerified => HiveService.isEmailVerified;
+  bool get hasCompletedBasicDetails => HiveService.hasCompletedBasicDetails;
+  bool get hasCompletedImageSetup => HiveService.hasCompletedImageSetup;
+  bool get isGoogle => HiveService.isGoogle;
+  String get uid => _auth.currentUser?.uid ?? "";
+  String get email => _auth.currentUser?.email ?? "";
   String? get userName => _auth.currentUser?.displayName;
 
-  String get uid => _auth.currentUser?.uid ?? "uid not found";
-
-  String? get role => _role;
-
-  bool get isLoading => _isLoading;
-
-  bool get canPost => _canPost;
-
-  String get formUserName => _formUserName ?? "no form name";
-
-  Future<bool> get isOauth async => await _googleSignIn.isSignedIn();
-
-  Stream<Map<String, dynamic>> get adminUserCountStream =>
-      _service.userAndAdminCountStream;
-
-  List<Users> allUsers = [];
-
+  // Constructor
   MyAuthProvider() {
-    _loadUserDetails();
+    _initialize();
   }
 
-  /// Load user details
-  Future<void> _loadUserDetails() async {
-    _currentUser =
-        HiveService.userBox.get(AppHiveConstants.kCurrentUserDetails);
-    print("++++++++++++++++++++++++++++++++++");
-    print(_currentUser.toString());
-    print("++++++++++++++++++++++++++++++++++");
+  /// Initialize the provider
+  Future<void> _initialize() async {
+    await _loadUserFromHive();
+  }
 
-    _isBlocked = await LocalStorage.getBool("isBlocked") ?? false;
-    _role = await LocalStorage.getString("role") ?? "no-role-found";
-    _canPost = await LocalStorage.getBool("canPost") ?? false;
-    isLoggedIn = await LocalStorage.getBool("isLoggedIn") ?? false;
-    isGoogle = await LocalStorage.getBool("isGoogle") ?? false;
-    isEmailVerified = await LocalStorage.getBool("isEmailVerified") ?? false;
-    _formUserName =
-        await LocalStorage.getString("userName") ?? "no form userName";
-    hasCompletedBasicDetails =
-        await LocalStorage.getBool('hasCompletedBasicDetails') ?? false;
-    hasCompletedImageSetup =
-        await LocalStorage.getBool('hasCompletedImageSetup') ?? false;
+  /// Load user details from Hive
+  Future<void> _loadUserFromHive() async {
+    try {
+      _currentUser = HiveService.getCurrentUser();
 
-    if (_currentUser?.email.isNotEmpty ?? false) {
-      _service.fetchRoleAndSaveLocally(email: _currentUser?.email ?? "").listen(
-        (data) async {
-          print("Stream update received: $data");
-          _currentUser?.canPost = data["canPost"] ?? false;
-          _currentUser?.role = data["role"] ?? "";
-          _currentUser?.isBlocked = data["isBlocked"] ?? false;
-          _currentUser?.save();
+      if (_currentUser?.email.isNotEmpty ?? false) {
+        _setupUserStream();
+      }
 
-          print("========================");
-          print(_currentUser?.email ?? "");
-          print("========================");
-
-          notifyListeners();
-
-          if (_currentUser!.isBlocked) {
-            await signOut();
-            notifyListeners();
-          }
-        },
-        onError: (e) {
-          print("Stream error: $e");
-        },
-      );
       notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading user from Hive: $e');
     }
   }
 
-  void setPassword(String newPassword) {
-    _password = newPassword;
-    notifyListeners();
+  /// Setup stream to listen for user updates
+  // void _setupUserStream() {
+  //   print("User stream triggered !!!!!!!!!!!");
+  //   _userStreamSubscription?.cancel();
+  //
+  //   _userStreamSubscription = _userService
+  //       .fetchRoleAndSaveLocally(email: _currentUser?.email ?? "")
+  //       .listen(
+  //     (data) async {
+  //       await _updateUserFromStream(data);
+  //     },
+  //     onError: (error) {
+  //       debugPrint("User stream error: $error");
+  //     },
+  //   );
+  //
+  //   print(_currentUser.toString());
+  // }
+
+  void _setupUserStream() {
+    print("User stream triggered !!!!!!!!!!!");
+    _userStreamSubscription?.cancel();
+
+    if (_currentUser?.email == null || _currentUser!.email.isEmpty) {
+      debugPrint("No user email available for stream setup");
+      return;
+    }
+
+    _userStreamSubscription =
+        _userService.fetchRoleAndSaveLocally(email: _currentUser!.email).listen(
+      (data) async {
+        print("Stream data received: $data");
+        await _updateUserFromStream(data);
+      },
+      onError: (error) {
+        debugPrint("User stream error: $error");
+        // Consider retry logic or fallback mechanism
+      },
+      onDone: () {
+        debugPrint("User stream completed");
+      },
+    );
+
+    print("Current user: ${_currentUser.toString()}");
   }
 
-  void setLoadingState({required bool value}) {
+  /// Update user from stream data
+  Future<void> _updateUserFromStream(Map<String, dynamic> data) async {
+    if (_currentUser == null) return;
+
+    _currentUser!.canPost = data["canPost"] ?? false;
+    _currentUser!.role = data["role"] ?? "";
+    _currentUser!.isBlocked = data["isBlocked"] ?? false;
+
+    print("+++++++++++++++++++++ UDPATE USER STREAM IS CALLED $_currentUser ");
+    await HiveService.saveUserToHive(user: _currentUser);
+    notifyListeners();
+
+    if (_currentUser!.isBlocked) {
+      await signOut();
+    }
+  }
+
+  /// Set loading state
+  void _setLoadingState(bool value) {
     _isLoading = value;
     notifyListeners();
   }
 
-  Future<void> completeBasicDetails() async {
-    await LocalStorage.setBool('hasCompletedBasicDetails', true);
-    notifyListeners();
-  }
-
-  Future<void> completeImageSetup() async {
-    await LocalStorage.setBool('hasCompletedImageSetup', true);
-  }
-
   /// Google Authentication
-
-  Future<String> googleAuth() async {
+  Future<String> signInWithGoogle() async {
     try {
-      setLoadingState(value: true);
-      notifyListeners();
+      _setLoadingState(true);
 
-      print("🔹 Google Sign-In Process Started");
+      // Sign out any existing Google user
       if (_googleSignIn.currentUser != null) {
         await _googleSignIn.disconnect();
       }
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        print("❌ Google sign-in canceled by user");
         return AppStatus.kFailed;
       }
 
-      print("✅ Google User Signed In: ${googleUser.email}");
-
-      final googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      print("🔹 Signing in with Google credentials...");
-      final userCredential = await _auth.signInWithCredential(credential);
-      firebaseUser = userCredential.user;
-
-      if (firebaseUser == null) {
-        print("❌ Firebase User is NULL after authentication");
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      if (userCredential.user == null) {
         return AppStatus.kFailed;
       }
 
-      isGoogle = true;
-      await LocalStorage.setBool("isGoogle", true);
-      notifyListeners();
+      // Get user details from service
       _currentUser =
-          await _service.getUserDetailsByEmail(email: googleUser.email);
-
-      HiveService.saveUserToHive(user: _currentUser);
+          await _userService.getUserDetailsByEmail(email: googleUser.email);
 
       if (_currentUser?.isBlocked ?? false) {
+        await signOut();
         return AppStatus.kBlocked;
       }
 
+      // Save to Hive
+      await _saveAuthStateToHive(isGoogle: true);
+      await HiveService.saveUserToHive(user: _currentUser);
+
+      // Setup user stream
       if (_currentUser != null) {
-        await LocalStorage.setBool("isLoggedIn", true);
-        await LocalStorage.setBool("isEmailVerified", true);
-        await LocalStorage.setBool('hasCompletedBasicDetails', true);
-        await LocalStorage.setBool('hasCompletedImageSetup', true);
+        _setupUserStream();
       }
 
-      await LocalStorage.setBool("canPost", _canPost);
-      await LocalStorage.setString("role", _role ?? "");
-
-      _notificationService.storeDeviceToken(uid: uid);
-      notifyListeners();
+      // Store notification token
+      await _notificationService.storeDeviceToken(uid: uid);
 
       return _currentUser != null
           ? AppStatus.kEmailAlreadyExists
           : AppStatus.kSuccess;
     } catch (e) {
-      print("❌ Error during Google Auth: ${e.toString()}");
-      isGoogle = false;
-      await LocalStorage.setBool("isGoogle", false);
+      debugPrint("Google Auth Error: $e");
       return AppStatus.kFailed;
     } finally {
-      setLoadingState(value: false);
-      notifyListeners();
+      _setLoadingState(false);
     }
   }
 
@@ -224,75 +201,87 @@ class MyAuthProvider extends ChangeNotifier {
     required String username,
   }) async {
     try {
-      setLoadingState(value: true);
+      _setLoadingState(true);
 
-      final result = await _service.isUserNameExists(username: username);
-
-      if (result) {
+      // Check if username exists
+      final bool usernameExists =
+          await _userService.isUserNameExists(username: username);
+      if (usernameExists) {
         return AppStatus.kUserNameAlreadyExists;
       }
 
-      UserCredential userCredential = await _auth
-          .createUserWithEmailAndPassword(email: email, password: password);
+      // Create user
+      final UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      User? user = userCredential.user;
-      if (user == null) return AppStatus.kFailed;
+      if (userCredential.user == null) {
+        return AppStatus.kFailed;
+      }
 
-      await user.sendEmailVerification();
-      _notificationService.storeDeviceToken(uid: uid);
-      await LocalStorage.setString("userName", username);
-      _formUserName = username;
-      await LocalStorage.setBool('isLoggedIn', true);
+      // Send email verification
+      await userCredential.user!.sendEmailVerification();
+
+      // Save auth state
+      await HiveService.setFormUserName(username);
+      await HiveService.setLoggedIn(true);
+      await _notificationService.storeDeviceToken(uid: uid);
+
       return AppStatus.kSuccess;
     } on FirebaseAuthException catch (e) {
       if (e.code == AppStatus.kEmailAlreadyExists) {
         return AppStatus.kEmailAlreadyExists;
       }
-      return e.message ?? "An unknown error occurred.";
+      return e.message ?? "Authentication failed";
     } catch (e) {
-      return "Error: $e";
+      debugPrint("Sign up error: $e");
+      return "Sign up failed";
     } finally {
-      setLoadingState(value: false);
+      _setLoadingState(false);
     }
   }
 
-  /// Login with Email and password
-  Future<String> loginWithEmailAndPassword({
+  /// Login with Email and Password
+  Future<String> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
     try {
-      setLoadingState(value: true);
+      _setLoadingState(true);
 
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      _currentUser = await _service.getUserDetailsByEmail(email: email);
-      if (_currentUser == null) return AppStatus.kUserNotFound;
+      // Get user details
+      _currentUser = await _userService.getUserDetailsByEmail(email: email);
+      if (_currentUser == null) {
+        return AppStatus.kUserNotFound;
+      }
 
-      final result = await _service.fetchRoleAndCanPostStatus(email: email);
-
-      if (result['status'] == AppStatus.kBlocked) {
+      // Check user status
+      final Map<String, dynamic> userStatus =
+          await _userService.fetchRoleAndCanPostStatus(email: email);
+      if (userStatus['status'] == AppStatus.kBlocked) {
         return AppStatus.kBlocked;
       }
 
-      _role = result['role'];
-      _canPost = result['canPost'];
+      // Update user with latest data
+      _currentUser!.role = userStatus['role'] ?? '';
+      _currentUser!.canPost = userStatus['canPost'] ?? false;
 
-      print("PPPPPPPPPPPPPPPPPPP$_role");
-      print("OOOOOOOOOOOO$_canPost");
+      // Save to Hive
+      await _saveAuthStateToHive();
+      await HiveService.saveUserToHive(user: _currentUser);
 
-      await LocalStorage.setBool("isLoggedIn", true);
-      await LocalStorage.setBool('isEmailVerified', true);
-      await LocalStorage.setBool('hasCompletedBasicDetails', true);
-      await LocalStorage.setBool('hasCompletedImageSetup', true);
-      _notificationService.storeDeviceToken(uid: uid);
+      // Setup user stream
+      _setupUserStream();
+
+      // Store notification token
+      await _notificationService.storeDeviceToken(uid: uid);
+
       return AppStatus.kSuccess;
     } on FirebaseAuthException catch (e) {
-      print(e.code);
-      print("============================");
       switch (e.code) {
         case "invalid-credential":
           return AppStatus.kInvalidCredential;
@@ -300,10 +289,10 @@ class MyAuthProvider extends ChangeNotifier {
           return AppStatus.kFailed;
       }
     } catch (e) {
-      return e.toString();
+      debugPrint("Sign in error: $e");
+      return "Sign in failed";
     } finally {
-      setLoadingState(value: false);
-      notifyListeners();
+      _setLoadingState(false);
     }
   }
 
@@ -314,110 +303,145 @@ class MyAuthProvider extends ChangeNotifier {
       await _auth.sendPasswordResetEmail(email: email);
       return AppStatus.kSuccess;
     } catch (e) {
-      return e.toString();
+      debugPrint("Reset password error: $e");
+      return "Password reset failed";
     }
   }
 
-  ///dispose timer for email verification
-  @override
-  void dispose() {
-    _timer?.cancel();
-    usernameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    super.dispose();
+  /// Check Email Verification Status
+  Future<void> checkEmailVerification() async {
+    try {
+      await _auth.currentUser?.reload();
+      final bool isVerified = _auth.currentUser?.emailVerified ?? false;
+
+      if (isVerified && !isEmailVerified) {
+        await HiveService.setEmailVerified(true);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Email verification check error: $e");
+    }
   }
 
-  Future<void> clearUserDetails() async {
-    await LocalStorage.removeElement("role");
-    await LocalStorage.removeElement("canPost");
-    await LocalStorage.removeElement("isLoggedIn");
-    await LocalStorage.removeElement("isEmailVerified");
-    await LocalStorage.removeElement("userName");
-    await LocalStorage.removeElement("hasCompletedBasicDetails");
-    await LocalStorage.removeElement("hasCompletedImageSetup");
+  /// Start Email Verification Timer
+  void startEmailVerificationTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => checkEmailVerification(),
+    );
+  }
 
-    // Reset variables
-    _role = "no-role-found";
-    _canPost = false;
-    isLoggedIn = false;
-    isEmailVerified = false;
-    _formUserName = "no form userName";
-    hasCompletedBasicDetails = false;
-    hasCompletedImageSetup = false;
+  /// Stop Email Verification Timer
+  void stopEmailVerificationTimer() {
+    _timer?.cancel();
+  }
 
-    print("🗑️ User details cleared from LocalStorage");
-    print("🔹 Role: $_role");
-    print("🔹 CanPost: $_canPost");
-    print("👍 isLoggedIn: $isLoggedIn");
-    print("🔥 isEmailVerified: $isEmailVerified");
-    print("📛 UserName: $_formUserName");
-    print("✅ hasCompletedBasicDetails: $hasCompletedBasicDetails");
-    print("🖼️ hasCompletedImageSetup: $hasCompletedImageSetup");
+  /// Resend Email Verification
+  Future<void> resendEmailVerification() async {
+    try {
+      await _auth.currentUser?.sendEmailVerification();
+    } catch (e) {
+      debugPrint("Resend email verification error: $e");
+    }
+  }
 
+  /// Complete Basic Details
+  Future<void> completeBasicDetails() async {
+    await HiveService.setHasCompletedBasicDetails(true);
     notifyListeners();
   }
 
-  Future<Users?> getUserDetails({required String email}) async {
-    try {
-      final user = await _service.getUserDetailsByEmail(email: email);
+  /// Complete Image Setup
+  Future<void> completeImageSetup() async {
+    await HiveService.setHasCompletedImageSetup(true);
+    notifyListeners();
+  }
 
-      if (user != null) {
-        _currentUser = user;
-        print("User loaded: $_currentUser");
-        notifyListeners();
-      } else {
-        print("User not found");
-      }
-
-      return user;
-    } catch (e) {
-      print("Provider error: ${e.toString()}");
-      return null;
-    }
+  /// Save authentication state to Hive
+  Future<void> _saveAuthStateToHive({bool isGoogle = false}) async {
+    await HiveService.setLoggedIn(true);
+    await HiveService.setEmailVerified(true);
+    await HiveService.setHasCompletedBasicDetails(true);
+    await HiveService.setHasCompletedImageSetup(true);
+    await HiveService.setIsGoogle(isGoogle);
   }
 
   /// Sign Out
   Future<void> signOut() async {
     try {
-      var box = await Hive.openBox<Users>(AppHiveConstants.kUserBox);
-      await box.clear();
+      // Cancel streams and timers
+      _userStreamSubscription?.cancel();
+      _timer?.cancel();
 
-      if (box.isEmpty) {
-        print("User Details Cleared");
-      } else {
-        print("User Details not Cleared");
+      // Delete notification token
+      if (uid.isNotEmpty) {
+        await _userService.deleteTokenOnSignOut(uid: uid);
       }
+
       // Sign out from Firebase
-      await _service.deleteTokenOnSignOut(uid: uid);
       await _auth.signOut();
-      // Disconnect Google if connected
+
+      // Sign out from Google if needed
       if (await _googleSignIn.isSignedIn()) {
         await _googleSignIn.disconnect();
       }
-      // Clear local data
-      await Future.wait(<Future>[
-        LocalStorage.clear(),
-        clearUserDetails(),
-      ]);
 
+      // Clear Hive data
+      await HiveService.clearAllData();
+
+      // Reset state
       _currentUser = null;
-      _role = null;
+      clearControllers();
 
-      print("User signed out successfully");
+      debugPrint("User signed out successfully");
     } catch (e) {
-      print("Error signing out: $e");
+      debugPrint("Sign out error: $e");
     } finally {
       notifyListeners();
     }
   }
 
+  /// Clear Controllers
   void clearControllers() {
     usernameController.clear();
     emailController.clear();
     passwordController.clear();
     confirmPasswordController.clear();
-    notifyListeners();
+  }
+
+  /// Get User Details
+  Future<Users?> getUserDetails({required String email}) async {
+    try {
+      final Users? user =
+          await _userService.getUserDetailsByEmail(email: email);
+      if (user != null) {
+        _currentUser = user;
+        await HiveService.saveUserToHive(user: user);
+        notifyListeners();
+      }
+      return user;
+    } catch (e) {
+      debugPrint("Get user details error: $e");
+      return null;
+    }
+  }
+
+  /// Admin and User Count Stream
+  Stream<Map<String, dynamic>> get adminUserCountStream =>
+      _userService.userAndAdminCountStream;
+
+  /// Check if user is OAuth authenticated
+  Future<bool> get isOAuth async => await _googleSignIn.isSignedIn();
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _userStreamSubscription?.cancel();
+    usernameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
   }
 }

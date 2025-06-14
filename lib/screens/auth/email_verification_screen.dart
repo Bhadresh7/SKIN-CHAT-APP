@@ -57,7 +57,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               CustomButton(
                 text: "Resend Email",
                 onPressed: () async {
-                  await provider.resendEmail();
+                  await provider.resendVerificationEmail();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                         content: Text("Verification email sent again!")),
@@ -72,7 +72,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 color: AppStyles.smoke,
                 text: "Change email",
                 onPressed: () async {
-                  await provider.cancelEmailCheck();
+                  await provider.cancelEmailVerification();
                   MyNavigation.replace(context, RegisterScreen());
                 },
               ),

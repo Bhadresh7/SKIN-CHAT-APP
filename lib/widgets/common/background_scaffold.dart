@@ -43,8 +43,6 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<MyAuthProvider>();
-    // print(
-    //     ">>>>>>>>>>>>>>>>>>>>>>>>>>${authProvider.currentUser?.username}<<<<<<<<<<<<<<<<<<");
 
     return SafeArea(
       child: Scaffold(
@@ -61,9 +59,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                             ? ClipOval(
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      authProvider.currentUser?.imageUrl ??
-                                          authProvider.imgUrl ??
-                                          "",
+                                      authProvider.currentUser?.imageUrl ?? "",
                                   fit: BoxFit.cover,
                                   width: 90,
                                   height: 90,

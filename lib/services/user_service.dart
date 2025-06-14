@@ -2,16 +2,15 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/users.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 
 import '../constants/app_db_constants.dart';
-import '../helpers/local_storage.dart';
 
 class UserService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
-  final HiveService _service = HiveService();
 
   ///save user details to db
   Future<String> saveUser({required Users user}) async {
@@ -35,6 +34,9 @@ class UserService {
             .set(user.toJson());
       }
       print("✅ User saved successfully.");
+
+      await HiveService.setLoggedIn(true);
+
       return AppStatus.kSuccess;
     } catch (e) {
       print("☠️ Error saving user: ${e.toString()}");
@@ -68,7 +70,6 @@ class UserService {
   }
 
   /// fetch the user role in real-time
-
   Stream<Map<String, dynamic>> fetchRoleAndSaveLocally(
       {required String email}) {
     return _store
@@ -102,30 +103,14 @@ class UserService {
   // Function to process user data and save it locally
   Future<Map<String, dynamic>> _processUserData(
       Map<String, dynamic> data) async {
-    final role = data["role"] ?? "no-role-found";
-    final canPost = data["canPost"] ?? false;
-    final isBlocked = data['isBlocked'] ?? false;
+    Users usr = Users.fromFirestore(data);
 
-    print("FROM SERVICE ----------$isBlocked");
-
-    final currentUser = HiveService.getCurrentUser();
-    print("🔥 Updated User Role =>>>>>>>>>>: $role");
-    print("📝 canPost: $canPost");
-    currentUser?.role = role;
-    currentUser?.isBlocked = isBlocked;
-    currentUser?.canPost = canPost;
-
-    print(currentUser.toString());
-    HiveService.saveUserToHive(user: currentUser);
-
-    // await LocalStorage.setString("role", role);
-    // await LocalStorage.setBool("canPost", canPost);
-    // await LocalStorage.setBool("isBlocked", isBlocked);
+    await HiveService.saveUserToHive(user: usr);
 
     return {
-      "role": role,
-      "canPost": canPost,
-      "isBlocked": isBlocked,
+      "role": usr.role,
+      "canPost": usr.canPost,
+      "isBlocked": usr.isBlocked,
     };
   }
 
@@ -181,9 +166,11 @@ class UserService {
       print("📝 Can Post: $canPost");
       print("🚫 Is Blocked: $isBlocked");
 
-      await LocalStorage.setString("email", mail);
-      await LocalStorage.setString("role", role);
-      await LocalStorage.setBool("canPost", canPost);
+      Users.fromFirestore(data);
+
+      // await LocalStorage.setString("email", mail);
+      // await LocalStorage.setString("role", role);
+      // await LocalStorage.setBool("canPost", canPost);
 
       return {
         'isBlocked': isBlocked,
@@ -356,23 +343,20 @@ class UserService {
 
   Future<void> deleteTokenOnSignOut({required String uid}) async {
     try {
-      print(">>>>>>>>>>>>>>>>>>>>>$uid");
-      QuerySnapshot snapshot = await _store
-          .collection("tokens")
-          .where("id", isEqualTo: uid)
-          .limit(1)
-          .get();
+      final DatabaseReference tokenRef =
+          FirebaseDatabase.instance.ref("tokens/$uid");
 
-      if (snapshot.docs.isEmpty) {
-        print(
-            "'''''''''''''''''''''''''''''''RESPONSE IS EMPTY''''''''''''''''''''''''");
+      final DataSnapshot snapshot = await tokenRef.get();
+
+      if (!snapshot.exists) {
+        print("🚫 No token found for uid: $uid");
         return;
       }
 
-      await _store.collection('tokens').doc(uid).delete();
-      print("+++++++++++++++ TOKEN DELETED SUCCESSFULLY +++++++++++++++++++++");
+      await tokenRef.remove();
+      print("✅ Token deleted successfully for uid: $uid");
     } catch (e) {
-      print("Error deleting token: $e");
+      print("🔥 Error deleting token: $e");
     }
   }
 }

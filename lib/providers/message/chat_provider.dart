@@ -1,70 +1,43 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:skin_chat_app/models/custom_message_modal.dart';
+import 'package:skin_chat_app/models/chat_message.dart';
+import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
-import 'package:skin_chat_app/services/message_service.dart';
+import 'package:skin_chat_app/services/chat_service.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
+import 'package:skin_chat_app/utils/custom_mapper.dart';
 
 class ChatProvider extends ChangeNotifier {
+  final ChatService _chatService = ChatService();
+  ValueNotifier<List<types.Message>> messageNotifier = ValueNotifier([]);
+
   ChatProvider() {
     print("I'm Initilized");
+    _chatService.initMessageListener();
   }
-
-  final ChatService _chatService = ChatService();
 
   ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
 
   ///stream of messages from realtime database
-  Stream<List<types.Message>> get messagesStream =>
-      _chatService.getMessagesStream();
+  Stream<List<types.Message>> get messagesStream => _chatService.messagesStream;
 
   ///Method to delete messages in the chat
   Future<void> deleteMessage(String messageKey) async {
     await _chatService.deleteMessage(messageKey: messageKey);
-
     notifyListeners();
   }
 
-  // Future<void> sendMessage(dynamic message, MyAuthProvider provider) async {
-  //   try {
-  //     if (message is types.PartialText) {
-  //       final newMessage = types.TextMessage(
-  //         author: types.User(
-  //             id: provider.uid,
-  //             firstName: provider.userName ?? provider.formUserName),
-  //         id: DateTime.now().millisecondsSinceEpoch.toString(),
-  //         text: message.text,
-  //       );
-  //
-  //       await _chatService.sendMessage(
-  //         message: newMessage.text,
-  //         userId: provider.uid,
-  //         userName: provider.userName ?? provider.formUserName,
-  //       );
-  //     }
-  //   } catch (e) {
-  //     print("❌ Error in sendMessage: $e");
-  //   } finally {
-  //     notifyListeners();
-  //   }
-  // }
-
-  Future<void> sendMessage(
-      CustomMessageModal message, MyAuthProvider provider) async {
+  Future<void> sendMessage(ChatMessage message) async {
     try {
-      print("-------------------${message.toJson()}");
-      final customMessage = types.CustomMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          metadata: message.toJson(),
-          author: types.User(
-              id: provider.currentUser!.uid,
-              firstName: provider.userName ?? provider.formUserName));
-      await _chatService.sendMessage(
-        message: message,
-        userId: provider.uid,
-        userName: provider.userName ?? provider.formUserName,
-      );
+      print("worked");
+      print(message.toJson());
+      await _chatService.addMessagesToLocalStorage(message: message);
+      await _chatService.sendMessageToRTDB(message: message);
+      print("%%%%%%%%%%%%%%%%%%%%%%%%%%%${message.author.firstName}");
+      notifyListeners();
     } catch (e) {
       print(e);
     }
@@ -95,20 +68,20 @@ class ChatProvider extends ChangeNotifier {
       final imageUrl = await _chatService.uploadImageAndSend(
         imageFile,
         provider.uid,
-        provider.userName ?? provider.formUserName,
+        provider.userName ?? "",
         (progress) {
           uploadProgressNotifier.value = progress;
         },
       );
 
-      final customMessage = CustomMessageModal(img: imageUrl);
+      final metaData = MetaModel(img: imageUrl);
 
-      final newMessage = types.ImageMessage(
+      types.ImageMessage(
         author: types.User(id: provider.uid),
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: "${provider.userName ?? provider.formUserName}.jpg",
+        name: "${provider.userName ?? "user-"}.jpg",
         size: imageFile.lengthSync(),
-        uri: customMessage.img.toString(),
+        uri: metaData.img.toString(),
       );
 
       uploadProgressNotifier.value = null;
@@ -132,13 +105,13 @@ class ChatProvider extends ChangeNotifier {
         img,
         caption ?? '',
         provider.uid,
-        provider.userName ?? provider.formUserName,
+        provider.userName ?? "",
         (progress) {
           uploadProgressNotifier.value = progress;
         },
       );
 
-      final customMessage = CustomMessageModal(img: imageUrl, text: caption);
+      final customMessage = MetaModel(img: imageUrl, text: caption);
 
       // Create a new CustomMessage with image URL and caption
       types.CustomMessage(
@@ -165,10 +138,27 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  /// get messages from local storage
+
+  List<types.CustomMessage> getAllMessagesFromLocalStorage() {
+    final data = HiveService.getAllMessages();
+
+    final message = CustomMapper.getCustomMessage(data);
+    print(message);
+    return message;
+  }
+
   /// Method to cancel upload
   void cancelUpload() {
     _chatService.cancelUpload();
     uploadProgressNotifier.value = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _chatService.dispose();
+    messageNotifier.dispose();
+    super.dispose();
   }
 }

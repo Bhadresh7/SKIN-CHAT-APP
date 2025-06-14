@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:skin_chat_app/constants/app_apis.dart';
@@ -105,49 +106,21 @@ class NotificationService {
     }
   }
 
-  /// 🔐 Store FCM token to Firestore for later use (like sending messages)
   Future<String> storeDeviceToken({required String uid}) async {
     try {
+      final DatabaseReference ref = FirebaseDatabase.instance.ref("tokens");
       String? token = await _firebaseMessaging.getToken();
       print("🕊️ Token: $token");
 
       if (token != null && token.isNotEmpty) {
-        // Check if a document with this 'id' already exists
-        QuerySnapshot snapshot = await _store
-            .collection('tokens')
-            .where('id', isEqualTo: uid)
-            .limit(1)
-            .get();
-
-        if (snapshot.docs.isNotEmpty) {
-          var doc = snapshot.docs.first;
-          String? existingToken = doc.get('token');
-
-          if (existingToken == token) {
-            print("✅ Token already exists and is up to date.");
-            return AppStatus.kSuccess;
-          }
-
-          // Update the token if it's different
-          await _store.collection('tokens').doc(uid).update({
-            "token": token,
-          });
-          print("🔄 Token updated for existing user.");
-          return AppStatus.kSuccess;
-        }
-
-        // If no document exists, add a new one
-        await _store.collection('tokens').doc(uid).set({
-          "id": uid,
-          "token": token,
-        });
-        print("✅ Token stored successfully for new user.");
+        await ref.child(uid).set(token);
+        print("✅ Token stored successfully as uid: token.");
         return AppStatus.kSuccess;
       }
 
       return AppStatus.kFailed;
     } catch (e) {
-      print("🔥 Error getting or storing FCM token: $e");
+      print("🔥 Error storing token: $e");
       return AppStatus.kFailed;
     }
   }
