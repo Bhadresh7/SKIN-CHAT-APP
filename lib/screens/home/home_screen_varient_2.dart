@@ -561,7 +561,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_chat_core/flutter_chat_core.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -897,10 +896,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     sendButtonVisibilityMode: SendButtonVisibilityMode.always,
                   ),
                   onMessageLongPress: (context, message) async {
-                    print("Vibration triggered");
-                    await HapticFeedback.lightImpact();
-                    Showdeletedialog.showDeleteDialog(
+                    ShowDeleteDialog.showDeleteDialog(
                         context, message, chatProvider, authProvider);
+
                     _removeMessageFromNotifier(message.id);
                   },
                   onAttachmentPressed: () async {
@@ -1034,7 +1032,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     );
 
                     _addMessageToNotifier(chatMessage);
-
                     chatProvider.sendMessage(newMessage);
                     shareIntentProvider.clear();
                     _clearController();

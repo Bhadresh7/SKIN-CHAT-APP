@@ -1,6 +1,5 @@
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:skin_chat_app/models/chat_message.dart';
-import 'package:uuid/uuid.dart';
 
 class CustomMapper {
   static List<types.CustomMessage> getCustomMessage(
@@ -22,10 +21,9 @@ class CustomMapper {
     ChatMessage chatModel, {
     required String userId,
   }) {
-    print("YYYYYY${chatModel.author.firstName}");
     return types.CustomMessage(
       author: types.User(id: userId, firstName: chatModel.author.firstName),
-      id: Uuid().v4(),
+      id: chatModel.id,
       metadata: {
         'text': chatModel.metaModel.text,
         'url': chatModel.metaModel.url,

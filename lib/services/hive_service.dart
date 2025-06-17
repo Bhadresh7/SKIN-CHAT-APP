@@ -241,11 +241,11 @@ class HiveService {
 // ===================
 
   /// Save message to Hive with message ID as key
-  static Future<void> saveMessage(ChatMessage message) async {
+  static Future<void> saveMessage({required ChatMessage message}) async {
     _ensureInitialized();
 
     try {
-      await _messageBox.add(message);
+      await _messageBox.put(message.id, message);
     } catch (e) {
       debugPrint("Error saving message to Hive: $e");
       rethrow;
@@ -272,6 +272,17 @@ class HiveService {
   /// Delete message from Hive by message ID
   static Future<void> deleteMessage(String messageId) async {
     _ensureInitialized();
+
+    if (!_messageBox.isOpen) {
+      debugPrint("Box is not open!");
+      return;
+    }
+
+    if (!_messageBox.containsKey(messageId)) {
+      debugPrint("Key $messageId not found in box!");
+      debugPrint("Available keys: ${_messageBox.keys}");
+      return;
+    }
 
     try {
       await _messageBox.delete(messageId);

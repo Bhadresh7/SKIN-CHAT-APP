@@ -24,38 +24,25 @@ class ChatProvider extends ChangeNotifier {
   ///stream of messages from realtime database
   Stream<List<types.Message>> get messagesStream => _chatService.messagesStream;
 
-  ///Method to delete messages in the chat
+  ///Method to delete messages in the chat and db
   Future<void> deleteMessage(String messageKey) async {
     await _chatService.deleteMessage(messageKey: messageKey);
+    await _chatService.deleteMessagesFromLocalStorage(messageId: messageKey);
     notifyListeners();
   }
 
+  // send messages to db and local storage
   Future<void> sendMessage(ChatMessage message) async {
     try {
       print("worked");
-      print(message.toJson());
-      await _chatService.addMessagesToLocalStorage(message: message);
       await _chatService.sendMessageToRTDB(message: message);
-      print("%%%%%%%%%%%%%%%%%%%%%%%%%%%${message.author.firstName}");
+      await _chatService.addMessagesToLocalStorage(message: message);
       notifyListeners();
     } catch (e) {
       print(e);
     }
   }
 
-  //
-  // final customMessage = types.CustomMessage(
-  //   author: _user,
-  //   createdAt: DateTime.now().millisecondsSinceEpoch,
-  //   id: 'unique-id =========>   $count',
-  //
-  //   metadata: {
-  //     'text': 'Hello!',
-  //     'image':
-  //     'https://img.freepik.com/free-photo/cosmos-flowers_1373-83.jpg?semt=ais_hybrid&w=740',
-  //     'url': 'https://www.apple.com/in/',
-  //   },
-  // );
   ///Method to handle the Image type message
 
   Future<void> handleImageMessage(
@@ -115,17 +102,11 @@ class ChatProvider extends ChangeNotifier {
 
       // Create a new CustomMessage with image URL and caption
       types.CustomMessage(
-          author: types.User(id: provider.uid),
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          metadata: customMessage.toJson()
-          // metadata: {
-          //   'type': 'image_with_caption',
-          //   'imageUrl': imageUrl,
-          //   'caption': caption ?? '',
-          //   'fileName': "${provider.userName ?? provider.formUserName}.jpg",
-          // },
-          );
+        author: types.User(id: provider.uid),
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        metadata: customMessage.toJson(),
+      );
 
       // Reset the progress and notify listeners
       uploadProgressNotifier.value = null;
@@ -142,9 +123,7 @@ class ChatProvider extends ChangeNotifier {
 
   List<types.CustomMessage> getAllMessagesFromLocalStorage() {
     final data = HiveService.getAllMessages();
-
     final message = CustomMapper.getCustomMessage(data);
-    print(message);
     return message;
   }
 

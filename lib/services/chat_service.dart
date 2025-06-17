@@ -10,6 +10,7 @@ import 'package:skin_chat_app/services/hive_service.dart';
 
 class ChatService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("chats");
+
   UploadTask? _currentUploadTask;
 
   UploadTask? get currentUploadTask => _currentUploadTask;
@@ -116,9 +117,22 @@ class ChatService {
   ///delete messages from database
   Future<void> deleteMessage({required String messageKey}) async {
     try {
+      print("Attempting to delete message with key: $messageKey");
       await _databaseRef.child(messageKey).remove();
+
+      print("FROM CHAT SERVICE DELETE FUNCTION  !!!!!!!!!!!!!!!");
     } catch (e) {
       print("Error deleting message: $e");
+    }
+  }
+
+  Future<void> deleteMessagesFromLocalStorage({
+    required String messageId,
+  }) async {
+    try {
+      await HiveService.deleteMessage(messageId);
+    } catch (e) {
+      print(e.toString());
     }
   }
 
@@ -126,15 +140,16 @@ class ChatService {
   Future<void> sendMessageToRTDB({
     required ChatMessage message,
   }) async {
-    await _databaseRef.push().set(
+    DatabaseReference ref = _databaseRef.child(message.id);
+    // create new Firebase reference
+
+    await ref.set(
       {
-        "id": message.id,
         "name": message.author.firstName,
         "metadata": message.metaModel.toJson(),
         "ts": ServerValue.timestamp,
       },
     );
-    print("Saved successfully --------------------------------");
   }
 
   ///Method to Upload images to firebase-store and store
@@ -251,6 +266,6 @@ class ChatService {
   /// FUNCTIONS TO SHOW THE MESSAGES WHEN THE USER IS OFFLINE
 
   Future<void> addMessagesToLocalStorage({required ChatMessage message}) async {
-    await HiveService.saveMessage(message);
+    await HiveService.saveMessage(message: message);
   }
 }
