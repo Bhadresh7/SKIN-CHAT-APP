@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'preview_data_model.g.dart';
 
 @HiveType(typeId: 3)
-class PreviewDataModal extends HiveObject {
+class PreviewDataModel extends HiveObject {
   @HiveField(0)
   final String title;
   @HiveField(1)
@@ -13,7 +13,7 @@ class PreviewDataModal extends HiveObject {
   @HiveField(3)
   final String url;
 
-  PreviewDataModal({
+  PreviewDataModel({
     required this.title,
     required this.description,
     required this.image,
@@ -29,8 +29,8 @@ class PreviewDataModal extends HiveObject {
     };
   }
 
-  factory PreviewDataModal.fromJson(Map<String, dynamic> json) {
-    return PreviewDataModal(
+  factory PreviewDataModel.fromJson(Map<String, dynamic> json) {
+    return PreviewDataModel(
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       image: json['image'] ?? '',

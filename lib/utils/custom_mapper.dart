@@ -28,6 +28,7 @@ class CustomMapper {
         'text': chatModel.metaModel.text,
         'url': chatModel.metaModel.url,
         'img': chatModel.metaModel.img,
+        'previewData': chatModel.metaModel.previewDataModel?.toJson(),
       },
       createdAt: chatModel.createdAt,
     );

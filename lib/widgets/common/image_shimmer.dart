@@ -11,7 +11,7 @@ class ImageShimmer extends StatelessWidget {
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       child: SizedBox(
-        height: 0.5.sh,
+        height: 0.2.sh,
       ),
     );
   }

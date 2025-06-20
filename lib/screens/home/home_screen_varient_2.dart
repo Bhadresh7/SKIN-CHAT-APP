@@ -593,7 +593,6 @@ class HomeScreenVarient2 extends StatefulWidget {
 class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   late NotificationService service;
   late TextEditingController messageController;
-  ValueNotifier<List<types.CustomMessage>> messageNotifier = ValueNotifier([]);
 
   @override
   void initState() {
@@ -602,7 +601,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     service = NotificationService();
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final initialMessages = chatProvider.getAllMessagesFromLocalStorage();
-    messageNotifier.value = initialMessages;
+    chatProvider.messageNotifier.value = initialMessages;
+    print("-----------------");
+    for (var e in initialMessages) {
+      print(e.toJson());
+    }
+    print("-----------------");
   }
 
   bool _hasHandledSharedFile = false;
@@ -747,7 +751,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
   @override
   void dispose() {
-    messageNotifier.dispose(); // Don't forget to dispose the ValueNotifier
     Future.microtask(() {
       messageController.dispose();
     });
@@ -766,20 +769,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
     final match = urlRegex.firstMatch(text);
     return match?.group(0);
-  }
-
-  void _addMessageToNotifier(types.CustomMessage message) {
-    final currentMessages =
-        List<types.CustomMessage>.from(messageNotifier.value);
-    currentMessages.insert(0, message);
-    messageNotifier.value = currentMessages;
-  }
-
-  void _removeMessageFromNotifier(String messageId) {
-    final currentMessages =
-        List<types.CustomMessage>.from(messageNotifier.value);
-    currentMessages.removeWhere((message) => message.id == messageId);
-    messageNotifier.value = currentMessages;
   }
 
   @override
@@ -840,7 +829,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
           children: [
             // Use ValueListenableBuilder to listen to messageNotifier changes
             ValueListenableBuilder<List<types.Message>>(
-              valueListenable: messageNotifier,
+              valueListenable: chatProvider.messageNotifier,
               builder: (context, messages, child) {
                 return Chat(
                   emptyState: messages.isEmpty
@@ -898,8 +887,6 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                   onMessageLongPress: (context, message) async {
                     ShowDeleteDialog.showDeleteDialog(
                         context, message, chatProvider, authProvider);
-
-                    _removeMessageFromNotifier(message.id);
                   },
                   onAttachmentPressed: () async {
                     final pickedImagePath =
@@ -1031,7 +1018,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       newMessage,
                     );
 
-                    _addMessageToNotifier(chatMessage);
+                    chatProvider.addMessageToNotifier(chatMessage);
                     chatProvider.sendMessage(newMessage);
                     shareIntentProvider.clear();
                     _clearController();

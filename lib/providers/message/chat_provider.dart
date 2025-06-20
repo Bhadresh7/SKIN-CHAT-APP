@@ -12,22 +12,53 @@ import 'package:skin_chat_app/utils/custom_mapper.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ChatService _chatService = ChatService();
-  ValueNotifier<List<types.Message>> messageNotifier = ValueNotifier([]);
 
-  ChatProvider() {
-    print("I'm Initilized");
-    _chatService.initMessageListener();
+  ValueNotifier<List<types.CustomMessage>> messageNotifier = ValueNotifier([]);
+  // StreamSubscription<List<types.CustomMessage>>? _subscription;
+
+  // void initialize() {
+  //   _chatService.initMessageListener();
+  //   _subscription = _chatService.messagesStream.listen((messages) {
+  //     messageNotifier.value = messages;
+  //   });
+  // }
+
+  void addMessageToNotifier(types.CustomMessage message) {
+    final current = List<types.CustomMessage>.from(messageNotifier.value);
+    current.insert(0, message);
+    messageNotifier.value = current;
   }
+
+  // void addMessageToNotifier(types.CustomMessage message) {
+  //   final currentMessages =
+  //       List<types.CustomMessage>.from(messageNotifier.value);
+  //   currentMessages.insert(0, message);
+  //   messageNotifier.value = currentMessages;
+  // }
+
+  void removeMessageFromNotifier(String messageId) {
+    final current = List<types.CustomMessage>.from(messageNotifier.value);
+    current.removeWhere((msg) => msg.id == messageId);
+    messageNotifier.value = current;
+  }
+
+  // void removeMessageFromNotifier(String messageId) {
+  //   final currentMessages =
+  //       List<types.CustomMessage>.from(messageNotifier.value);
+  //   currentMessages.removeWhere((message) => message.id == messageId);
+  //   messageNotifier.value = currentMessages;
+  // }
 
   ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
 
   ///stream of messages from realtime database
-  Stream<List<types.Message>> get messagesStream => _chatService.messagesStream;
+  // Stream<List<types.Message>> get messagesStream => _chatService.messagesStream;
 
   ///Method to delete messages in the chat and db
   Future<void> deleteMessage(String messageKey) async {
     await _chatService.deleteMessage(messageKey: messageKey);
     await _chatService.deleteMessagesFromLocalStorage(messageId: messageKey);
+    removeMessageFromNotifier(messageKey);
     notifyListeners();
   }
 
@@ -123,6 +154,7 @@ class ChatProvider extends ChangeNotifier {
 
   List<types.CustomMessage> getAllMessagesFromLocalStorage() {
     final data = HiveService.getAllMessages();
+
     final message = CustomMapper.getCustomMessage(data);
     return message;
   }
@@ -136,7 +168,8 @@ class ChatProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _chatService.dispose();
+    // _subscription?.cancel();
+    // _chatService.dispose();
     messageNotifier.dispose();
     super.dispose();
   }

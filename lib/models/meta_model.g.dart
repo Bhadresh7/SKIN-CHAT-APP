@@ -20,19 +20,22 @@ class MetaModelAdapter extends TypeAdapter<MetaModel> {
       text: fields[0] as String?,
       url: fields[1] as String?,
       img: fields[2] as String?,
+      previewDataModel: fields[3] as PreviewDataModel?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MetaModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.text)
       ..writeByte(1)
       ..write(obj.url)
       ..writeByte(2)
-      ..write(obj.img);
+      ..write(obj.img)
+      ..writeByte(3)
+      ..write(obj.previewDataModel);
   }
 
   @override

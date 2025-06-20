@@ -185,25 +185,58 @@ class UserService {
   }
 
   ///Track the count of the users role (admin,user,blocked users)
-  Stream<Map<String, int?>> get userAndAdminCountStream {
+  // Stream<Map<String, int?>> get userAndAdminCountStream {
+  //   return _store
+  //       .collection(AppDbConstants.kUserCollection)
+  //       .snapshots()
+  //       .map((snapshot) {
+  //     int blockedUserCount = snapshot.docs
+  //         .where((doc) =>
+  //             doc.data().containsKey('isBlocked') && doc['isBlocked'] == true)
+  //         .length;
+  //
+  //     int adminCount = snapshot.docs
+  //         .where(
+  //             (doc) => doc.data().containsKey('role') && doc['role'] == 'admin')
+  //         .length;
+  //
+  //     int userCount = snapshot.docs
+  //         .where(
+  //             (doc) => doc.data().containsKey('role') && doc['role'] == 'user')
+  //         .length;
+  //
+  //     return {
+  //       'admin': adminCount,
+  //       'user': userCount,
+  //       'blocked': blockedUserCount,
+  //     };
+  //   });
+  // }
+  /// Tracks the count of user roles: admin, user, and blocked users.
+  Stream<Map<String, int>> get userAndAdminCountStream {
     return _store
         .collection(AppDbConstants.kUserCollection)
         .snapshots()
         .map((snapshot) {
-      int blockedUserCount = snapshot.docs
-          .where((doc) =>
-              doc.data().containsKey('isBlocked') && doc['isBlocked'] == true)
-          .length;
+      int adminCount = 0;
+      int userCount = 0;
+      int blockedUserCount = 0;
 
-      int adminCount = snapshot.docs
-          .where(
-              (doc) => doc.data().containsKey('role') && doc['role'] == 'admin')
-          .length;
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
 
-      int userCount = snapshot.docs
-          .where(
-              (doc) => doc.data().containsKey('role') && doc['role'] == 'user')
-          .length;
+        if (data.containsKey('isBlocked') && data['isBlocked'] == true) {
+          blockedUserCount++;
+        }
+
+        if (data.containsKey('role')) {
+          if (data['role'] == 'admin') {
+            adminCount++;
+          } else if (data['role'] == 'user') {
+            userCount++;
+          }
+        }
+      }
 
       return {
         'admin': adminCount,

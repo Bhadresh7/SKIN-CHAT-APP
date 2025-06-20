@@ -1,7 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
-import 'package:skin_chat_app/models/preview_data_modal.dart';
+import 'package:skin_chat_app/helpers/save_image_helper.dart';
+import 'package:skin_chat_app/models/preview_data_model.dart';
 import 'package:skin_chat_app/services/fetch_metadata.dart';
 import 'package:skin_chat_app/widgets/common/clikable_text_widget.dart';
 import 'package:skin_chat_app/widgets/common/image_shimmer.dart';
@@ -21,9 +22,9 @@ class CustomMessageWidget extends StatefulWidget {
 }
 
 class _CustomMessageWidgetState extends State<CustomMessageWidget> {
-  static final Map<String, PreviewDataModal> _metadataCache = {};
+  static final Map<String, PreviewDataModel> _metadataCache = {};
 
-  Future<PreviewDataModal?>? _metadataFuture;
+  Future<PreviewDataModel?>? _metadataFuture;
   String? _currentUrl;
 
   @override
@@ -63,9 +64,10 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
     setState(() {}); // Trigger rebuild to update future
   }
 
-  Future<PreviewDataModal?> getMeta(String url) async {
+  Future<PreviewDataModel?> getMeta(String url) async {
     final service = FetchMeta();
     final metadata = await service.fetchLinkMetadata(url);
+
     if (metadata != null) {
       _metadataCache[url] = metadata;
     }
@@ -77,6 +79,11 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
     final String? text = widget.messageData['text']?.toString();
     final String? imageUrl = widget.messageData['img']?.toString();
     final String? url = widget.messageData['url']?.toString();
+    final previewDataMap = widget.messageData['previewData'];
+    PreviewDataModel? previewDataModel;
+    if (previewDataMap is Map<String, dynamic>) {
+      previewDataModel = PreviewDataModel.fromJson(previewDataMap);
+    }
 
     if ((text == null || text.isEmpty) &&
         (imageUrl == null || imageUrl.isEmpty) &&
@@ -84,10 +91,10 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
       return const SizedBox.shrink();
     }
 
-    return FutureBuilder<PreviewDataModal?>(
+    return FutureBuilder<PreviewDataModel?>(
       future: _metadataFuture,
       builder: (context, snapshot) {
-        final metadata = snapshot.data;
+        final metadata = previewDataModel;
 
         return Container(
           width: widget.messageWidth,
@@ -100,19 +107,22 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (metadata != null) ...[
-                const Divider(),
                 if (metadata.image.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: GestureDetector(
-                      onTap: () {
-                        showImageViewer(
-                          context,
-                          CachedNetworkImageProvider(metadata.image),
-                          useSafeArea: true,
-                          swipeDismissible: true,
-                          doubleTapZoomable: true,
-                        );
+                      onTap: () async {
+                        try {
+                          showImageViewer(
+                            context,
+                            CachedNetworkImageProvider(metadata.image),
+                            swipeDismissible: true,
+                            useSafeArea: true,
+                            doubleTapZoomable: true,
+                          );
+                        } catch (e) {
+                          print('Error downloading image: $e');
+                        }
                       },
                       child: CachedNetworkImage(
                         imageUrl: metadata.image,
@@ -132,7 +142,8 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-                if (metadata.description.isNotEmpty) Text(metadata.description),
+                if (metadata.description.isNotEmpty)
+                  Text(metadata.description.toString()),
               ],
               if (imageUrl != null && imageUrl.isNotEmpty)
                 Padding(
@@ -140,13 +151,21 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: GestureDetector(
-                      onTap: () {
-                        showImageViewer(
-                          context,
-                          CachedNetworkImageProvider(imageUrl),
-                          swipeDismissible: true,
-                          doubleTapZoomable: true,
-                        );
+                      onTap: () async {
+                        try {
+                          final file = await SaveImageHelper.saveImageToGallery(
+                            url: imageUrl,
+                          );
+                          showImageViewer(
+                            context,
+                            FileImage(file),
+                            useSafeArea: true,
+                            swipeDismissible: true,
+                            doubleTapZoomable: true,
+                          );
+                        } catch (e) {
+                          print('Error downloading image: $e');
+                        }
                       },
                       child: CachedNetworkImage(
                         imageUrl: imageUrl,

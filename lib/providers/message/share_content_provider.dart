@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import 'package:receive_intent/receive_intent.dart' as receive_intent;
-import 'package:skin_chat_app/models/preview_data_modal.dart';
+import 'package:skin_chat_app/models/preview_data_model.dart';
 
 class SharedContentProvider with ChangeNotifier {
   String? _receivedText;
@@ -9,7 +9,7 @@ class SharedContentProvider with ChangeNotifier {
   Metadata? _linkMetadata;
   bool _isLoadingMetadata = false;
 
-  PreviewDataModal? previewDataModal;
+  PreviewDataModel? previewDataModel;
 
   String? get receivedText => _receivedText;
 
@@ -101,13 +101,13 @@ class SharedContentProvider with ChangeNotifier {
 
     try {
       final metadata = await MetadataFetch.extract(url);
-      previewDataModal = PreviewDataModal(
+      previewDataModel = PreviewDataModel(
         title: metadata?.title ?? "",
         description: metadata?.description ?? "",
         image: metadata?.image ?? "",
         url: metadata?.url ?? "",
       );
-      print(previewDataModal.toString());
+      print(previewDataModel.toString());
       _linkMetadata = metadata;
     } catch (e) {
       debugPrint("Metadata fetch error: $e");

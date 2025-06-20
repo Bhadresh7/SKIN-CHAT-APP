@@ -4,6 +4,9 @@ import 'package:skin_chat_app/constants/app_hive_constants.dart';
 import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/services/fetch_metadata.dart';
+
+import '../models/preview_data_model.dart';
 
 class HiveService {
   // Private constructor
@@ -31,10 +34,13 @@ class HiveService {
       await Hive.initFlutter();
 
       // Register adapter if not already registered
-      if (!Hive.isAdapterRegistered(0) || !Hive.isAdapterRegistered(1)) {
+      if (!Hive.isAdapterRegistered(0) ||
+          !Hive.isAdapterRegistered(1) ||
+          !Hive.isAdapterRegistered(2) ||
+          !Hive.isAdapterRegistered(3)) {
         Hive.registerAdapter(UsersAdapter());
         Hive.registerAdapter(ChatMessageAdapter());
-        // Hive.registerAdapter(ChatMessageAdapter());
+        Hive.registerAdapter(PreviewDataModelAdapter());
         Hive.registerAdapter(MetaModelAdapter());
       }
 
@@ -47,6 +53,10 @@ class HiveService {
 
       _isInitialized = true;
       debugPrint("Hive initialized successfully");
+      List<ChatMessage> messages = getAllMessages();
+      for (var e in messages) {
+        print(e.toJson());
+      }
     } catch (e) {
       debugPrint("Hive initialization error: $e");
       rethrow;
@@ -241,11 +251,38 @@ class HiveService {
 // ===================
 
   /// Save message to Hive with message ID as key
+  // static Future<void> saveMessage({required ChatMessage message}) async {
+  //   _ensureInitialized();
+  //
+  //   try {
+  //     await _messageBox.put(message.id, message);
+  //     print(
+  //         "AFTER SAVING THE MESSAGE ----------- ${message.metaModel.toJson()}");
+  //   } catch (e) {
+  //     debugPrint("Error saving message to Hive: $e");
+  //     rethrow;
+  //   }
+  // }
   static Future<void> saveMessage({required ChatMessage message}) async {
     _ensureInitialized();
 
     try {
+      final url = message.metaModel.url;
+
+      if (url != null &&
+          url.isNotEmpty &&
+          message.metaModel.previewDataModel == null) {
+        final fetchedPreview = await FetchMeta().fetchLinkMetadata(url);
+        if (fetchedPreview != null) {
+          message.metaModel.previewDataModel = fetchedPreview;
+        }
+      }
+
+      // Now store the message with embedded metadata
       await _messageBox.put(message.id, message);
+
+      print(
+          "AFTER SAVING THE MESSAGE ----------- ${message.metaModel.toJson()}");
     } catch (e) {
       debugPrint("Error saving message to Hive: $e");
       rethrow;
