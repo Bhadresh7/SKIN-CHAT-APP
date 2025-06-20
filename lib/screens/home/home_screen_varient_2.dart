@@ -601,12 +601,9 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     service = NotificationService();
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final initialMessages = chatProvider.getAllMessagesFromLocalStorage();
+
     chatProvider.messageNotifier.value = initialMessages;
-    print("-----------------");
-    for (var e in initialMessages) {
-      print(e.toJson());
-    }
-    print("-----------------");
+    chatProvider.initialize();
   }
 
   bool _hasHandledSharedFile = false;

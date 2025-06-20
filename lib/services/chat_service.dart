@@ -20,65 +20,77 @@ class ChatService {
 
   // Stream<List<types.Message>> get messagesStream => _messageController.stream;
 
-  // final _messageController =
-  //     StreamController<List<types.CustomMessage>>.broadcast();
-  // StreamSubscription<DatabaseEvent>? _messageSubscription;
-  //
-  // Stream<List<types.CustomMessage>> get messagesStream =>
-  //     _messageController.stream;
-  //
-  // void initMessageListener() {
-  //   _messageSubscription =
-  //       _databaseRef.orderByChild("ts").onValue.listen((event) {
-  //     if (event.snapshot.value == null) {
-  //       _messageController.add([]);
-  //       return;
-  //     }
-  //
-  //     final rawData = event.snapshot.value;
-  //     if (rawData is! Map) {
-  //       _messageController.add([]);
-  //       return;
-  //     }
-  //
-  //     final messages = rawData.entries
-  //         .map((entry) {
-  //           final messageData = entry.value;
-  //           if (messageData is! Map) return null;
-  //
-  //           final author = types.User(
-  //             id: messageData["id"].toString(),
-  //             firstName: messageData["name"]?.toString() ?? "Unknown",
-  //           );
-  //
-  //           final timestamp =
-  //               messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-  //           final msg = messageData["metadata"];
-  //           if (msg is! Map) return null;
-  //
-  //           return types.CustomMessage(
-  //             id: entry.key,
-  //             author: author,
-  //             createdAt: timestamp,
-  //             metadata: {
-  //               "text": msg["text"],
-  //               "url": msg["url"],
-  //               "img": msg["img"],
-  //             },
-  //           );
-  //         })
-  //         .whereType<types.CustomMessage>()
-  //         .toList();
-  //
-  //     messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-  //     _messageController.add(messages);
-  //   });
-  // }
-  //
-  // void dispose() {
-  //   _messageSubscription?.cancel();
-  //   _messageController.close();
-  // }
+  final _messageController =
+      StreamController<List<types.CustomMessage>>.broadcast();
+  StreamSubscription<DatabaseEvent>? _messageSubscription;
+
+  Stream<List<types.CustomMessage>> get messagesStream =>
+      _messageController.stream;
+
+  void initMessageListener() {
+    _messageSubscription =
+        _databaseRef.orderByChild("ts").onValue.listen((event) {
+      if (event.snapshot.value == null) {
+        _messageController.add([]);
+        return;
+      }
+
+      final rawData = event.snapshot.value;
+      if (rawData is! Map) {
+        _messageController.add([]);
+        return;
+      }
+
+      final messages = rawData.entries
+          .map((entry) {
+            final messageData = entry.value;
+            if (messageData is! Map) return null;
+
+            final author = types.User(
+              id: messageData["id"].toString(),
+              firstName: messageData["name"]?.toString() ?? "Unknown",
+            );
+
+            final timestamp =
+                messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
+            final msg = messageData["metadata"];
+            if (msg is! Map) return null;
+
+            return types.CustomMessage(
+              id: entry.key,
+              author: author,
+              createdAt: timestamp,
+              metadata: {
+                "text": msg["text"],
+                "url": msg["url"],
+                "img": msg["img"],
+              },
+            );
+          })
+          .whereType<types.CustomMessage>()
+          .toList();
+
+      messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+
+      // 🔵 PRINT EACH MESSAGE
+      for (final m in messages) {
+        print("MESSAGE ID: ${m.id}");
+        print("Author: ${m.author.firstName} (ID: ${m.author.id})");
+        print("Created At: ${m.createdAt}");
+        print("Text: ${m.metadata?['text']}");
+        print("URL: ${m.metadata?['url']}");
+        print("Image: ${m.metadata?['img']}");
+        print("--------------------------");
+      }
+
+      _messageController.add(messages);
+    });
+  }
+
+  void dispose() {
+    _messageSubscription?.cancel();
+    _messageController.close();
+  }
 
   // void initMessageListener() {
   //   _messageSubscription =
@@ -194,6 +206,7 @@ class ChatService {
     DatabaseReference ref = _databaseRef.child(message.id);
     await ref.set(
       {
+        "id": message.author.id,
         "name": message.author.firstName,
         "metadata": message.metaModel.toJson(),
         "ts": ServerValue.timestamp,
