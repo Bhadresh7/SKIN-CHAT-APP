@@ -1,16 +1,53 @@
-# skin_chat_app
+# 💬 Skin Chat App
 
-A new Flutter project.
+A real-time Android chat application built for **job seekers**, enabling seamless communication in a **single group chat**. Powered by **Flutter** and **Firebase**, the app ensures secure and responsive messaging with end-to-end encryption using **Hive**.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🚀 Features
 
-A few resources to get you started if this is your first Flutter project:
+- 🔒 **Secure Authentication**
+  - Sign in via **OAuth** or **username/password**
+  - Managed with **Firebase Authentication**
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- 💬 **Real-Time Messaging**
+  - All users communicate in a single shared group
+  - Messages are delivered instantly via **Firebase Realtime Database**
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- 🔔 **Push Notifications**
+  - Get notified for new messages using **Firebase Cloud Messaging (FCM)**
+
+- 🔐 **Encrypted Messaging**
+  - All chat data is encrypted locally using **Hive**
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer          | Technology                     |
+|----------------|--------------------------------|
+| Frontend       | Flutter                        |
+| Backend        | Firebase Realtime Database     |
+| Authentication | Firebase Auth (OAuth + Email/Password) |
+| Notifications  | Firebase Cloud Messaging       |
+| Encryption     | Hive (for secure local storage)|
+
+---
+
+## 📱 Platform Support
+
+Currently available for:
+
+- ✅ **Android**
+
+---
+
+## 🏗️ Architecture Overview
+
+```plaintext
+[Flutter App]
+     |
+     |-- Firebase Authentication (OAuth, Email/Password)
+     |-- Firebase Realtime Database (Chats)
+     |-- Firebase Cloud Messaging (Push Notifications)
+     |-- Hive (Local message encryption)
