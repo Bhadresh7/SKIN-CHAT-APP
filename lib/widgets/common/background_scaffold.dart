@@ -9,6 +9,7 @@ import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/version/app_version_provider.dart';
 import 'package:skin_chat_app/screens/screen_exports.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 
 class BackgroundScaffold extends StatefulWidget {
   const BackgroundScaffold({
@@ -35,9 +36,9 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        Provider.of<AppVersionProvider>(context, listen: false)
-            .fetchAppVersion());
+    Future.microtask(() {
+      Provider.of<AppVersionProvider>(context, listen: false).fetchAppVersion();
+    });
   }
 
   @override
@@ -71,7 +72,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                       ),
                       accountEmail: Text(authProvider.email),
                       accountName: Text(authProvider.currentUser?.username ??
-                          authProvider.userName ??
+                          HiveService.formUserName ??
                           "User"),
                     ),
                     ListTile(

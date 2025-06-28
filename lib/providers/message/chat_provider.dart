@@ -3,25 +3,50 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
-import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/models/preview_data_model.dart';
+import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/services/chat_service.dart';
+import 'package:skin_chat_app/services/fetch_metadata.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/utils/custom_mapper.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ChatService _chatService = ChatService();
-
+  final internetProvider = InternetProvider();
   ValueNotifier<List<types.CustomMessage>> messageNotifier = ValueNotifier([]);
   ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
   StreamSubscription<List<types.CustomMessage>>? _subscription;
 
-  void initialize() {
-    _chatService.initMessageListener();
-    _subscription = _chatService.messagesStream.listen((messages) {
-      messageNotifier.value = messages;
-    });
+  void initMessageStream() async {
+    if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
+      HiveService.getAllMessages();
+    } else {
+      _chatService.dispose();
+      final Set<String> existingMessageIds =
+          await HiveService.getAllMessageIdsSet();
+
+      _chatService.initMessageListener();
+      _subscription = _chatService.messagesStream.listen(
+        (messages) async {
+          messageNotifier.value = messages;
+
+          for (final customMsg in messages) {
+            if (!existingMessageIds.contains(customMsg.id)) {
+              final chatMsg = CustomMapper.mapCustomToChatMessage(customMsg);
+
+              PreviewDataModel? previewDataModel = await FetchMeta()
+                  .fetchLinkMetadata(chatMsg.metaModel.url ?? "");
+              chatMsg.metaModel.previewDataModel = previewDataModel;
+              existingMessageIds.add(customMsg.id);
+              await HiveService.saveMessage(message: chatMsg);
+            }
+          }
+        },
+      );
+    }
   }
 
   void addMessageToNotifier(types.CustomMessage message) {
@@ -49,7 +74,6 @@ class ChatProvider extends ChangeNotifier {
   // send messages to db and local storage
   Future<void> sendMessage(ChatMessage message) async {
     try {
-      print("worked");
       await _chatService.sendMessageToRTDB(message: message);
       await _chatService.addMessagesToLocalStorage(message: message);
       notifyListeners();
@@ -137,7 +161,6 @@ class ChatProvider extends ChangeNotifier {
 
   List<types.CustomMessage> getAllMessagesFromLocalStorage() {
     final data = HiveService.getAllMessages();
-
     final message = CustomMapper.getCustomMessage(data);
     return message;
   }
@@ -152,7 +175,6 @@ class ChatProvider extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
-    _chatService.dispose();
     messageNotifier.dispose();
     super.dispose();
   }

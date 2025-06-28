@@ -34,7 +34,8 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
               Align(
                 alignment: Alignment.topRight,
                 child: TextButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    await authProvider.completeImageSetup();
                     MyNavigation.replace(context, HomeScreenVarient2());
                   },
                   child: Text(
@@ -98,7 +99,7 @@ class _ImageSetupScreenState extends State<ImageSetupScreen> {
                           return;
                         }
 
-                        authProvider.completeImageSetup();
+                        await authProvider.completeImageSetup();
                         MyNavigation.replace(context, HomeScreenVarient2());
                       },
                       width: 90.w,

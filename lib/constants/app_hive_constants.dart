@@ -7,6 +7,7 @@ class AppHiveConstants {
   static const String kAuthBox = 'auth_box';
   static const String kPostingStatusBox = 'posting_status_box';
   static const String kMessageBox = 'message_box';
+  static const String kTimestampBox = 'last_timestamp_box';
 
   // User box keys
   static const String kCurrentUserDetails = 'current_user_details';

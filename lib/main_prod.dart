@@ -12,5 +12,5 @@ void main() async {
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
   );
-  await runMainApp();
+  await runMainApp(env: 'prod');
 }

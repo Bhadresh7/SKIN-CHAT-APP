@@ -36,6 +36,7 @@ class UserService {
       print("✅ User saved successfully.");
 
       await HiveService.setLoggedIn(true);
+      await HiveService.saveUserToHive(user: user);
 
       return AppStatus.kSuccess;
     } catch (e) {

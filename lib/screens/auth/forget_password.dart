@@ -68,10 +68,15 @@ class ForgetPassword extends StatelessWidget {
                         context: context,
                         message: "Email has sent to your email");
                     MyNavigation.back(context);
+                  } else if (result == AppStatus.kEmailNotFound) {
+                    ToastHelper.showErrorToast(
+                      context: context,
+                      message: "Email not exists",
+                    );
                   } else {
                     ToastHelper.showErrorToast(
                       context: context,
-                      message: "Error while send email",
+                      message: "Error while sending email",
                     );
                   }
                 }

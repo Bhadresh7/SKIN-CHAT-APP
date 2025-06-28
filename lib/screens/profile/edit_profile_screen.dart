@@ -7,6 +7,7 @@ import 'package:skin_chat_app/helpers/date_formater_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 
 import '../../constants/app_status.dart';
 import '../../providers/image/image_picker_provider.dart';
@@ -39,11 +40,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final provider = Provider.of<MyAuthProvider>(context, listen: false);
-    usernameController.text = provider.currentUser?.username ?? "user";
-    aadharController.text = provider.currentUser?.aadharNo ?? "";
-    mobileNumberController.text = provider.currentUser?.mobileNumber ?? "";
-    dateController.text = provider.currentUser?.dob ?? "";
+    final data = HiveService.getCurrentUser();
+    usernameController.text = data?.username ?? "user";
+    aadharController.text = data?.aadharNo ?? "";
+    mobileNumberController.text = data?.mobileNumber ?? "";
+    dateController.text = data?.dob ?? "";
   }
 
   @override
@@ -149,7 +150,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     DateInputField(
                       controller: dateController,
                       initialValue: DateFormaterHelper.formatedDate(
-                          value: provider.currentUser?.dob ?? ""),
+                        value: dateController.text,
+                      ),
                     ),
                     CustomButton(
                       text: "Update",

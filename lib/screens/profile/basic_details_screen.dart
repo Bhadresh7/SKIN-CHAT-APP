@@ -11,8 +11,7 @@ import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/password_hashing_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/models/users.dart';
-import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
-import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/screens/screen_exports.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
@@ -42,10 +41,11 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     dateController = TextEditingController();
     super.initState();
     final authProvider = context.read<MyAuthProvider>();
+    final chatProvider = context.read<ChatProvider>();
+    chatProvider.initMessageStream();
 
-    userNameController.text = authProvider.userName ?? "";
+    userNameController.text = authProvider.usernameController.text;
     print("BASIC USER DETAILS ${userNameController.text}");
-    // authProvider.disposeControllers();
   }
 
   @override
@@ -178,6 +178,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         // Proceed only if success
                         if (result == AppStatus.kSuccess) {
                           await authProvider.completeBasicDetails();
+                          authProvider.clearControllers();
                           if (authProvider.isGoogle) {
                             await authProvider.completeImageSetup();
                             MyNavigation.replace(context, HomeScreenVarient2());

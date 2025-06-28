@@ -30,10 +30,6 @@ class BasicUserDetailsProvider extends ChangeNotifier {
         return AppStatus.kaadharNoExists;
       }
 
-      // await LocalStorage.setString("role", user.role);
-      // await LocalStorage.setString("email", user.email);
-      // await LocalStorage.setBool("isLoggedIn", true);
-
       return AppStatus.kSuccess;
     } catch (e) {
       print(e.toString());

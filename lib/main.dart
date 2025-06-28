@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:skin_chat_app/constants/app_config.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
+import 'package:toastification/toastification.dart';
 
 import 'constants/app_styles.dart';
 import 'helpers/notification_helpers.dart';
@@ -15,15 +17,17 @@ import 'providers/version/app_version_provider.dart';
 import 'screens/auth/auth_screen.dart';
 import 'services/notification_service.dart';
 
-Future<void> runMainApp() async {
+Future<void> runMainApp({required String env}) async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  AppConfig.setEnvironment(env);
   await HiveService.init();
-
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitDown,
     DeviceOrientation.portraitUp,
   ]);
+
+  ChatProvider().initMessageStream();
 
   /// Load environment variables
   await dotenv.load(fileName: ".env");
@@ -65,15 +69,17 @@ class MyApp extends StatelessWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        return MaterialApp(
-          themeMode: ThemeMode.system,
-          theme: ThemeData(
-            brightness: Brightness.light,
-            fontFamily: AppStyles.primaryFont,
-            scaffoldBackgroundColor: Colors.white,
+        return ToastificationWrapper(
+          child: MaterialApp(
+            themeMode: ThemeMode.system,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              fontFamily: AppStyles.primaryFont,
+              scaffoldBackgroundColor: Colors.white,
+            ),
+            debugShowCheckedModeBanner: false,
+            home: const AuthScreen(),
           ),
-          debugShowCheckedModeBanner: false,
-          home: const AuthScreen(),
         );
       },
     );

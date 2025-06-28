@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/providers/message/chat_provider.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/services/user_service.dart';
@@ -30,14 +31,23 @@ class MyAuthProvider extends ChangeNotifier {
 
   // Getters
   Users? get currentUser => _currentUser;
+
   bool get isLoading => _isLoading;
+
   bool get isLoggedIn => HiveService.isLoggedIn;
+
   bool get isEmailVerified => HiveService.isEmailVerified;
+
   bool get hasCompletedBasicDetails => HiveService.hasCompletedBasicDetails;
+
   bool get hasCompletedImageSetup => HiveService.hasCompletedImageSetup;
+
   bool get isGoogle => HiveService.isGoogle;
+
   String get uid => _auth.currentUser?.uid ?? "";
+
   String get email => _auth.currentUser?.email ?? "";
+
   String? get userName => _auth.currentUser?.displayName;
 
   // Constructor
@@ -65,26 +75,9 @@ class MyAuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Setup stream to listen for user updates
-  // void _setupUserStream() {
-  //   print("User stream triggered !!!!!!!!!!!");
-  //   _userStreamSubscription?.cancel();
-  //
-  //   _userStreamSubscription = _userService
-  //       .fetchRoleAndSaveLocally(email: _currentUser?.email ?? "")
-  //       .listen(
-  //     (data) async {
-  //       await _updateUserFromStream(data);
-  //     },
-  //     onError: (error) {
-  //       debugPrint("User stream error: $error");
-  //     },
-  //   );
-  //
-  //   print(_currentUser.toString());
-  // }
-
   void _setupUserStream() {
+    ChatProvider().initMessageStream();
+
     print("User stream triggered !!!!!!!!!!!");
     _userStreamSubscription?.cancel();
 
@@ -227,6 +220,7 @@ class MyAuthProvider extends ChangeNotifier {
       // Save auth state
       await HiveService.setFormUserName(username);
       await HiveService.setLoggedIn(true);
+      // await HiveService.saveUserToHive(user: user)
       await _notificationService.storeDeviceToken(uid: uid);
 
       return AppStatus.kSuccess;
@@ -299,12 +293,18 @@ class MyAuthProvider extends ChangeNotifier {
   /// Reset Password
   Future<String> resetPassword({required String email}) async {
     try {
-      await _auth.setLanguageCode("en");
-      await _auth.sendPasswordResetEmail(email: email);
-      return AppStatus.kSuccess;
+      final isEmailExists = await _userService.findUserByEmail(email: email);
+
+      if (isEmailExists) {
+        await _auth.setLanguageCode("en");
+        await _auth.sendPasswordResetEmail(email: email);
+        return AppStatus.kSuccess;
+      }
+
+      return AppStatus.kEmailNotFound;
     } catch (e) {
       debugPrint("Reset password error: $e");
-      return "Password reset failed";
+      return "Password reset failed. Try again.";
     }
   }
 

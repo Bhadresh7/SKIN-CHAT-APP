@@ -48,15 +48,11 @@ class HiveService {
       _userBox = await Hive.openBox<Users>(AppHiveConstants.kUserBox);
       _authBox = await Hive.openBox(AppHiveConstants.kAuthBox);
       _postingAccessBox =
-          await Hive.openBox(AppHiveConstants.kPostingStatusBox);
+      await Hive.openBox(AppHiveConstants.kPostingStatusBox);
       _messageBox = await Hive.openBox(AppHiveConstants.kMessageBox);
 
       _isInitialized = true;
       debugPrint("Hive initialized successfully");
-      List<ChatMessage> messages = getAllMessages();
-      for (var e in messages) {
-        print(e.toJson());
-      }
     } catch (e) {
       debugPrint("Hive initialization error: $e");
       rethrow;
@@ -69,6 +65,10 @@ class HiveService {
       throw Exception(
           "HiveService not initialized. Call HiveService.init() first.");
     }
+  }
+
+  static Future<bool> isBoxExists() async {
+    return await Hive.boxExists(AppHiveConstants.kMessageBox);
   }
 
   // ===================
@@ -113,6 +113,14 @@ class HiveService {
     } catch (e) {
       debugPrint("Error clearing user data from Hive: $e");
     }
+  }
+
+  static Future<int> getLastSavedTimestamp() async {
+    final tsBox = await Hive.openBox<int>(AppHiveConstants.kTimestampBox);
+
+    final time = tsBox.get('lastTs', defaultValue: 0) ?? 0;
+    print("#################$time");
+    return time;
   }
 
   // ===================
@@ -263,26 +271,63 @@ class HiveService {
   //     rethrow;
   //   }
   // }
+
+  static Future<void> pushMessageToHive(List<ChatMessage> messages) async {
+    _ensureInitialized();
+    for (final message in messages) {
+      print("PPPPPPPPPPPPPPPPPPPPPPPPPPP");
+      print(message.toJson());
+      print("PPPPPPPPPPPPPPPPPPPPPPPPPPP");
+
+      await _messageBox.put(message.id, message); // id must be unique
+    }
+
+    print("✅ Stored ${messages.length} messages to Hive.");
+    print(
+        "NEW MESSAGES FROM LOCAL STORAGE ---------------- ${messages.length}");
+    final data = getAllMessages();
+
+    for (final message in data) {
+      print("📩 Message ID: ${message.id}");
+      print("📨 Text: ${message.metaModel.toJson()}");
+      print("-------------------------");
+    }
+  }
+
   static Future<void> saveMessage({required ChatMessage message}) async {
     _ensureInitialized();
-
     try {
       final url = message.metaModel.url;
-
+      print("URL FROM THE DB BEFORE SAVING TO THE LOCAL STORAGE ${url}");
       if (url != null &&
           url.isNotEmpty &&
           message.metaModel.previewDataModel == null) {
         final fetchedPreview = await FetchMeta().fetchLinkMetadata(url);
+        print(
+            "FETCHED METADATA==========================${fetchedPreview
+                ?.toJson()}");
+
         if (fetchedPreview != null) {
           message.metaModel.previewDataModel = fetchedPreview;
         }
       }
 
-      // Now store the message with embedded metadata
+      // Save message to Hive
       await _messageBox.put(message.id, message);
-
       print(
-          "AFTER SAVING THE MESSAGE ----------- ${message.metaModel.toJson()}");
+          "AFTER SAVING THE MESSAGE TO LOCAL ----------- ${message.metaModel
+              .toJson()}");
+
+
+      // ✅ Save/update the latest timestamp
+      final tsBox = await Hive.openBox<int>(AppHiveConstants.kTimestampBox);
+      final lastSavedTs = tsBox.get('lastTs', defaultValue: 0) ?? 0;
+      final currentMsgTs = message.createdAt;
+
+      if (currentMsgTs > lastSavedTs) {
+        await tsBox.put('lastTs', currentMsgTs);
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@$currentMsgTs");
+      }
     } catch (e) {
       debugPrint("Error saving message to Hive: $e");
       rethrow;
@@ -380,5 +425,19 @@ class HiveService {
     } catch (e) {
       debugPrint("Error closing Hive boxes: $e");
     }
+  }
+
+  static Future<Set<String>> getAllMessageIdsSet() async {
+    const boxName = AppHiveConstants.kMessageBox;
+
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox<ChatMessage>(boxName);
+    }
+
+    final box = Hive.box(boxName); // Don't use generic here
+    return box.values
+        .whereType<ChatMessage>() // Ensure you're getting only valid objects
+        .map((msg) => msg.id)
+        .toSet();
   }
 }

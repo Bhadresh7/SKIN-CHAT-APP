@@ -7,11 +7,12 @@ class AppStatus {
 
   ///AUTH
   static const String kUserNotFound = 'user-not-found';
+  static const String kEmailNotFound = 'email-not-found';
   static const String kUserFound = "user-found";
   static const String kTooManyRequests = 'too-many-requests';
   static const String kEmailAlreadyExists = 'email-already-in-use';
   static const String kInternetErrorMsg = 'network-request-failed';
-  static const String kaadharNoExists='aadhar-already-exists';
+  static const String kaadharNoExists = 'aadhar-already-exists';
 
   static const String kEmailNotVerified = 'email-not-verified';
   static const String kBlocked = 'blocked';

@@ -28,7 +28,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     if (provider.isEmailVerified || authProvider.isEmailVerified) {
       Future.microtask(() {
         MyNavigation.replace(context, BasicDetailsScreen());
-        authProvider.clearControllers();
       });
     }
 
