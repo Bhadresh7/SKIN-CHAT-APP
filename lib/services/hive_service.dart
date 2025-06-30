@@ -4,7 +4,6 @@ import 'package:skin_chat_app/constants/app_hive_constants.dart';
 import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/models/users.dart';
-import 'package:skin_chat_app/services/fetch_metadata.dart';
 
 import '../models/preview_data_model.dart';
 
@@ -48,7 +47,7 @@ class HiveService {
       _userBox = await Hive.openBox<Users>(AppHiveConstants.kUserBox);
       _authBox = await Hive.openBox(AppHiveConstants.kAuthBox);
       _postingAccessBox =
-      await Hive.openBox(AppHiveConstants.kPostingStatusBox);
+          await Hive.openBox(AppHiveConstants.kPostingStatusBox);
       _messageBox = await Hive.openBox(AppHiveConstants.kMessageBox);
 
       _isInitialized = true;
@@ -297,27 +296,24 @@ class HiveService {
   static Future<void> saveMessage({required ChatMessage message}) async {
     _ensureInitialized();
     try {
-      final url = message.metaModel.url;
-      print("URL FROM THE DB BEFORE SAVING TO THE LOCAL STORAGE ${url}");
-      if (url != null &&
-          url.isNotEmpty &&
-          message.metaModel.previewDataModel == null) {
-        final fetchedPreview = await FetchMeta().fetchLinkMetadata(url);
-        print(
-            "FETCHED METADATA==========================${fetchedPreview
-                ?.toJson()}");
-
-        if (fetchedPreview != null) {
-          message.metaModel.previewDataModel = fetchedPreview;
-        }
-      }
+      // final url = message.metaModel.url;
+      // print("URL FROM THE DB BEFORE SAVING TO THE LOCAL STORAGE ${url}");
+      // if (url != null &&
+      //     url.isNotEmpty &&
+      //     message.metaModel.previewDataModel == null) {
+      //   final fetchedPreview = await FetchMeta().fetchLinkMetadata(url);
+      //   print(
+      //       "FETCHED METADATA==========================${fetchedPreview?.toJson()}");
+      //
+      //   if (fetchedPreview != null) {
+      //     message.metaModel.previewDataModel = fetchedPreview;
+      //   }
+      // }
 
       // Save message to Hive
       await _messageBox.put(message.id, message);
       print(
-          "AFTER SAVING THE MESSAGE TO LOCAL ----------- ${message.metaModel
-              .toJson()}");
-
+          "AFTER SAVING THE MESSAGE TO LOCAL ----------- ${message.metaModel.toJson()}");
 
       // ✅ Save/update the latest timestamp
       final tsBox = await Hive.openBox<int>(AppHiveConstants.kTimestampBox);
@@ -401,7 +397,7 @@ class HiveService {
         clearUserData(),
         clearAuthData(),
         clearPostingAccessData(),
-        clearMessageData(),
+        // clearMessageData(),
       ]);
       debugPrint("All Hive data cleared successfully");
     } catch (e) {
