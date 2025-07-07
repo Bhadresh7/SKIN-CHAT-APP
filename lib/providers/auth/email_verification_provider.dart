@@ -10,7 +10,6 @@ class EmailVerificationProvider extends ChangeNotifier {
 
   // Getters that read from Hive
   bool get isEmailVerified => HiveService.isEmailVerified;
-  bool get isLoggedIn => HiveService.isLoggedIn;
 
   EmailVerificationProvider() {
     _initializeEmailVerification();

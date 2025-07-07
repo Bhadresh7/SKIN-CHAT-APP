@@ -54,15 +54,22 @@ class _AuthScreenState extends State<AuthScreen> {
 Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
   bool isLoggedIn = authProvider.isLoggedIn;
   bool? isBlocked = authProvider.currentUser?.isBlocked ?? false;
-  print("Blocked status -- ${isBlocked}-- isLoggedIn -- ${isLoggedIn}");
+  bool? basicDetailsFormStatus = authProvider.hasCompletedBasicDetails;
+  bool? imageSetupStatus = authProvider.hasCompletedImageSetup;
+  // print("Blocked status -- $isBlocked-- isLoggedIn -- $isLoggedIn");
+  // print("------------------------------------------------------------");
+  // print(basicDetailsFormStatus);
+  // print(imageSetupStatus);
+  // print("------------------------------------------------------------");
+
   if (!isLoggedIn) {
     print("--------------got to login");
     return const LoginScreen();
   } else if (!authProvider.isEmailVerified) {
     return const EmailVerificationScreen();
-  } else if (!authProvider.hasCompletedBasicDetails) {
+  } else if (!basicDetailsFormStatus) {
     return const BasicDetailsScreen();
-  } else if (!authProvider.hasCompletedImageSetup) {
+  } else if (!imageSetupStatus) {
     return const ImageSetupScreen();
   } else {
     return HomeScreenVarient2();

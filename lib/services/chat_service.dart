@@ -7,6 +7,7 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
+import 'package:uuid/uuid.dart';
 
 class ChatService {
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref("chats");
@@ -121,10 +122,10 @@ class ChatService {
   }
 
   ///delete messages from database
-  Future<void> deleteMessage({required String messageKey}) async {
+  Future<void> deleteMessage({required String messageId}) async {
     try {
-      print("Attempting to delete message with key: $messageKey");
-      await _databaseRef.child(messageKey).remove();
+      print("DELETE FUNCTION $messageId");
+      await _databaseRef.child(messageId).remove();
 
       print("FROM CHAT SERVICE DELETE FUNCTION  !!!!!!!!!!!!!!!");
     } catch (e) {
@@ -155,9 +156,10 @@ class ChatService {
     String userName,
     void Function(double)? onProgress,
   ) async {
-    final fileName = "$userName-${DateTime.now().millisecondsSinceEpoch}.jpg";
-    final storageRef =
-        FirebaseStorage.instance.ref().child("chat_images/$fileName");
+    final messageId = Uuid().v4();
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child("chat_images/$userName/$messageId.jpg");
 
     // Assign to _currentUploadTask so we can later cancel it if needed
     _currentUploadTask = storageRef.putFile(imageFile);
@@ -179,7 +181,7 @@ class ChatService {
       final chatMessage = ChatMessage(
         author: types.User(id: userId),
         metaModel: customMessage,
-        id: userId,
+        id: messageId,
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
       // Save URL to Realtime DB (or Firestore depending on your implementation)
@@ -200,9 +202,10 @@ class ChatService {
     String userName,
     void Function(double)? onProgress,
   ) async {
-    final fileName = "$userName-${DateTime.now().millisecondsSinceEpoch}.jpg";
-    final storageRef =
-        FirebaseStorage.instance.ref().child("chat_images/$fileName");
+    final messageId = Uuid().v4();
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child("chat_images/$userName/$messageId.jpg");
 
     // Assign to _currentUploadTask so we can later cancel it if needed
     _currentUploadTask = storageRef.putFile(imageFile);
@@ -227,7 +230,7 @@ class ChatService {
         final chatMessage = ChatMessage(
           author: types.User(id: userId),
           metaModel: customMessage,
-          id: userId,
+          id: Uuid().v4(),
           createdAt: DateTime.now().millisecondsSinceEpoch,
         );
         // Save URL to Realtime DB (or Firestore depending on your implementation)
@@ -239,7 +242,7 @@ class ChatService {
         final chatMessage = ChatMessage(
           author: types.User(id: userId),
           metaModel: customMessage,
-          id: userId,
+          id: Uuid().v4(),
           createdAt: DateTime.now().millisecondsSinceEpoch,
         );
         // Save URL to Realtime DB (or Firestore depending on your implementation)
@@ -273,6 +276,18 @@ class ChatService {
   }) async {
     try {
       await HiveService.deleteMessage(messageId);
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> deleteImageFromStorage(
+      {required String messageId, required String username}) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child("chat_images/$username/$messageId.jpg");
+      await storageRef.delete();
     } catch (e) {
       print(e.toString());
     }

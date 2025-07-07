@@ -8,7 +8,8 @@ import '../../providers/message/chat_provider.dart' show ChatProvider;
 class ShowDeleteDialog {
   static void showDeleteDialog(BuildContext context, dynamic message,
       ChatProvider chatProvider, MyAuthProvider authProvider) {
-    if (message.author.id != authProvider.uid) {
+    if (message.author.id != authProvider.uid ||
+        authProvider.currentUser?.role == 'super_admin') {
       return;
     }
     showDialog(
@@ -23,11 +24,9 @@ class ShowDeleteDialog {
           ),
           TextButton(
             onPressed: () async {
-              print(")))))))))))))))))))))))))");
-              print(message.id);
-              print(")))))))))))))))))))))))))");
-
-              await chatProvider.deleteMessage(message.id);
+              await chatProvider.deleteMessage(
+                  messageId: message.id,
+                  username: authProvider.currentUser?.username ?? "");
               if (context.mounted) {
                 Navigator.pop(context);
               }

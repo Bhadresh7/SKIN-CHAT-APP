@@ -10,7 +10,7 @@ import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/password_hashing_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
-import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/screens/screen_exports.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
@@ -44,7 +44,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     final chatProvider = context.read<ChatProvider>();
     chatProvider.initMessageStream();
 
-    userNameController.text = authProvider.usernameController.text;
+    userNameController.text =
+        authProvider.userName ?? authProvider.usernameController.text;
     print("BASIC USER DETAILS ${userNameController.text}");
   }
 
@@ -147,7 +148,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                     onPressed: () async {
                       if (_formKey.currentState!.validate() &&
                           basicDetailsProvider.selectedRole != null) {
-                        Users user = Users(
+                        UsersModel user = UsersModel(
                           dob: dateController.text.trim(),
                           aadharNo: aadharController.text.trim(),
                           mobileNumber: mobileNumberController.text.trim(),
@@ -166,31 +167,57 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         );
                         final result = await basicDetailsProvider
                             .saveUserToDbAndLocally(user);
+                        print(
+                            "BASIC USER DEATILS SCREEN ==================${result}");
+                        switch (result) {
+                          case AppStatus.kaadharNoExists:
+                            return ToastHelper.showErrorToast(
+                              context: context,
+                              message: AppStatus.kaadharNoExists,
+                            );
 
-                        //Handle aadhar exists
-                        if (result == AppStatus.kaadharNoExists) {
-                          return ToastHelper.showErrorToast(
-                            context: context,
-                            message: AppStatus.kaadharNoExists,
-                          );
+                          case AppStatus.kSuccess:
+                            await authProvider.completeBasicDetails();
+
+                            if (authProvider.isGoogle) {
+                              await authProvider.completeImageSetup();
+                              MyNavigation.replace(
+                                  context, HomeScreenVarient2());
+                            } else {
+                              MyNavigation.replace(context, ImageSetupScreen());
+                            }
+                            return;
+
+                          case AppStatus.kFailed:
+                            return ToastHelper.showErrorToast(
+                              context: context,
+                              message: result,
+                            );
+
+                          default:
+                            // Handle unknown status if needed
+                            return ToastHelper.showErrorToast(
+                              context: context,
+                              message: 'Unexpected error occurred.',
+                            );
                         }
 
                         // Proceed only if success
-                        if (result == AppStatus.kSuccess) {
-                          await authProvider.completeBasicDetails();
-                          authProvider.clearControllers();
-                          if (authProvider.isGoogle) {
-                            await authProvider.completeImageSetup();
-                            MyNavigation.replace(context, HomeScreenVarient2());
-                          } else {
-                            MyNavigation.replace(context, ImageSetupScreen());
-                          }
-                        } else {
-                          return ToastHelper.showErrorToast(
-                            context: context,
-                            message: "Cannot save the user",
-                          );
-                        }
+                        // if (result == AppStatus.kSuccess) {
+                        //   await authProvider.completeBasicDetails();
+                        //   authProvider.clearControllers();
+                        //   if (authProvider.isGoogle) {
+                        //     await authProvider.completeImageSetup();
+                        //     MyNavigation.replace(context, HomeScreenVarient2());
+                        //   } else {
+                        //     MyNavigation.replace(context, ImageSetupScreen());
+                        //   }
+                        // } else {
+                        //   return ToastHelper.showErrorToast(
+                        //     context: context,
+                        //     message: "Cannot save the user",
+                        //   );
+                        // }
                       }
                     },
                   ),

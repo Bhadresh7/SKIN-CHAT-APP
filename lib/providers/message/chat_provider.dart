@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
-import 'package:skin_chat_app/models/preview_data_model.dart';
-import 'package:skin_chat_app/providers/exports.dart';
+import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/providers/internet/internet_provider.dart';
 import 'package:skin_chat_app/services/chat_service.dart';
 import 'package:skin_chat_app/services/fetch_metadata.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
@@ -16,73 +16,98 @@ import 'package:skin_chat_app/utils/custom_mapper.dart';
 class ChatProvider extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final internetProvider = InternetProvider();
+
   ValueNotifier<List<types.CustomMessage>> messageNotifier = ValueNotifier([]);
   ValueNotifier<double?> uploadProgressNotifier = ValueNotifier(null);
   StreamSubscription<List<types.CustomMessage>>? _subscription;
+
+  ChatProvider() {
+    initMessageStream();
+  }
 
   void initMessageStream() async {
     if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
       HiveService.getAllMessages();
     } else {
       _chatService.dispose();
-      final Set<String> existingMessageIds =
-          await HiveService.getAllMessageIdsSet();
+
+      final existingMessageIds = await HiveService.getAllMessageIdsSet();
 
       _chatService.initMessageListener();
+
       _subscription = _chatService.messagesStream.listen(
-        (messages) async {
-          messageNotifier.value = messages;
-
-          for (final customMsg in messages) {
-            if (!existingMessageIds.contains(customMsg.id)) {
-              final chatMsg = CustomMapper.mapCustomToChatMessage(customMsg);
-
-              PreviewDataModel? previewDataModel = await FetchMeta()
-                  .fetchLinkMetadata(chatMsg.metaModel.url ?? "");
-              chatMsg.metaModel.previewDataModel = previewDataModel;
-              existingMessageIds.add(customMsg.id);
-              await HiveService.saveMessage(message: chatMsg);
-            }
-          }
-        },
+        (messages) => _handleIncomingMessages(messages, existingMessageIds),
       );
     }
   }
 
+  Future<void> _handleIncomingMessages(
+    List<types.CustomMessage> messages,
+    Set<String> existingMessageIds,
+  ) async {
+    messageNotifier.value = messages;
+
+    for (final customMsg in messages) {
+      if (!existingMessageIds.contains(customMsg.id)) {
+        await _handleNewMessage(customMsg, existingMessageIds);
+      }
+    }
+  }
+
+  Future<void> _handleNewMessage(
+    types.CustomMessage customMsg,
+    Set<String> existingMessageIds,
+  ) async {
+    final chatMsg = CustomMapper.mapCustomToChatMessage(customMsg);
+
+    final previewData = await FetchMeta().fetchLinkMetadata(
+      chatMsg.metaModel.url ?? "",
+    );
+
+    chatMsg.metaModel.previewDataModel = previewData;
+    existingMessageIds.add(customMsg.id);
+
+    await HiveService.saveMessage(message: chatMsg);
+  }
+
   void addMessageToNotifier(types.CustomMessage message) {
-    final currentMessages =
-        List<types.CustomMessage>.from(messageNotifier.value);
-    currentMessages.insert(0, message);
-    messageNotifier.value = currentMessages;
+    final updatedMessages = [message, ...messageNotifier.value];
+    messageNotifier.value = updatedMessages;
   }
 
   void removeMessageFromNotifier(String messageId) {
-    final currentMessages =
-        List<types.CustomMessage>.from(messageNotifier.value);
-    currentMessages.removeWhere((message) => message.id == messageId);
-    messageNotifier.value = currentMessages;
+    final updatedMessages = messageNotifier.value
+        .where((message) => message.id != messageId)
+        .toList();
+
+    messageNotifier.value = updatedMessages;
   }
 
-  ///Method to delete messages in the chat and db
-  Future<void> deleteMessage(String messageKey) async {
-    await _chatService.deleteMessage(messageKey: messageKey);
-    await _chatService.deleteMessagesFromLocalStorage(messageId: messageKey);
-    removeMessageFromNotifier(messageKey);
+  Future<void> deleteMessage(
+      {required String messageId, required String username}) async {
+    try {
+      Future.wait([
+        _chatService.deleteMessage(messageId: messageId),
+        _chatService.deleteMessagesFromLocalStorage(messageId: messageId),
+        _chatService.deleteImageFromStorage(
+            messageId: messageId, username: username)
+      ]);
+    } catch (e) {
+      print(e.toString());
+    }
+    removeMessageFromNotifier(messageId);
     notifyListeners();
   }
 
-  // send messages to db and local storage
   Future<void> sendMessage(ChatMessage message) async {
     try {
       await _chatService.sendMessageToRTDB(message: message);
       await _chatService.addMessagesToLocalStorage(message: message);
       notifyListeners();
     } catch (e) {
-      print(e);
+      print("❌ Error in sendMessage: $e");
     }
   }
-
-  ///Method to handle the Image type message
 
   Future<void> handleImageMessage(
     MyAuthProvider provider,
@@ -95,19 +120,17 @@ class ChatProvider extends ChangeNotifier {
         imageFile,
         provider.uid,
         provider.userName ?? "",
-        (progress) {
-          uploadProgressNotifier.value = progress;
-        },
+        (progress) => uploadProgressNotifier.value = progress,
       );
 
-      final metaData = MetaModel(img: imageUrl);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-      types.ImageMessage(
+      final _ = types.ImageMessage(
         author: types.User(id: provider.uid),
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: "$timestamp",
         name: "${provider.userName ?? "user-"}.jpg",
         size: imageFile.lengthSync(),
-        uri: metaData.img.toString(),
+        uri: imageUrl,
       );
 
       uploadProgressNotifier.value = null;
@@ -126,46 +149,36 @@ class ChatProvider extends ChangeNotifier {
     try {
       uploadProgressNotifier.value = 0.0;
 
-      // Use the new uploadImageAndSendWithCaption method
       final imageUrl = await _chatService.uploadImageAndSendWithCaption(
         img,
         caption ?? '',
         provider.uid,
         provider.userName ?? "",
-        (progress) {
-          uploadProgressNotifier.value = progress;
-        },
+        (progress) => uploadProgressNotifier.value = progress,
       );
 
-      final customMessage = MetaModel(img: imageUrl, text: caption);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-      // Create a new CustomMessage with image URL and caption
-      types.CustomMessage(
+      final _ = types.CustomMessage(
         author: types.User(id: provider.uid),
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        metadata: customMessage.toJson(),
+        id: "$timestamp",
+        createdAt: timestamp,
+        metadata: MetaModel(img: imageUrl, text: caption).toJson(),
       );
 
-      // Reset the progress and notify listeners
       uploadProgressNotifier.value = null;
       notifyListeners();
     } catch (e) {
-      print(e);
+      print("❌ Error in handleImageWithTextMessage: $e");
       uploadProgressNotifier.value = null;
-      notifyListeners();
     }
   }
 
-  /// get messages from local storage
-
   List<types.CustomMessage> getAllMessagesFromLocalStorage() {
     final data = HiveService.getAllMessages();
-    final message = CustomMapper.getCustomMessage(data);
-    return message;
+    return CustomMapper.getCustomMessage(data);
   }
 
-  /// Method to cancel upload
   void cancelUpload() {
     _chatService.cancelUpload();
     uploadProgressNotifier.value = null;

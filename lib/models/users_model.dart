@@ -2,11 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
 import 'package:skin_chat_app/helpers/time_stamp_helper.dart';
 
-part 'users.g.dart';
+part 'users_model.g.dart';
 
 @HiveType(typeId: 0)
-class Users extends HiveObject {
-  Users({
+class UsersModel extends HiveObject {
+  UsersModel({
     required this.aadharNo,
     required this.mobileNumber,
     required this.uid,
@@ -75,8 +75,8 @@ class Users extends HiveObject {
   }
 
   /// Convert Firestore document to a `Users` object
-  factory Users.fromFirestore(Map<String, dynamic> data) {
-    return Users(
+  factory UsersModel.fromFirestore(Map<String, dynamic> data) {
+    return UsersModel(
       uid: data['uid'] ?? '',
       username: data['username'] ?? '',
       email: data['email'] ?? '',

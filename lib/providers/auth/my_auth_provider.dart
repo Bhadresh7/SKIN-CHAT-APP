@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/providers/message/chat_provider.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
@@ -24,13 +24,14 @@ class MyAuthProvider extends ChangeNotifier {
   final confirmPasswordController = TextEditingController();
 
   // State variables
-  Users? _currentUser;
+  UsersModel? _currentUser;
   Timer? _timer;
   bool _isLoading = false;
   StreamSubscription? _userStreamSubscription;
+  bool _isStreamSetup = false;
 
   // Getters
-  Users? get currentUser => _currentUser;
+  UsersModel? get currentUser => _currentUser;
 
   bool get isLoading => _isLoading;
 
@@ -76,48 +77,73 @@ class MyAuthProvider extends ChangeNotifier {
   }
 
   void _setupUserStream() {
+    // Prevent multiple stream setups
+    if (_isStreamSetup) {
+      debugPrint("Stream already setup, skipping duplicate setup");
+      return;
+    }
+
     ChatProvider().initMessageStream();
 
     print("User stream triggered !!!!!!!!!!!");
+
+    // Cancel existing subscription first
     _userStreamSubscription?.cancel();
+    _userStreamSubscription = null;
 
     if (_currentUser?.email == null || _currentUser!.email.isEmpty) {
       debugPrint("No user email available for stream setup");
       return;
     }
 
-    _userStreamSubscription =
-        _userService.fetchRoleAndSaveLocally(email: _currentUser!.email).listen(
+    _userStreamSubscription = _userService
+        .fetchRoleAndSaveLocally(email: _currentUser?.email ?? "")
+        .listen(
       (data) async {
         print("Stream data received: $data");
         await _updateUserFromStream(data);
       },
       onError: (error) {
         debugPrint("User stream error: $error");
-        // Consider retry logic or fallback mechanism
+        _isStreamSetup = false; // Reset flag on error
       },
       onDone: () {
         debugPrint("User stream completed");
+        _isStreamSetup = false; // Reset flag when stream completes
       },
     );
 
+    _isStreamSetup = true; // Set flag after successful setup
     print("Current user: ${_currentUser.toString()}");
   }
 
-  /// Update user from stream data
+  /// Update user from stream data with better error handling
   Future<void> _updateUserFromStream(Map<String, dynamic> data) async {
     if (_currentUser == null) return;
 
-    _currentUser!.canPost = data["canPost"] ?? false;
-    _currentUser!.role = data["role"] ?? "";
-    _currentUser!.isBlocked = data["isBlocked"] ?? false;
+    try {
+      // Create a copy of current user to avoid direct mutation issues
+      final updatedUser =
+          UsersModel.fromFirestore(_currentUser?.toJson() ?? {});
 
-    print("+++++++++++++++++++++ UDPATE USER STREAM IS CALLED $_currentUser ");
-    await HiveService.saveUserToHive(user: _currentUser);
-    notifyListeners();
+      updatedUser.canPost = data["canPost"] ?? false;
+      updatedUser.role = data["role"] ?? "";
+      updatedUser.isBlocked = data["isBlocked"] ?? false;
 
-    if (_currentUser!.isBlocked) {
-      await signOut();
+      print("+++++++++++++++++++++ UPDATE USER STREAM IS CALLED $updatedUser ");
+
+      // Update current user reference
+      _currentUser = updatedUser;
+
+      // Save to Hive with error handling
+      await HiveService.saveUserToHive(user: _currentUser);
+      notifyListeners();
+
+      if (_currentUser!.isBlocked) {
+        await signOut();
+      }
+    } catch (e) {
+      debugPrint("Error updating user from stream: $e");
     }
   }
 
@@ -167,6 +193,8 @@ class MyAuthProvider extends ChangeNotifier {
       // Save to Hive
       await _saveAuthStateToHive(isGoogle: true);
       await HiveService.saveUserToHive(user: _currentUser);
+      await completeBasicDetails();
+      await completeImageSetup();
 
       // Setup user stream
       if (_currentUser != null) {
@@ -220,7 +248,6 @@ class MyAuthProvider extends ChangeNotifier {
       // Save auth state
       await HiveService.setFormUserName(username);
       await HiveService.setLoggedIn(true);
-      // await HiveService.saveUserToHive(user: user)
       await _notificationService.storeDeviceToken(uid: uid);
 
       return AppStatus.kSuccess;
@@ -245,46 +272,60 @@ class MyAuthProvider extends ChangeNotifier {
     try {
       _setLoadingState(true);
 
+      //  Sign in with Firebase Auth
       await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      // Get user details
+      //  Get user from your app's database
       _currentUser = await _userService.getUserDetailsByEmail(email: email);
       if (_currentUser == null) {
+        await _auth.signOut(); // Clean up Firebase session
         return AppStatus.kUserNotFound;
       }
 
-      // Check user status
-      final Map<String, dynamic> userStatus =
+      // Get user's latest role, canPost, and isBlocked
+      final userStatus =
           await _userService.fetchRoleAndCanPostStatus(email: email);
-      if (userStatus['status'] == AppStatus.kBlocked) {
+
+      if (userStatus['isBlocked'] == true) {
+        await _auth.signOut(); // Blocked users must be signed out
         return AppStatus.kBlocked;
       }
 
-      // Update user with latest data
-      _currentUser!.role = userStatus['role'] ?? '';
-      _currentUser!.canPost = userStatus['canPost'] ?? false;
+      // Update user object with latest status
+      _currentUser!
+        ..role = userStatus['role'] ?? ''
+        ..canPost = userStatus['canPost'] ?? false
+        ..isBlocked = userStatus['isBlocked'] ?? false;
 
       // Save to Hive
       await _saveAuthStateToHive();
       await HiveService.saveUserToHive(user: _currentUser);
 
-      // Setup user stream
+      //  Complete profile setup steps
+      await completeBasicDetails();
+      await completeImageSetup();
+
+      // Set up stream listener for real-time updates
       _setupUserStream();
 
-      // Store notification token
+      //  Store notification token
       await _notificationService.storeDeviceToken(uid: uid);
 
       return AppStatus.kSuccess;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case "invalid-credential":
+        case "user-not-found":
+        case "wrong-password":
           return AppStatus.kInvalidCredential;
+        case "user-disabled":
+          return AppStatus.kBlocked;
         default:
           return AppStatus.kFailed;
       }
     } catch (e) {
       debugPrint("Sign in error: $e");
-      return "Sign in failed";
+      return AppStatus.kFailed;
     } finally {
       _setLoadingState(false);
     }
@@ -362,8 +403,6 @@ class MyAuthProvider extends ChangeNotifier {
   Future<void> _saveAuthStateToHive({bool isGoogle = false}) async {
     await HiveService.setLoggedIn(true);
     await HiveService.setEmailVerified(true);
-    await HiveService.setHasCompletedBasicDetails(true);
-    await HiveService.setHasCompletedImageSetup(true);
     await HiveService.setIsGoogle(isGoogle);
   }
 
@@ -372,6 +411,8 @@ class MyAuthProvider extends ChangeNotifier {
     try {
       // Cancel streams and timers
       _userStreamSubscription?.cancel();
+      _userStreamSubscription = null;
+
       _timer?.cancel();
 
       // Delete notification token
@@ -411,9 +452,9 @@ class MyAuthProvider extends ChangeNotifier {
   }
 
   /// Get User Details
-  Future<Users?> getUserDetails({required String email}) async {
+  Future<UsersModel?> getUserDetails({required String email}) async {
     try {
-      final Users? user =
+      final UsersModel? user =
           await _userService.getUserDetailsByEmail(email: email);
       if (user != null) {
         _currentUser = user;
@@ -438,6 +479,7 @@ class MyAuthProvider extends ChangeNotifier {
   void dispose() {
     _timer?.cancel();
     _userStreamSubscription?.cancel();
+    _isStreamSetup = false;
     usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();

@@ -51,7 +51,7 @@ class ImagePickerProvider extends ChangeNotifier {
     }
   }
 
-  bool isUploading = false; // Define a boolean flag
+  bool isUploading = false;
 
   Future<String?> uploadImageToFirebase(String userId) async {
     if (selectedImage == null) return AppStatus.kFailed;

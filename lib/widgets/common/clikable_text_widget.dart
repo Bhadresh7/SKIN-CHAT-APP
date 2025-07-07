@@ -63,22 +63,22 @@ class ClickableTextWidget extends StatelessWidget {
             child: RichText(
               text: TextSpan(
                 style: const TextStyle(fontSize: 16, color: Colors.black),
-                children: parseText(text!),
+                children: parseText(text ?? ""),
               ),
             ),
           ),
         if (url != null &&
             url!.isNotEmpty &&
-            (text == null || !text!.contains(url!)))
+            (text == null || !text!.contains(url ?? "")))
           GestureDetector(
             onTap: () async {
-              final uri = Uri.parse(url!);
+              final uri = Uri.parse(url ?? "");
               if (await canLaunchUrl(uri)) {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
             child: Text(
-              url!,
+              url ?? "",
               style: const TextStyle(
                 color: Colors.blue,
                 decoration: TextDecoration.underline,

@@ -326,12 +326,17 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                             AppStatus.kDisconnected ||
                         internetProvider.connectionStatus == AppStatus.kSlow) {
                       return ToastHelper.showErrorToast(
-                          context: context,
-                          message: "Please check your internet connection");
+                        context: context,
+                        message: "Please check your internet connection",
+                      );
                     }
 
                     ShowDeleteDialog.showDeleteDialog(
-                        context, message, chatProvider, authProvider);
+                      context,
+                      message,
+                      chatProvider,
+                      authProvider,
+                    );
                   },
                   onAttachmentPressed: () async {
                     final pickedImagePath =
@@ -396,11 +401,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                                     compressedImage!,
                                     textController.text.trim(),
                                   );
-                                  // await service.sendNotificationToUsers(
-                                  //   title: authProvider.currentUser!.username,
-                                  //   content: "sent an image "
-                                  //       " ${textController.text.trim()}",
-                                  // );
+                                  await service.sendNotificationToUsers(
+                                    title: authProvider.currentUser!.username,
+                                    content: "sent an image "
+                                        " ${textController.text.trim()}",
+                                    userId: authProvider.currentUser?.uid ?? "",
+                                  );
                                   imagePickerProvider.clear();
                                 }
                               },
@@ -465,14 +471,14 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     );
 
                     chatProvider.addMessageToNotifier(chatMessage);
-                    chatProvider.sendMessage(newMessage);
-                    // await service.sendNotificationToUsers(
-                    //   title: authProvider.currentUser!.username,
-                    //   content: newMessage.metaModel.text ??
-                    //       newMessage.metaModel.img ??
-                    //       newMessage.metaModel.url ??
-                    //       "",
-                    // );
+                    await chatProvider.sendMessage(newMessage);
+                    await service.sendNotificationToUsers(
+                        title: authProvider.currentUser?.username ?? "",
+                        content: newMessage.metaModel.text ??
+                            newMessage.metaModel.img ??
+                            newMessage.metaModel.url ??
+                            "",
+                        userId: authProvider.currentUser?.uid ?? "");
                     shareIntentProvider.clear();
                     _clearController();
                     shareContentProvider.clear();

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 
 import '../constants/app_db_constants.dart';
@@ -13,7 +13,7 @@ class UserService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
 
   ///save user details to db
-  Future<String> saveUser({required Users user}) async {
+  Future<String> saveUser({required UsersModel user}) async {
     try {
       final results = await Future.wait([
         _checkDocumentExists(
@@ -104,7 +104,7 @@ class UserService {
   // Function to process user data and save it locally
   Future<Map<String, dynamic>> _processUserData(
       Map<String, dynamic> data) async {
-    Users usr = Users.fromFirestore(data);
+    UsersModel usr = UsersModel.fromFirestore(data);
 
     await HiveService.saveUserToHive(user: usr);
 
@@ -167,7 +167,7 @@ class UserService {
       print("📝 Can Post: $canPost");
       print("🚫 Is Blocked: $isBlocked");
 
-      Users.fromFirestore(data);
+      UsersModel.fromFirestore(data);
 
       // await LocalStorage.setString("email", mail);
       // await LocalStorage.setString("role", role);
@@ -185,34 +185,6 @@ class UserService {
     }
   }
 
-  ///Track the count of the users role (admin,user,blocked users)
-  // Stream<Map<String, int?>> get userAndAdminCountStream {
-  //   return _store
-  //       .collection(AppDbConstants.kUserCollection)
-  //       .snapshots()
-  //       .map((snapshot) {
-  //     int blockedUserCount = snapshot.docs
-  //         .where((doc) =>
-  //             doc.data().containsKey('isBlocked') && doc['isBlocked'] == true)
-  //         .length;
-  //
-  //     int adminCount = snapshot.docs
-  //         .where(
-  //             (doc) => doc.data().containsKey('role') && doc['role'] == 'admin')
-  //         .length;
-  //
-  //     int userCount = snapshot.docs
-  //         .where(
-  //             (doc) => doc.data().containsKey('role') && doc['role'] == 'user')
-  //         .length;
-  //
-  //     return {
-  //       'admin': adminCount,
-  //       'user': userCount,
-  //       'blocked': blockedUserCount,
-  //     };
-  //   });
-  // }
   /// Tracks the count of user roles: admin, user, and blocked users.
   Stream<Map<String, int>> get userAndAdminCountStream {
     return _store
@@ -248,7 +220,7 @@ class UserService {
   }
 
   ///update user profile
-  Future<Users?> updateUserProfile({
+  Future<UsersModel?> updateUserProfile({
     String? imgUrl,
     String? name,
     required String aadharNumber,
@@ -265,14 +237,14 @@ class UserService {
 
       QuerySnapshot snapshot = await _store
           .collection(AppDbConstants.kUserCollection)
-          .where("aadharNo", isEqualTo: aadharNumber)
+          .where("uid", isEqualTo: user?.uid)
           .limit(1)
           .get();
 
       if (snapshot.docs.isEmpty) {
         snapshot = await _store
             .collection(AppDbConstants.kSuperAdminCollection)
-            .where("aadharNo", isEqualTo: aadharNumber)
+            .where("uid", isEqualTo: user?.uid)
             .limit(1)
             .get();
 
@@ -296,7 +268,7 @@ class UserService {
 
       // OPTIONAL: if you really need the updated document, this is read #2
       final data = (await docRef.get()).data() as Map<String, dynamic>;
-      return Users.fromFirestore(data);
+      return UsersModel.fromFirestore(data);
     } catch (e) {
       print("Error updating user profile: $e");
       return null;
@@ -304,7 +276,7 @@ class UserService {
   }
 
   ///get user details by email for edit profile screen
-  Future<Users?> getUserDetailsByEmail({required String email}) async {
+  Future<UsersModel?> getUserDetailsByEmail({required String email}) async {
     try {
       final userSnapshot = await _store
           .collection(AppDbConstants.kUserCollection)
@@ -314,7 +286,7 @@ class UserService {
 
       if (userSnapshot.docs.isNotEmpty) {
         final userData = userSnapshot.docs.first.data();
-        return Users.fromFirestore(userData);
+        return UsersModel.fromFirestore(userData);
       }
 
       final adminSnapshot = await _store
@@ -325,7 +297,7 @@ class UserService {
 
       if (adminSnapshot.docs.isNotEmpty) {
         final adminData = adminSnapshot.docs.first.data();
-        return Users.fromFirestore(adminData);
+        return UsersModel.fromFirestore(adminData);
       }
 
       return null;

@@ -55,12 +55,13 @@ class _LoginScreenState extends State<LoginScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text("User Blocked"),
-              content: Text("Please contact the Admin for more information"),
+              title: Text("Account Disabled"),
+              content: Text(
+                  "Your account has been disabled. Please contact support."),
               actions: [
                 TextButton(
                   onPressed: () => MyNavigation.back(context),
-                  child: Text("ok"),
+                  child: Text("OK"),
                 )
               ],
             );
@@ -71,15 +72,23 @@ class _LoginScreenState extends State<LoginScreen> {
       case AppStatus.kInvalidCredential:
         ToastHelper.showErrorToast(
           context: context,
-          message: "Invalid credentials",
+          message: "Invalid email or password",
+        );
+        break;
+
+      case AppStatus.kUserNotFound:
+        ToastHelper.showErrorToast(
+          context: context,
+          message: "User not found. Please register first.",
         );
         break;
 
       case AppStatus.kSuccess:
+        // User exists and login successful - go to home screen
         MyNavigation.replace(context, HomeScreenVarient2());
         ToastHelper.showSuccessToast(
           context: context,
-          message: "Login Success",
+          message: "Login successful",
         );
         break;
 
@@ -87,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
       default:
         ToastHelper.showErrorToast(
           context: context,
-          message: "Login failed",
+          message: "Login failed. Please try again.",
         );
         break;
     }
@@ -163,6 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         email: emailController.text.trim(),
                         password: passwordController.text.trim(),
                       );
+
                       getAuthBaseScreen(context, result);
                       print("=========================$result");
                     }

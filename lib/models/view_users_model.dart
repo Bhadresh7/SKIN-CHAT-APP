@@ -1,5 +1,5 @@
-class ViewUsers {
-  ViewUsers({
+class ViewUsersModel {
+  ViewUsersModel({
     required this.uid,
     required this.name,
     required this.role,
@@ -19,8 +19,8 @@ class ViewUsers {
   final String dob;
   final String? img;
 
-  factory ViewUsers.fromJson(Map<String, dynamic> data) {
-    return ViewUsers(
+  factory ViewUsersModel.fromJson(Map<String, dynamic> data) {
+    return ViewUsersModel(
       uid: data['uid'] ?? '',
       email: data['email'] ?? '',
       role: data['role'] ?? '',

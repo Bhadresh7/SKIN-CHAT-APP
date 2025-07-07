@@ -16,7 +16,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Title: ${message.notification?.title}");
   print("Body: ${message.notification?.body}");
   print(message.data);
-
   // You can show a heads-up notification here
   NotificationService().showHeadsUpNotification(message);
 }
@@ -39,12 +38,12 @@ class NotificationService {
     await _firebaseMessaging.requestPermission();
 
     // Handling foreground notifications
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("🛎️ Foreground Notification Received:");
-      print("Title: ${message.notification?.title}");
-      print("Body: ${message.notification?.body}");
-      showNotification(message);
-    });
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    // print("🛎️ Foreground Notification Received:");
+    // print("Title: ${message.notification?.title}");
+    // print("Body: ${message.notification?.body}");
+    // showNotification(message);
+    // });
 
     // Handling background notifications
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -129,11 +128,13 @@ class NotificationService {
   Future<void> sendNotificationToUsers({
     required String title,
     required String content,
+    required String userId,
   }) async {
     try {
       Response res = await _dio.post(
         AppApis.getNotification,
         data: {
+          "id":userId,
           "title": title,
           "content": content,
         },

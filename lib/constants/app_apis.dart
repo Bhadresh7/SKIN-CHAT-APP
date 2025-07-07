@@ -7,4 +7,7 @@ class AppApis {
       : dotenv.get("TEST_BASE_URL", fallback: "NO-TEST-URL-FOUND");
 
   static String getNotification = "$_baseUrl/send";
+
+  static String get encryptionKey =>
+      dotenv.get("HIVE_ENCRYPTION_KEY", fallback: "NO-KEY-FOUND");
 }

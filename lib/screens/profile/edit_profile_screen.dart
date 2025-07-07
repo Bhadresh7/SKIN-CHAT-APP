@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -90,7 +91,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       onTap: () async {
                         final status = await imagePickerProvider.pickImage();
                         debugPrint("Image Pick Status: $status");
-                        setState(() {});
+                        setState(() {
+                          print(
+                              "IMAGE SELECTED ${imagePickerProvider.selectedImage}");
+                        });
                       },
                       child: imagePickerProvider.selectedImage != null
                           ? CircleAvatar(
@@ -101,8 +105,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           : provider.currentUser?.imageUrl != null
                               ? CircleAvatar(
                                   radius: 0.35.sw,
-                                  backgroundImage: NetworkImage(
-                                      provider.currentUser!.imageUrl!),
+                                  backgroundImage: CachedNetworkImageProvider(
+                                      provider.currentUser?.imageUrl ?? ""),
                                 )
                               : CircleAvatar(
                                   radius: 0.35.sw,
@@ -178,10 +182,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           );
 
-                          if (confirm != true) return;
+                          if (!confirm!) return;
 
                           // Upload image only if new image is selected
-                          String? imageUrl = provider.currentUser!.imageUrl;
+                          String? imageUrl =
+                              provider.currentUser?.imageUrl ?? "";
                           if (imagePickerProvider.selectedImage != null) {
                             print(
                                 "IMAGE URL -------------------------$imageUrl");

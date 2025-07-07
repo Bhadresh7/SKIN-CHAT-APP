@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
-import 'package:skin_chat_app/helpers/save_image_helper.dart';
 import 'package:skin_chat_app/models/preview_data_model.dart';
 import 'package:skin_chat_app/widgets/common/clikable_text_widget.dart';
 import 'package:skin_chat_app/widgets/common/image_shimmer.dart';
@@ -87,7 +86,7 @@ class CustomMessageWidget extends StatelessWidget {
                       },
                       child: CachedNetworkImage(
                         imageUrl: metadata.image,
-                        fit: BoxFit.fitWidth,
+                        fit: BoxFit.fitHeight,
                         placeholder: (_, __) =>
                             const Center(child: ImageShimmer()),
                         errorWidget: (_, __, ___) =>
@@ -112,16 +111,13 @@ class CustomMessageWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: GestureDetector(
                       onTap: () async {
-                        final file = await SaveImageHelper.saveImageToGallery(
-                          url: imageUrl,
-                        );
-                        showImageViewer(
-                          context,
-                          FileImage(file),
-                          useSafeArea: true,
-                          swipeDismissible: true,
-                          doubleTapZoomable: true,
-                        );
+                        // showImageViewer(
+                        //   context,
+                        //   FileImage(file),
+                        //   useSafeArea: true,
+                        //   swipeDismissible: true,
+                        //   doubleTapZoomable: true,
+                        // );
                       },
                       child: CachedNetworkImage(
                         imageUrl: imageUrl,

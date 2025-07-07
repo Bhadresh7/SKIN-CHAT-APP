@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:skin_chat_app/constants/app_db_constants.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/models/view_users.dart';
+import 'package:skin_chat_app/models/view_users_model.dart';
 
 class SuperAdminService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
@@ -98,7 +98,7 @@ class SuperAdminService {
     return snapshot.docs;
   }
 
-  Future<ViewUsers?> getAllUsers({required String email}) async {
+  Future<ViewUsersModel?> getAllUsers({required String email}) async {
     try {
       final userSnapshot = await _store
           .collection(AppDbConstants.kUserCollection)
@@ -111,7 +111,7 @@ class SuperAdminService {
         userData.forEach((key, value) {
           print("$key===>$value");
         });
-        return ViewUsers.fromJson(userData);
+        return ViewUsersModel.fromJson(userData);
       } else {
         return null; // Return null if no user found
       }

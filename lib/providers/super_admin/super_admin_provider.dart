@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/models/view_users.dart';
+import 'package:skin_chat_app/models/view_users_model.dart';
 
 import '../../services/super_admin_service.dart';
 
@@ -15,9 +15,9 @@ class SuperAdminProvider with ChangeNotifier {
   bool _loading = false;
 
   bool get loading => _loading;
-  ViewUsers? _viewUsers;
+  ViewUsersModel? _viewUsers;
 
-  ViewUsers? get viewUsers => _viewUsers;
+  ViewUsersModel? get viewUsers => _viewUsers;
 
   void setLoadingState(bool value) {
     _loading = value;
@@ -28,10 +28,6 @@ class SuperAdminProvider with ChangeNotifier {
     try {
       setLoadingState(true);
       _isSuperAdmin = await _service.findSuperAdminByEmail(email: email);
-      // await LocalStorage.setBool('isLoggedIn', true);
-      // await LocalStorage.setBool('isEmailVerified', true);
-      // await LocalStorage.setString('role', 'super_admin');
-      // await LocalStorage.setBool("canPost", true);
     } catch (e) {
       print(e.toString());
     } finally {
@@ -134,7 +130,7 @@ class SuperAdminProvider with ChangeNotifier {
     return snapshot.docs;
   }
 
-  Future<ViewUsers?> getAllUsers({required String email}) async {
+  Future<ViewUsersModel?> getAllUsers({required String email}) async {
     try {
       final user = await _service.getAllUsers(email: email);
       if (user != null) {

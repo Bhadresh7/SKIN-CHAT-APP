@@ -73,6 +73,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                       accountEmail: Text(authProvider.email),
                       accountName: Text(authProvider.currentUser?.username ??
                           HiveService.formUserName ??
+                          authProvider.userName ??
                           "User"),
                     ),
                     ListTile(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/services/user_service.dart';
 
 class BasicUserDetailsProvider extends ChangeNotifier {
@@ -22,7 +22,7 @@ class BasicUserDetailsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> saveUserToDbAndLocally(Users user) async {
+  Future<String> saveUserToDbAndLocally(UsersModel user) async {
     try {
       setLoadingState(value: true);
       final result = await _service.saveUser(user: user);

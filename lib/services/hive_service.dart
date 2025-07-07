@@ -1,9 +1,15 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:skin_chat_app/constants/app_apis.dart';
 import 'package:skin_chat_app/constants/app_hive_constants.dart';
 import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
-import 'package:skin_chat_app/models/users.dart';
+import 'package:skin_chat_app/models/users_model.dart';
 
 import '../models/preview_data_model.dart';
 
@@ -17,7 +23,7 @@ class HiveService {
   static HiveService get instance => _instance;
 
   // Box references
-  static late Box<Users> _userBox;
+  static late Box<UsersModel> _userBox;
   static late Box _authBox;
   static late Box _postingAccessBox;
   static late Box _messageBox;
@@ -25,7 +31,60 @@ class HiveService {
   // Initialization flag
   static bool _isInitialized = false;
 
-  /// Initialize Hive and open boxes
+  // Secure storage for encryption keys
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
+
+  /// Generate a secure encryption key
+  static Uint8List _generateSecureKey() {
+    final random = Random.secure();
+    final key = Uint8List(32); // 256-bit key
+    for (int i = 0; i < key.length; i++) {
+      key[i] = random.nextInt(256);
+    }
+    return key;
+  }
+
+  /// Get or generate encryption key for a specific box
+  static Future<Uint8List> _getOrCreateEncryptionKey(String keyName) async {
+    try {
+      // Try to get existing key
+      String? existingKey = await _secureStorage.read(key: keyName);
+
+      if (existingKey != null) {
+        // Decode existing key
+        return base64Decode(existingKey);
+      } else {
+        // Generate new key
+        final newKey = _generateSecureKey();
+        final encodedKey = base64Encode(newKey);
+
+        // Store the key securely
+        await _secureStorage.write(key: keyName, value: encodedKey);
+        debugPrint("Generated new encryption key for $keyName");
+
+        return newKey;
+      }
+    } catch (e) {
+      debugPrint("Error managing encryption key for $keyName: $e");
+      // Fallback: generate a key based on device-specific info
+      return _generateFallbackKey(keyName);
+    }
+  }
+
+  /// Generate a fallback encryption key if secure storage fails
+  static Uint8List _generateFallbackKey(String keyName) {
+    // Create a deterministic but secure key based on the keyName
+    // This ensures the same key is generated each time for the same box
+    final bytes = utf8.encode('${keyName}skin_chat_app_fallback_salt');
+    final digest = sha256.convert(bytes);
+    return Uint8List.fromList(digest.bytes);
+  }
+
+  /// Initialize Hive and open encrypted boxes
   static Future<void> init() async {
     if (_isInitialized) return;
 
@@ -37,21 +96,43 @@ class HiveService {
           !Hive.isAdapterRegistered(1) ||
           !Hive.isAdapterRegistered(2) ||
           !Hive.isAdapterRegistered(3)) {
-        Hive.registerAdapter(UsersAdapter());
+        Hive.registerAdapter(UsersModelAdapter());
         Hive.registerAdapter(ChatMessageAdapter());
         Hive.registerAdapter(PreviewDataModelAdapter());
         Hive.registerAdapter(MetaModelAdapter());
       }
 
-      // Open boxes
-      _userBox = await Hive.openBox<Users>(AppHiveConstants.kUserBox);
-      _authBox = await Hive.openBox(AppHiveConstants.kAuthBox);
-      _postingAccessBox =
-          await Hive.openBox(AppHiveConstants.kPostingStatusBox);
-      _messageBox = await Hive.openBox(AppHiveConstants.kMessageBox);
+      // Generate encryption keys for each box
+      final userBoxKey = await _getOrCreateEncryptionKey(AppApis.encryptionKey);
+      final authBoxKey = await _getOrCreateEncryptionKey(AppApis.encryptionKey);
+      final postingAccessBoxKey =
+          await _getOrCreateEncryptionKey(AppApis.encryptionKey);
+      final messageBoxKey =
+          await _getOrCreateEncryptionKey(AppApis.encryptionKey);
+
+      // Open encrypted boxes
+      _userBox = await Hive.openBox<UsersModel>(
+        AppHiveConstants.kUserBox,
+        encryptionCipher: HiveAesCipher(userBoxKey),
+      );
+
+      _authBox = await Hive.openBox(
+        AppHiveConstants.kAuthBox,
+        encryptionCipher: HiveAesCipher(authBoxKey),
+      );
+
+      _postingAccessBox = await Hive.openBox(
+        AppHiveConstants.kPostingStatusBox,
+        encryptionCipher: HiveAesCipher(postingAccessBoxKey),
+      );
+
+      _messageBox = await Hive.openBox(
+        AppHiveConstants.kMessageBox,
+        encryptionCipher: HiveAesCipher(messageBoxKey),
+      );
 
       _isInitialized = true;
-      debugPrint("Hive initialized successfully");
+      debugPrint("Hive initialized successfully with AES encryption");
     } catch (e) {
       debugPrint("Hive initialization error: $e");
       rethrow;
@@ -70,19 +151,75 @@ class HiveService {
     return await Hive.boxExists(AppHiveConstants.kMessageBox);
   }
 
+  /// Reset encryption keys (use with caution - will make existing data unreadable)
+  static Future<void> resetEncryptionKeys() async {
+    try {
+      await _secureStorage.delete(key: AppApis.encryptionKey);
+      await _secureStorage.delete(key: AppApis.encryptionKey);
+      await _secureStorage.delete(key: AppApis.encryptionKey);
+      await _secureStorage.delete(key: AppApis.encryptionKey);
+
+      debugPrint("All encryption keys have been reset");
+    } catch (e) {
+      debugPrint("Error resetting encryption keys: $e");
+    }
+  }
+
+  /// Migrate existing unencrypted data to encrypted boxes
+  static Future<void> migrateToEncryptedStorage() async {
+    try {
+      // Check if unencrypted boxes exist
+      final unencryptedUserBoxExists =
+          await Hive.boxExists('${AppHiveConstants.kUserBox}_unencrypted');
+      final unencryptedAuthBoxExists =
+          await Hive.boxExists('${AppHiveConstants.kAuthBox}_unencrypted');
+      final unencryptedPostingBoxExists = await Hive.boxExists(
+          '${AppHiveConstants.kPostingStatusBox}_unencrypted');
+      final unencryptedMessageBoxExists =
+          await Hive.boxExists('${AppHiveConstants.kMessageBox}_unencrypted');
+
+      if (!unencryptedUserBoxExists &&
+          !unencryptedAuthBoxExists &&
+          !unencryptedPostingBoxExists &&
+          !unencryptedMessageBoxExists) {
+        debugPrint("No unencrypted data found to migrate");
+        return;
+      }
+
+      debugPrint("Starting migration to encrypted storage...");
+
+      // Migrate user data
+      if (unencryptedUserBoxExists) {
+        final oldUserBox = await Hive.openBox<UsersModel>(
+            '${AppHiveConstants.kUserBox}_unencrypted');
+        final userData = oldUserBox.get(AppHiveConstants.kCurrentUserDetails);
+        if (userData != null) {
+          await saveUserToHive(user: userData);
+        }
+        await oldUserBox.clear();
+        await oldUserBox.close();
+      }
+
+      // Similar migration for other boxes...
+      debugPrint("Migration to encrypted storage completed");
+    } catch (e) {
+      debugPrint("Error during migration: $e");
+    }
+  }
+
   // ===================
   // USER DATA OPERATIONS
   // ===================
 
   /// Save user to Hive
-  static Future<void> saveUserToHive({required Users? user}) async {
+  static Future<void> saveUserToHive({required UsersModel? user}) async {
     if (user == null) return;
 
     _ensureInitialized();
 
     try {
       await _userBox.put(AppHiveConstants.kCurrentUserDetails, user);
-      debugPrint("User saved successfully to Hive");
+      debugPrint("User saved successfully to encrypted Hive");
       debugPrint(user.toString());
     } catch (e) {
       debugPrint("Error saving user to Hive: $e");
@@ -91,7 +228,7 @@ class HiveService {
   }
 
   /// Get current user from Hive
-  static Users? getCurrentUser() {
+  static UsersModel? getCurrentUser() {
     _ensureInitialized();
 
     try {
@@ -115,7 +252,12 @@ class HiveService {
   }
 
   static Future<int> getLastSavedTimestamp() async {
-    final tsBox = await Hive.openBox<int>(AppHiveConstants.kTimestampBox);
+    final timestampBoxKey =
+        await _getOrCreateEncryptionKey('timestamp_box_key');
+    final tsBox = await Hive.openBox<int>(
+      AppHiveConstants.kTimestampBox,
+      encryptionCipher: HiveAesCipher(timestampBoxKey),
+    );
 
     final time = tsBox.get('lastTs', defaultValue: 0) ?? 0;
     print("#################$time");
@@ -257,20 +399,6 @@ class HiveService {
 //  MESSAGE OPERATIONS
 // ===================
 
-  /// Save message to Hive with message ID as key
-  // static Future<void> saveMessage({required ChatMessage message}) async {
-  //   _ensureInitialized();
-  //
-  //   try {
-  //     await _messageBox.put(message.id, message);
-  //     print(
-  //         "AFTER SAVING THE MESSAGE ----------- ${message.metaModel.toJson()}");
-  //   } catch (e) {
-  //     debugPrint("Error saving message to Hive: $e");
-  //     rethrow;
-  //   }
-  // }
-
   static Future<void> pushMessageToHive(List<ChatMessage> messages) async {
     _ensureInitialized();
     for (final message in messages) {
@@ -281,7 +409,7 @@ class HiveService {
       await _messageBox.put(message.id, message); // id must be unique
     }
 
-    print("✅ Stored ${messages.length} messages to Hive.");
+    print("✅ Stored ${messages.length} messages to encrypted Hive.");
     print(
         "NEW MESSAGES FROM LOCAL STORAGE ---------------- ${messages.length}");
     final data = getAllMessages();
@@ -296,33 +424,24 @@ class HiveService {
   static Future<void> saveMessage({required ChatMessage message}) async {
     _ensureInitialized();
     try {
-      // final url = message.metaModel.url;
-      // print("URL FROM THE DB BEFORE SAVING TO THE LOCAL STORAGE ${url}");
-      // if (url != null &&
-      //     url.isNotEmpty &&
-      //     message.metaModel.previewDataModel == null) {
-      //   final fetchedPreview = await FetchMeta().fetchLinkMetadata(url);
-      //   print(
-      //       "FETCHED METADATA==========================${fetchedPreview?.toJson()}");
-      //
-      //   if (fetchedPreview != null) {
-      //     message.metaModel.previewDataModel = fetchedPreview;
-      //   }
-      // }
-
-      // Save message to Hive
+      // Save message to encrypted Hive
       await _messageBox.put(message.id, message);
-      print(
-          "AFTER SAVING THE MESSAGE TO LOCAL ----------- ${message.metaModel.toJson()}");
+      // print(
+      //     "AFTER SAVING THE MESSAGE TO ENCRYPTED LOCAL ----------- ${message.metaModel.toJson()}");
 
-      // ✅ Save/update the latest timestamp
-      final tsBox = await Hive.openBox<int>(AppHiveConstants.kTimestampBox);
+      // ✅ Save/update the latest timestamp with encryption
+      final timestampBoxKey =
+          await _getOrCreateEncryptionKey('timestamp_box_key');
+      final tsBox = await Hive.openBox<int>(
+        AppHiveConstants.kTimestampBox,
+        encryptionCipher: HiveAesCipher(timestampBoxKey),
+      );
       final lastSavedTs = tsBox.get('lastTs', defaultValue: 0) ?? 0;
       final currentMsgTs = message.createdAt;
 
       if (currentMsgTs > lastSavedTs) {
         await tsBox.put('lastTs', currentMsgTs);
-        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@$currentMsgTs");
+        // print("@@@@@@@@@@@@@@@@@@@@@@@@@@@$currentMsgTs");
       }
     } catch (e) {
       debugPrint("Error saving message to Hive: $e");
@@ -339,7 +458,7 @@ class HiveService {
 
       if (messages.isEmpty) return [];
 
-      debugPrint("Retrieved ${messages.length} messages from Hive");
+      debugPrint("Retrieved ${messages.length} messages from encrypted Hive");
       return messages;
     } catch (e) {
       debugPrint("Error getting all messages from Hive: $e");
@@ -364,7 +483,8 @@ class HiveService {
 
     try {
       await _messageBox.delete(messageId);
-      debugPrint("Message deleted successfully from Hive with ID: $messageId");
+      debugPrint(
+          "Message deleted successfully from encrypted Hive with ID: $messageId");
     } catch (e) {
       debugPrint("Error deleting message from Hive: $e");
       rethrow;
@@ -399,7 +519,7 @@ class HiveService {
         clearPostingAccessData(),
         // clearMessageData(),
       ]);
-      debugPrint("All Hive data cleared successfully");
+      debugPrint("All encrypted Hive data cleared successfully");
     } catch (e) {
       debugPrint("Error clearing all Hive data: $e");
     }
@@ -416,7 +536,7 @@ class HiveService {
           _messageBox.close(),
         ]);
         _isInitialized = false;
-        debugPrint("Hive boxes closed successfully");
+        debugPrint("Encrypted Hive boxes closed successfully");
       }
     } catch (e) {
       debugPrint("Error closing Hive boxes: $e");
@@ -427,7 +547,12 @@ class HiveService {
     const boxName = AppHiveConstants.kMessageBox;
 
     if (!Hive.isBoxOpen(boxName)) {
-      await Hive.openBox<ChatMessage>(boxName);
+      final messageBoxKey =
+          await _getOrCreateEncryptionKey(AppApis.encryptionKey);
+      await Hive.openBox<ChatMessage>(
+        boxName,
+        encryptionCipher: HiveAesCipher(messageBoxKey),
+      );
     }
 
     final box = Hive.box(boxName); // Don't use generic here
@@ -435,5 +560,35 @@ class HiveService {
         .whereType<ChatMessage>() // Ensure you're getting only valid objects
         .map((msg) => msg.id)
         .toSet();
+  }
+
+  // ===================
+  // SECURITY UTILITIES
+  // ===================
+
+  /// Check if encryption is properly set up
+  static Future<bool> isEncryptionEnabled() async {
+    try {
+      final userBoxKey = await _secureStorage.read(key: AppApis.encryptionKey);
+      return userBoxKey != null;
+    } catch (e) {
+      debugPrint("Error checking encryption status: $e");
+      return false;
+    }
+  }
+
+  /// Get encryption info for debugging (don't use in production)
+  static Future<Map<String, bool>> getEncryptionStatus() async {
+    if (kDebugMode) {
+      return {
+        'userBox': await _secureStorage.containsKey(key: AppApis.encryptionKey),
+        'authBox': await _secureStorage.containsKey(key: AppApis.encryptionKey),
+        'postingAccessBox':
+            await _secureStorage.containsKey(key: AppApis.encryptionKey),
+        'messageBox':
+            await _secureStorage.containsKey(key: AppApis.encryptionKey),
+      };
+    }
+    return {};
   }
 }

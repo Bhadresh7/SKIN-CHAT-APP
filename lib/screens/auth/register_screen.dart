@@ -136,8 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             context: context,
                             message: "Registeration successful",
                           );
-                          // authProvider.setPassword(
-                          //     authProvider.passwordController.text.trim());
+
                           MyNavigation.to(
                             context,
                             EmailVerificationScreen(),
