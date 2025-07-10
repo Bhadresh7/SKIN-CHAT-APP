@@ -1,17 +1,17 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'chat_message.dart';
+part of 'chat_message_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
+class ChatMessageAdapter extends TypeAdapter<ChatMessageModel> {
   @override
   final int typeId = 2;
 
   @override
-  ChatMessage read(BinaryReader reader) {
+  ChatMessageModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
@@ -20,7 +20,7 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
     // Convert Map<dynamic, dynamic> to Map<String, dynamic>
     final authorMap = Map<String, dynamic>.from(fields[1] as Map);
 
-    return ChatMessage(
+    return ChatMessageModel(
       id: fields[0] as String,
       author: types.User.fromJson(authorMap),
       metaModel: fields[2] as MetaModel,
@@ -29,7 +29,7 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
   }
 
   @override
-  void write(BinaryWriter writer, ChatMessage obj) {
+  void write(BinaryWriter writer, ChatMessageModel obj) {
     writer
       ..writeByte(4)
       ..writeByte(0)

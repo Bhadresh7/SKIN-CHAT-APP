@@ -36,7 +36,7 @@ class ImagePickerProvider extends ChangeNotifier {
     var result = await FlutterImageCompress.compressAndGetFile(
       filePath,
       newPath,
-      quality: 50,
+      quality: 20,
       autoCorrectionAngle: true,
     );
 

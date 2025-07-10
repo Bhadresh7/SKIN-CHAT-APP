@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_config.dart';
 import 'package:skin_chat_app/helpers/notification_helpers.dart';
@@ -28,6 +31,18 @@ Future<void> runMainApp({required String env}) async {
   // Initialize Hive after dotenv is loaded
   await HiveService.init();
 
+  // Request permissions
+  if (Platform.isAndroid) {
+    final androidStatus = await Permission.photos.request();
+    if (!androidStatus.isGranted) {
+      throw Exception("Photo permission not granted on Android");
+    }
+  } else if (Platform.isIOS) {
+    final iosStatus = await Permission.photosAddOnly.request();
+    if (!iosStatus.isGranted) {
+      throw Exception("Photo add-only permission not granted on iOS");
+    }
+  }
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitDown,
     DeviceOrientation.portraitUp,

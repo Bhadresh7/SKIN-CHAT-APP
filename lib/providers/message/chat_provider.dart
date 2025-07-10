@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:skin_chat_app/constants/app_status.dart';
-import 'package:skin_chat_app/models/chat_message.dart';
+import 'package:skin_chat_app/models/chat_message_model.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
 import 'package:skin_chat_app/providers/internet/internet_provider.dart';
@@ -99,7 +99,7 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> sendMessage(ChatMessage message) async {
+  Future<void> sendMessage(ChatMessageModel message) async {
     try {
       await _chatService.sendMessageToRTDB(message: message);
       await _chatService.addMessagesToLocalStorage(message: message);

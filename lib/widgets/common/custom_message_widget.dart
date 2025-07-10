@@ -1,23 +1,51 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
+import 'package:skin_chat_app/helpers/save_image_helper.dart';
 import 'package:skin_chat_app/models/preview_data_model.dart';
-import 'package:skin_chat_app/widgets/common/clikable_text_widget.dart';
-import 'package:skin_chat_app/widgets/common/image_shimmer.dart';
+import 'package:skin_chat_app/services/fetch_metadata.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../services/fetch_metadata.dart';
+import 'clikable_text_widget.dart' show ClickableTextWidget;
+import 'image_shimmer.dart';
 
-class CustomMessageWidget extends StatelessWidget {
+class CustomMessageWidget extends StatefulWidget {
   final Map<String, dynamic> messageData;
   final double messageWidth;
-
-  static final Map<String, PreviewDataModel> _metadataCache = {};
 
   const CustomMessageWidget({
     super.key,
     required this.messageData,
     required this.messageWidth,
   });
+
+  @override
+  State<CustomMessageWidget> createState() => _CustomMessageWidgetState();
+}
+
+class _CustomMessageWidgetState extends State<CustomMessageWidget> {
+  static final Map<String, PreviewDataModel> _metadataCache = {};
+  File? localImageFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _initLocalImage();
+  }
+
+  Future<void> _initLocalImage() async {
+    final imageUrl = widget.messageData['img']?.toString();
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      final file = await SaveImageHelper.saveImageToGallery(url: imageUrl);
+      if (mounted) {
+        setState(() {
+          localImageFile = file;
+        });
+      }
+    }
+  }
 
   Future<PreviewDataModel?> _getMetadata(String? url) async {
     if (url == null || url.isEmpty) return null;
@@ -31,16 +59,14 @@ class CustomMessageWidget extends StatelessWidget {
     if (metadata != null) {
       _metadataCache[url] = metadata;
     }
-    print("FROM CUSTOM WIDGET **********${metadata?.toJson()}");
     return metadata;
   }
 
   @override
   Widget build(BuildContext context) {
-    final String? text = messageData['text']?.toString();
-    final String? imageUrl = messageData['img']?.toString();
-    final String? url = messageData['url']?.toString();
-    final previewDataMap = messageData['previewData'];
+    final text = widget.messageData['text']?.toString();
+    final url = widget.messageData['url']?.toString();
+    final previewDataMap = widget.messageData['previewData'];
 
     PreviewDataModel? previewDataModel;
     if (previewDataMap is Map<String, dynamic>) {
@@ -48,7 +74,8 @@ class CustomMessageWidget extends StatelessWidget {
     }
 
     if ((text == null || text.isEmpty) &&
-        (imageUrl == null || imageUrl.isEmpty) &&
+        (widget.messageData['img'] == null ||
+            widget.messageData['img'].toString().isEmpty) &&
         (url == null || url.isEmpty)) {
       return const SizedBox.shrink();
     }
@@ -60,12 +87,11 @@ class CustomMessageWidget extends StatelessWidget {
       builder: (context, snapshot) {
         final metadata = snapshot.data;
 
-        return Container(
-          width: messageWidth,
-          padding: const EdgeInsets.all(8),
+        Widget content = Container(
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(6)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,25 +99,14 @@ class CustomMessageWidget extends StatelessWidget {
               if (metadata != null) ...[
                 if (metadata.image.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: GestureDetector(
-                      onTap: () {
-                        showImageViewer(
-                          context,
-                          CachedNetworkImageProvider(metadata.image),
-                          swipeDismissible: true,
-                          useSafeArea: true,
-                          doubleTapZoomable: true,
-                        );
-                      },
-                      child: CachedNetworkImage(
-                        imageUrl: metadata.image,
-                        fit: BoxFit.fitHeight,
-                        placeholder: (_, __) =>
-                            const Center(child: ImageShimmer()),
-                        errorWidget: (_, __, ___) =>
-                            const Icon(Icons.broken_image),
-                      ),
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: CachedNetworkImage(
+                      fit: BoxFit.cover,
+                      imageUrl: metadata.image,
+                      placeholder: (_, __) =>
+                          const Center(child: ImageShimmer()),
+                      errorWidget: (_, __, ___) =>
+                          const Icon(Icons.broken_image),
                     ),
                   ),
                 if (metadata.title.isNotEmpty)
@@ -104,29 +119,22 @@ class CustomMessageWidget extends StatelessWidget {
                   ),
                 if (metadata.description.isNotEmpty) Text(metadata.description),
               ],
-              if (imageUrl != null && imageUrl.isNotEmpty)
+              if (localImageFile != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: GestureDetector(
-                      onTap: () async {
-                        // showImageViewer(
-                        //   context,
-                        //   FileImage(file),
-                        //   useSafeArea: true,
-                        //   swipeDismissible: true,
-                        //   doubleTapZoomable: true,
-                        // );
+                      onTap: () {
+                        showImageViewer(
+                          context,
+                          FileImage(localImageFile!),
+                          useSafeArea: true,
+                          swipeDismissible: true,
+                          doubleTapZoomable: true,
+                        );
                       },
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.fitWidth,
-                        placeholder: (_, __) =>
-                            const Center(child: ImageShimmer()),
-                        errorWidget: (_, __, ___) =>
-                            const Icon(Icons.broken_image),
-                      ),
+                      child: Image.file(localImageFile!),
                     ),
                   ),
                 ),
@@ -137,6 +145,19 @@ class CustomMessageWidget extends StatelessWidget {
             ],
           ),
         );
+
+        if (metadata != null && url != null && url.isNotEmpty) {
+          return InkWell(
+            onTap: () async {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: content,
+          );
+        }
+        return content;
       },
     );
   }

@@ -12,7 +12,6 @@ import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
-import 'package:skin_chat_app/models/chat_message.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
@@ -22,6 +21,8 @@ import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/common/custom_message_widget.dart';
 import 'package:skin_chat_app/widgets/common/showDeleteDialog.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../models/chat_message_model.dart';
 
 class HomeScreenVarient2 extends StatefulWidget {
   const HomeScreenVarient2({super.key});
@@ -290,31 +291,11 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                         )
                       : null,
                   theme: DefaultChatTheme(
-                    sentMessageBodyTextStyle: TextStyle(
-                      fontSize: AppStyles.msgText,
-                      color: AppStyles.smoke,
-                    ),
-                    receivedMessageBodyTextStyle:
-                        TextStyle(fontSize: AppStyles.msgText),
                     dateDividerMargin: EdgeInsets.all(0.03.sh),
                     dateDividerTextStyle: TextStyle(fontSize: 15),
-                    userAvatarTextStyle: TextStyle(
-                      fontWeight: FontWeight.normal,
-                      color: AppStyles.smoke,
-                    ),
-                    receivedMessageBodyLinkTextStyle: TextStyle(
-                      color: AppStyles.links,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppStyles.links,
-                    ),
                     inputBackgroundColor: AppStyles.primary,
                     inputTextCursorColor: AppStyles.smoke,
                     inputBorderRadius: BorderRadius.all(Radius.circular(0)),
-                    sentMessageBodyLinkTextStyle: TextStyle(
-                      color: AppStyles.smoke,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppStyles.smoke,
-                    ),
                   ),
                   timeFormat: DateFormat("d/MM/yyyy - hh:mm a "),
                   inputOptions: InputOptions(
@@ -450,7 +431,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                       text: message.text,
                     );
 
-                    final newMessage = ChatMessage(
+                    final newMessage = ChatMessageModel(
                       id: Uuid().v4(),
                       author: types.User(
                         id: authProvider.uid,

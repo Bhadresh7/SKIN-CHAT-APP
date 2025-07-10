@@ -5,7 +5,7 @@ import 'package:skin_chat_app/models/meta_model.dart';
 part 'chat_message.g.dart';
 
 @HiveType(typeId: 2)
-class ChatMessage extends HiveObject {
+class ChatMessageModel extends HiveObject {
   @HiveField(0)
   final String id;
 
@@ -18,7 +18,7 @@ class ChatMessage extends HiveObject {
   @HiveField(3)
   final int createdAt;
 
-  ChatMessage({
+  ChatMessageModel({
     required this.id,
     required types.User author,
     required this.metaModel,
@@ -28,8 +28,8 @@ class ChatMessage extends HiveObject {
   types.User get author => types.User.fromJson(authorJson);
 
   /// Create from a Flutter Chat `CustomMessage`
-  factory ChatMessage.fromCustomMessage(types.CustomMessage msg) {
-    return ChatMessage(
+  factory ChatMessageModel.fromCustomMessage(types.CustomMessage msg) {
+    return ChatMessageModel(
       id: msg.id,
       author: msg.author,
       metaModel: MetaModel.fromJson(msg.metadata ?? {}),
@@ -48,8 +48,8 @@ class ChatMessage extends HiveObject {
   }
 
   /// Load from JSON
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
-    return ChatMessage(
+  factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
+    return ChatMessageModel(
       id: json['id'] as String,
       author: types.User.fromJson(json['author'] as Map<String, dynamic>),
       metaModel:
@@ -57,5 +57,10 @@ class ChatMessage extends HiveObject {
       createdAt:
           json['createdAt'] as int? ?? DateTime.now().millisecondsSinceEpoch,
     );
+  }
+
+  @override
+  String toString() {
+    return 'ChatMessageModel{id: $id, authorJson: $authorJson, metaModel: $metaModel, createdAt: $createdAt}';
   }
 }

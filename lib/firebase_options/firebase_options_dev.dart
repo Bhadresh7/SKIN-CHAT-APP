@@ -57,6 +57,7 @@ class DefaultFirebaseOptions {
     appId: '1:824661335158:android:c400d4b6900d087f4d1357',
     messagingSenderId: '824661335158',
     projectId: 'skin-7def2',
+    databaseURL: 'https://skin-7def2-default-rtdb.firebaseio.com',
     storageBucket: 'skin-7def2.firebasestorage.app',
   );
 

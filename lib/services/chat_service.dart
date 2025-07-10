@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:skin_chat_app/models/chat_message.dart';
+import 'package:skin_chat_app/models/chat_message_model.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:uuid/uuid.dart';
@@ -80,7 +80,7 @@ class ChatService {
     final rawData = data.value;
     print("RAW DATA ======= $rawData");
 
-    List<ChatMessage> newMessages = [];
+    List<ChatMessageModel> newMessages = [];
 
     if (rawData != null && rawData is Map) {
       rawData.forEach((key, value) {
@@ -98,7 +98,7 @@ class ChatService {
               Map<String, dynamic>.from(messageMap['metadata'] ?? {});
 
           // Create MetaModel and ChatMessage
-          final chatMessage = ChatMessage(
+          final chatMessage = ChatMessageModel(
             id: key, // use Firebase key as message ID
             author: author,
             metaModel: MetaModel.fromJson(metadata),
@@ -135,7 +135,7 @@ class ChatService {
 
   ///send messages to firebase-realtime database
   Future<void> sendMessageToRTDB({
-    required ChatMessage message,
+    required ChatMessageModel message,
   }) async {
     DatabaseReference ref = _databaseRef.child(message.id);
     await ref.set(
@@ -178,7 +178,7 @@ class ChatService {
       final imageUrl = await completedSnapshot.ref.getDownloadURL();
 
       final customMessage = MetaModel(img: imageUrl);
-      final chatMessage = ChatMessage(
+      final chatMessage = ChatMessageModel(
         author: types.User(id: userId),
         metaModel: customMessage,
         id: messageId,
@@ -227,7 +227,7 @@ class ChatService {
 
       if (caption.trim().isNotEmpty) {
         final customMessage = MetaModel(img: imageUrl, text: caption);
-        final chatMessage = ChatMessage(
+        final chatMessage = ChatMessageModel(
           author: types.User(id: userId),
           metaModel: customMessage,
           id: Uuid().v4(),
@@ -239,7 +239,7 @@ class ChatService {
         final customMessage = MetaModel(
           img: imageUrl,
         );
-        final chatMessage = ChatMessage(
+        final chatMessage = ChatMessageModel(
           author: types.User(id: userId),
           metaModel: customMessage,
           id: Uuid().v4(),
@@ -263,7 +263,8 @@ class ChatService {
 
   /// FUNCTIONS TO SHOW THE MESSAGES WHEN THE USER IS OFFLINE
 
-  Future<void> addMessagesToLocalStorage({required ChatMessage message}) async {
+  Future<void> addMessagesToLocalStorage(
+      {required ChatMessageModel message}) async {
     try {
       await HiveService.saveMessage(message: message);
     } catch (e) {

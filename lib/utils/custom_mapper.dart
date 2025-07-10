@@ -1,11 +1,11 @@
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:skin_chat_app/models/chat_message.dart';
+import 'package:skin_chat_app/models/chat_message_model.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/models/preview_data_model.dart';
 
 class CustomMapper {
   static List<types.CustomMessage> getCustomMessage(
-      List<ChatMessage> messages) {
+      List<ChatMessageModel> messages) {
     // Sort messages by createdAt in ascending order (oldest to newest)
     messages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -20,7 +20,7 @@ class CustomMapper {
   }
 
   static types.CustomMessage mapCustomMessageModalToChatMessage(
-    ChatMessage chatModel, {
+    ChatMessageModel chatModel, {
     required String userId,
   }) {
     return types.CustomMessage(
@@ -36,8 +36,9 @@ class CustomMapper {
     );
   }
 
-  static ChatMessage mapCustomToChatMessage(types.CustomMessage customMsg) {
-    return ChatMessage(
+  static ChatMessageModel mapCustomToChatMessage(
+      types.CustomMessage customMsg) {
+    return ChatMessageModel(
       id: customMsg.id,
       createdAt: customMsg.createdAt ?? DateTime.now().millisecondsSinceEpoch,
       author: types.User(

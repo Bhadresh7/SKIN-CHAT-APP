@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:skin_chat_app/constants/app_apis.dart';
+import 'package:skin_chat_app/models/notification_model.dart';
 
 import '../constants/app_status.dart';
 
@@ -131,22 +132,37 @@ class NotificationService {
     required String userId,
   }) async {
     try {
+      final messageModel = NotificationModel(
+        uid: userId,
+        title: title,
+        content: content,
+      );
+
       Response res = await _dio.post(
         AppApis.getNotification,
-        data: {
-          "id":userId,
-          "title": title,
-          "content": content,
-        },
+        data: messageModel.toJson(),
         options: Options(
           headers: {
             "Content-Type": "application/json",
           },
         ),
       );
-      print("🐈 Notification sent: ${res.statusMessage}");
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        print("✅ Notification sent successfully: ${res.statusMessage}");
+      } else {
+        print("❌ Server responded with: ${res.statusCode}");
+        print("❌ Response body: ${res.data}");
+      }
     } catch (e) {
-      print("❌ Error sending notification: $e");
+      if (e is DioException) {
+        print("❌ DioException Details:");
+        print("Status Code: ${e.response?.statusCode}");
+        // print("Request URL: ${e.requestOptions.uri}");
+        print("Response Data: ${e.response?.data}");
+        print("Error Message: ${e.message}");
+      }
+      print("❌ Full Error: $e");
     }
   }
 }

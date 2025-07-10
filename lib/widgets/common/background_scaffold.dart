@@ -55,8 +55,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                     UserAccountsDrawerHeader(
                       currentAccountPicture: CircleAvatar(
                         radius: 30,
-                        child: authProvider.currentUser?.imageUrl != null &&
-                                authProvider.currentUser!.imageUrl!.isNotEmpty
+                        child: authProvider.currentUser?.imageUrl != null
                             ? ClipOval(
                                 child: CachedNetworkImage(
                                   imageUrl:

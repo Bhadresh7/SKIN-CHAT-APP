@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:skin_chat_app/constants/app_apis.dart';
 import 'package:skin_chat_app/constants/app_hive_constants.dart';
-import 'package:skin_chat_app/models/chat_message.dart';
+import 'package:skin_chat_app/models/chat_message_model.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/models/users_model.dart';
 
@@ -399,7 +399,7 @@ class HiveService {
 //  MESSAGE OPERATIONS
 // ===================
 
-  static Future<void> pushMessageToHive(List<ChatMessage> messages) async {
+  static Future<void> pushMessageToHive(List<ChatMessageModel> messages) async {
     _ensureInitialized();
     for (final message in messages) {
       print("PPPPPPPPPPPPPPPPPPPPPPPPPPP");
@@ -421,7 +421,7 @@ class HiveService {
     }
   }
 
-  static Future<void> saveMessage({required ChatMessage message}) async {
+  static Future<void> saveMessage({required ChatMessageModel message}) async {
     _ensureInitialized();
     try {
       // Save message to encrypted Hive
@@ -450,11 +450,12 @@ class HiveService {
   }
 
   /// Get all messages from Hive sorted by timestamp
-  static List<ChatMessage> getAllMessages() {
+  static List<ChatMessageModel> getAllMessages() {
     _ensureInitialized();
 
     try {
-      final messages = _messageBox.values.whereType<ChatMessage>().toList();
+      final messages =
+          _messageBox.values.whereType<ChatMessageModel>().toList();
 
       if (messages.isEmpty) return [];
 
@@ -549,7 +550,7 @@ class HiveService {
     if (!Hive.isBoxOpen(boxName)) {
       final messageBoxKey =
           await _getOrCreateEncryptionKey(AppApis.encryptionKey);
-      await Hive.openBox<ChatMessage>(
+      await Hive.openBox<ChatMessageModel>(
         boxName,
         encryptionCipher: HiveAesCipher(messageBoxKey),
       );
@@ -557,7 +558,8 @@ class HiveService {
 
     final box = Hive.box(boxName); // Don't use generic here
     return box.values
-        .whereType<ChatMessage>() // Ensure you're getting only valid objects
+        .whereType<
+            ChatMessageModel>() // Ensure you're getting only valid objects
         .map((msg) => msg.id)
         .toSet();
   }
