@@ -17,7 +17,6 @@ class UsersModelAdapter extends TypeAdapter<UsersModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UsersModel(
-      aadharNo: fields[9] as String,
       mobileNumber: fields[10] as String,
       uid: fields[0] as String,
       username: fields[1] as String,
@@ -37,7 +36,7 @@ class UsersModelAdapter extends TypeAdapter<UsersModel> {
   @override
   void write(BinaryWriter writer, UsersModel obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.uid)
       ..writeByte(1)
@@ -56,8 +55,6 @@ class UsersModelAdapter extends TypeAdapter<UsersModel> {
       ..write(obj.canPost)
       ..writeByte(8)
       ..write(obj.isBlocked)
-      ..writeByte(9)
-      ..write(obj.aadharNo)
       ..writeByte(10)
       ..write(obj.mobileNumber)
       ..writeByte(11)

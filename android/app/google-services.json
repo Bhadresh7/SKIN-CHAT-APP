@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "824661335158",
+    "firebase_url": "https://skin-7def2-default-rtdb.firebaseio.com",
+    "project_id": "skin-7def2",
+    "storage_bucket": "skin-7def2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:824661335158:android:c400d4b6900d087f4d1357",
+        "android_client_info": {
+          "package_name": "com.chat.skin_chat_app.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "824661335158-6aler94voqp42r307es33eai58b9esrj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chat.skin_chat_app.dev",
+            "certificate_hash": "3fec677e17ab3d7d866c3302df355b7c400e84c8"
+          }
+        },
+        {
+          "client_id": "824661335158-7j60jpjktmj1le7refhuc30n318h6ro0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACQdzcrmruNKIM94m7EzvhAVW4-eLKh1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "824661335158-7j60jpjktmj1le7refhuc30n318h6ro0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

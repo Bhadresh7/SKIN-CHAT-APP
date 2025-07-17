@@ -69,6 +69,7 @@ dependencies:
   firebase_database: ^11.3.7
   firebase_messaging: ^15.2.7
   google_sign_in: ^6.3.0
+  rxdart: ^0.28.0
 
   #local storage
   path_provider: ^2.1.5

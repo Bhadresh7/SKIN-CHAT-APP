@@ -153,13 +153,12 @@ class ChatService {
   Future<String> uploadImageAndSend(
     File imageFile,
     String userId,
-    String userName,
     void Function(double)? onProgress,
   ) async {
     final messageId = Uuid().v4();
     final storageRef = FirebaseStorage.instance
         .ref()
-        .child("chat_images/$userName/$messageId.jpg");
+        .child("chat_images/$userId/$messageId.jpg");
 
     // Assign to _currentUploadTask so we can later cancel it if needed
     _currentUploadTask = storageRef.putFile(imageFile);
@@ -199,13 +198,12 @@ class ChatService {
     File imageFile,
     String caption,
     String userId,
-    String userName,
     void Function(double)? onProgress,
   ) async {
     final messageId = Uuid().v4();
     final storageRef = FirebaseStorage.instance
         .ref()
-        .child("chat_images/$userName/$messageId.jpg");
+        .child("chat_images/$userId/$messageId.jpg");
 
     // Assign to _currentUploadTask so we can later cancel it if needed
     _currentUploadTask = storageRef.putFile(imageFile);
@@ -283,11 +281,11 @@ class ChatService {
   }
 
   Future<void> deleteImageFromStorage(
-      {required String messageId, required String username}) async {
+      {required String messageId, required String userId}) async {
     try {
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child("chat_images/$username/$messageId.jpg");
+          .child("chat_images/$userId/$messageId.jpg");
       await storageRef.delete();
     } catch (e) {
       print(e.toString());

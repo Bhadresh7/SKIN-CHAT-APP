@@ -104,7 +104,6 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                         _buildDetailRow('Name', user?.name),
                         _buildDetailRow('Email', user?.email),
                         _buildDetailRow('Mobile No', user?.mobileNumber),
-                        _buildDetailRow('Aadhar No', user?.aadharNo),
                         _buildDetailRow('DOB', user?.dob)
                       ],
                     ),

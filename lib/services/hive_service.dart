@@ -227,6 +227,23 @@ class HiveService {
     }
   }
 
+  static String getCurrentUserId() {
+    final currentUserId = _userBox.get(AppHiveConstants.kCurrentUserDetails);
+    return currentUserId?.uid ?? "";
+  }
+
+  static Future<void> updateUserImageInHive(String downloadUrl) async {
+    final currentUser = _userBox.get(AppHiveConstants.kCurrentUserDetails);
+
+    if (currentUser != null) {
+      currentUser.imageUrl = downloadUrl;
+      await currentUser.save();
+      debugPrint("✅ Updated user imageUrl in Hive");
+    } else {
+      debugPrint("❌ No current user found in Hive");
+    }
+  }
+
   /// Get current user from Hive
   static UsersModel? getCurrentUser() {
     _ensureInitialized();

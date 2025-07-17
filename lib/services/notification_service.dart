@@ -49,35 +49,35 @@ class NotificationService {
     // Handling background notifications
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print("🌟 Background Notification Tapped!");
-      showNotification(message);
+      // showNotification(message);
     });
   }
 
   /// Show normal notification when app is in foreground
-  Future<void> showNotification(RemoteMessage message) async {
-    try {
-      // Create notification details
-      const androidDetails = AndroidNotificationDetails(
-        'your_channel_id', // channel id
-        'your_channel_name', // channel name
-        importance: Importance.high,
-        priority: Priority.high,
-        ticker: 'ticker',
-      );
-      const platformDetails = NotificationDetails(android: androidDetails);
-
-      // Show the notification
-      await _flutterLocalNotificationsPlugin.show(
-        0,
-        message.notification?.title, // title
-        message.notification?.body, // body
-        platformDetails,
-        payload: message.data.toString(),
-      );
-    } catch (e) {
-      print("🔥 Error showing notification: $e");
-    }
-  }
+  // Future<void> showNotification(RemoteMessage message) async {
+  //   try {
+  //     // Create notification details
+  //     const androidDetails = AndroidNotificationDetails(
+  //       'your_channel_id', // channel id
+  //       'your_channel_name', // channel name
+  //       importance: Importance.high,
+  //       priority: Priority.high,
+  //       ticker: 'ticker',
+  //     );
+  //     const platformDetails = NotificationDetails(android: androidDetails);
+  //
+  //     // Show the notification
+  //     await _flutterLocalNotificationsPlugin.show(
+  //       0,
+  //       message.notification?.title, // title
+  //       message.notification?.body, // body
+  //       platformDetails,
+  //       payload: message.data.toString(),
+  //     );
+  //   } catch (e) {
+  //     print("🔥 Error showing notification: $e");
+  //   }
+  // }
 
   /// Show a heads-up notification (poster-like) when app is in background
   Future<void> showHeadsUpNotification(RemoteMessage message) async {

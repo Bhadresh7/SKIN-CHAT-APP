@@ -7,7 +7,6 @@ part 'users_model.g.dart';
 @HiveType(typeId: 0)
 class UsersModel extends HiveObject {
   UsersModel({
-    required this.aadharNo,
     required this.mobileNumber,
     required this.uid,
     required this.username,
@@ -41,8 +40,7 @@ class UsersModel extends HiveObject {
   bool canPost;
   @HiveField(8)
   bool isBlocked;
-  @HiveField(9)
-  final String aadharNo;
+
   @HiveField(10)
   final String mobileNumber;
   @HiveField(11)
@@ -64,7 +62,6 @@ class UsersModel extends HiveObject {
       'isAdmin': isAdmin,
       'canPost': canPost,
       'isBlocked': isBlocked,
-      'aadharNo': aadharNo,
       'mobileNumber': mobileNumber,
       'dob': dob,
       'createdAt': createdAt != null
@@ -86,7 +83,6 @@ class UsersModel extends HiveObject {
       isAdmin: data['isAdmin'] ?? false,
       canPost: data['canPost'] ?? false,
       isBlocked: data['isBlocked'] ?? false,
-      aadharNo: data['aadharNo'] ?? '',
       mobileNumber: data['mobileNumber'] ?? '',
       dob: data['dob'] ?? '',
       createdAt: data['createdAt'] != null
@@ -109,7 +105,6 @@ Users {
   isAdmin: $isAdmin,
   canPost: $canPost,
   isBlocked: $isBlocked,
-  aadharNo: $aadharNo,
   mobileNumber: $mobileNumber,
   dob: $dob,
   createdAt: $createdAt,

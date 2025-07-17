@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/services/user_service.dart';
 
 class BasicUserDetailsProvider extends ChangeNotifier {
-  final UserService _service = UserService();
+  final _service = UserService();
+  StreamSubscription? _userStreamSubscription;
   bool _isLoading = false;
 
   bool get isLoading => _isLoading;
@@ -26,8 +29,20 @@ class BasicUserDetailsProvider extends ChangeNotifier {
     try {
       setLoadingState(value: true);
       final result = await _service.saveUser(user: user);
-      if (result == AppStatus.kaadharNoExists) {
-        return AppStatus.kaadharNoExists;
+      _userStreamSubscription = _service.fetchRoleAndSaveLocally().listen(
+        (data) async {
+          print("First registeration");
+          print("Stream data received: $data");
+        },
+        onError: (error) {
+          debugPrint("User stream error: $error");
+        },
+        onDone: () {
+          debugPrint("User stream completed");
+        },
+      );
+      if (result == AppStatus.kEmailAlreadyExists) {
+        return AppStatus.kEmailAlreadyExists;
       }
 
       return AppStatus.kSuccess;
@@ -43,7 +58,6 @@ class BasicUserDetailsProvider extends ChangeNotifier {
   Future<String> updateUserProfile({
     String? imgUrl,
     String? name,
-    required String aadharNumber,
     String? mobile,
     String? dob,
   }) async {
@@ -51,7 +65,6 @@ class BasicUserDetailsProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
       final result = await _service.updateUserProfile(
-        aadharNumber: aadharNumber,
         name: name,
         dob: dob,
         imgUrl: imgUrl,

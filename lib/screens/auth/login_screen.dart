@@ -34,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     emailController = TextEditingController();
     passwordController = TextEditingController();
@@ -42,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     emailController.dispose();
     passwordController.dispose();
@@ -121,6 +119,12 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             spacing: 0.02.sh,
             children: [
+              // ElevatedButton(
+              //   onPressed: () {
+              //     UserService().deleteUsersCollection();
+              //   },
+              //   child: Text("Delete Users"),
+              // ),
               Lottie.asset(
                 AppAssets.login,
                 height: 0.4.sh,

@@ -24,7 +24,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController usernameController;
-  late TextEditingController aadharController;
   late TextEditingController mobileNumberController;
   late TextEditingController dateController;
 
@@ -34,16 +33,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     usernameController = TextEditingController();
-    aadharController = TextEditingController();
     mobileNumberController = TextEditingController();
     dateController = TextEditingController();
     _loadUserDataFuture = _loadUserData();
+    final url = HiveService.getCurrentUser()?.imageUrl;
+    print(url);
   }
 
   Future<void> _loadUserData() async {
     final data = HiveService.getCurrentUser();
     usernameController.text = data?.username ?? "user";
-    aadharController.text = data?.aadharNo ?? "";
     mobileNumberController.text = data?.mobileNumber ?? "";
     dateController.text = data?.dob ?? "";
   }
@@ -51,7 +50,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     usernameController.dispose();
-    aadharController.dispose();
     mobileNumberController.dispose();
     dateController.dispose();
     super.dispose();
@@ -96,23 +94,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               "IMAGE SELECTED ${imagePickerProvider.selectedImage}");
                         });
                       },
-                      child: imagePickerProvider.selectedImage != null
-                          ? CircleAvatar(
-                              radius: 0.35.sw,
-                              backgroundImage:
-                                  FileImage(imagePickerProvider.selectedImage!),
-                            )
-                          : provider.currentUser?.imageUrl != null
-                              ? CircleAvatar(
-                                  radius: 0.35.sw,
-                                  backgroundImage: CachedNetworkImageProvider(
-                                      provider.currentUser?.imageUrl ?? ""),
-                                )
-                              : CircleAvatar(
-                                  radius: 0.35.sw,
-                                  backgroundImage:
-                                      AssetImage(AppAssets.profileImage),
-                                ),
+                      child: CircleAvatar(
+                        radius: 0.35.sw,
+                        backgroundImage:
+                            imagePickerProvider.selectedImage != null
+                                ? FileImage(imagePickerProvider.selectedImage!)
+                                : (HiveService.getCurrentUser()
+                                            ?.imageUrl
+                                            ?.isNotEmpty ??
+                                        false)
+                                    ? CachedNetworkImageProvider(
+                                        HiveService.getCurrentUser()!.imageUrl!)
+                                    : AssetImage(AppAssets.profileImage)
+                                        as ImageProvider,
+                      ),
                     ),
                     CustomInputField(
                       controller: usernameController,
@@ -123,19 +118,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             errorText: "name is required"),
                         FormBuilderValidators.minLength(3,
                             errorText: "Enter a valid username"),
-                      ],
-                    ),
-                    CustomInputField(
-                      controller: aadharController,
-                      name: "Aadhar number",
-                      hintText: "Aadhar number",
-                      keyboardType: TextInputType.number,
-                      maxLength: 12,
-                      validators: [
-                        FormBuilderValidators.required(
-                            errorText: "Aadhar number is required"),
-                        FormBuilderValidators.match(RegExp(r'^\d{12}$'),
-                            errorText: "Enter a valid Aadhar number"),
                       ],
                     ),
                     CustomInputField(
@@ -196,7 +178,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                           final result =
                               await basicUserDetailsProvider.updateUserProfile(
-                            aadharNumber: aadharController.text.trim(),
                             mobile: mobileNumberController.text.trim(),
                             dob: dateController.text.trim(),
                             name: usernameController.text.trim(),
@@ -206,7 +187,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           if (result == AppStatus.kFailed) {
                             return ToastHelper.showErrorToast(
                               context: context,
-                              message: "Aadhar number is not found",
+                              message: "Email not found",
                             );
                           }
 
@@ -217,8 +198,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             );
                             await provider.getUserDetails(
                                 email: provider.email);
-                            imagePickerProvider
-                                .clear(); // Optional: Clear the selected image after update
+                            await _loadUserData();
+                            imagePickerProvider.clear();
                           }
                         }
                       },

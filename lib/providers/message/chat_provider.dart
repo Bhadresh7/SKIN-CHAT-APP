@@ -83,14 +83,16 @@ class ChatProvider extends ChangeNotifier {
     messageNotifier.value = updatedMessages;
   }
 
-  Future<void> deleteMessage(
-      {required String messageId, required String username}) async {
+  Future<void> deleteMessage({
+    required String messageId,
+    required String userId,
+  }) async {
     try {
       Future.wait([
         _chatService.deleteMessage(messageId: messageId),
         _chatService.deleteMessagesFromLocalStorage(messageId: messageId),
         _chatService.deleteImageFromStorage(
-            messageId: messageId, username: username)
+            messageId: messageId, userId: userId)
       ]);
     } catch (e) {
       print(e.toString());
@@ -119,7 +121,6 @@ class ChatProvider extends ChangeNotifier {
       final imageUrl = await _chatService.uploadImageAndSend(
         imageFile,
         provider.uid,
-        provider.userName ?? "",
         (progress) => uploadProgressNotifier.value = progress,
       );
 
@@ -153,7 +154,6 @@ class ChatProvider extends ChangeNotifier {
         img,
         caption ?? '',
         provider.uid,
-        provider.userName ?? "",
         (progress) => uploadProgressNotifier.value = progress,
       );
 

@@ -4,7 +4,6 @@ class ViewUsersModel {
     required this.name,
     required this.role,
     required this.email,
-    required this.aadharNo,
     required this.mobileNumber,
     required this.dob,
     this.img,
@@ -14,7 +13,6 @@ class ViewUsersModel {
   final String name;
   final String role;
   final String email;
-  final String aadharNo;
   final String mobileNumber;
   final String dob;
   final String? img;
@@ -25,7 +23,6 @@ class ViewUsersModel {
       email: data['email'] ?? '',
       role: data['role'] ?? '',
       name: data['username'] ?? '',
-      aadharNo: data['aadharNo'] ?? '',
       mobileNumber: data['mobileNumber'] ?? '',
       dob: data['dob'] ?? '',
       img: data['imageUrl'] ?? '',

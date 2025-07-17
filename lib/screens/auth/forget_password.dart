@@ -44,29 +44,36 @@ class ForgetPassword extends StatelessWidget {
               ],
             ),
             CustomButton(
+              isLoading: myAuthProvider.isLoading,
               prefixWidget: Icon(
                 Icons.email,
                 size: 0.025.sh,
               ),
               text: "Get email",
               onPressed: () async {
+                if (!formKey.currentState!.validate()) {
+                  return;
+                }
+
                 if (internetProvider.connectionStatus ==
                         AppStatus.kDisconnected ||
                     internetProvider.connectionStatus == AppStatus.kSlow) {
                   return ToastHelper.showErrorToast(
-                      context: context,
-                      message: "Please check your internet connection !!");
+                    context: context,
+                    message: "Please check your internet connection !!",
+                  );
                 }
+
                 final result = await myAuthProvider.resetPassword(
                   email: emailController.text.trim(),
                 );
-                print("🔥🔥🔥🔥🔥$result🔥🔥🔥🔥🔥");
-                print("🔥🔥🔥🔥🔥${emailController.text}🔥🔥🔥🔥🔥");
+
                 if (context.mounted) {
                   if (result == AppStatus.kSuccess) {
                     ToastHelper.showSuccessToast(
-                        context: context,
-                        message: "Email has sent to your email");
+                      context: context,
+                      message: "Email has sent to your email",
+                    );
                     MyNavigation.back(context);
                   } else if (result == AppStatus.kEmailNotFound) {
                     ToastHelper.showErrorToast(

@@ -29,14 +29,12 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   late TextEditingController userNameController;
-  late TextEditingController aadharController;
   late TextEditingController mobileNumberController;
   late TextEditingController dateController;
 
   @override
   void initState() {
     userNameController = TextEditingController();
-    aadharController = TextEditingController();
     mobileNumberController = TextEditingController();
     dateController = TextEditingController();
     super.initState();
@@ -52,7 +50,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   @override
   void dispose() {
     userNameController.dispose();
-    aadharController.dispose();
     dateController.dispose();
     mobileNumberController.dispose();
     super.dispose();
@@ -115,19 +112,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                     ),
                   ),
                   CustomInputField(
-                    controller: aadharController,
-                    name: "Aadhar number",
-                    maxLength: 12,
-                    keyboardType: TextInputType.number,
-                    hintText: "Aadhar number",
-                    validators: [
-                      FormBuilderValidators.required(
-                          errorText: "Aadhar number is required"),
-                      FormBuilderValidators.match(RegExp(r'^\d{12}$'),
-                          errorText: "Enter a valid 12-digit Aadhar number"),
-                    ],
-                  ),
-                  CustomInputField(
                     controller: mobileNumberController,
                     keyboardType: TextInputType.phone,
                     maxLength: 10,
@@ -150,7 +134,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           basicDetailsProvider.selectedRole != null) {
                         UsersModel user = UsersModel(
                           dob: dateController.text.trim(),
-                          aadharNo: aadharController.text.trim(),
                           mobileNumber: mobileNumberController.text.trim(),
                           uid: authProvider.uid,
                           username: userNameController.text.trim(),
@@ -170,11 +153,11 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                         print(
                             "BASIC USER DEATILS SCREEN ==================${result}");
                         switch (result) {
-                          case AppStatus.kaadharNoExists:
-                            return ToastHelper.showErrorToast(
-                              context: context,
-                              message: AppStatus.kaadharNoExists,
-                            );
+                          case AppStatus.kEmailAlreadyExists:
+                            ToastHelper.showSuccessToast(
+                                context: context,
+                                message: AppStatus.kEmailAlreadyExists);
+                            break;
 
                           case AppStatus.kSuccess:
                             await authProvider.completeBasicDetails();
@@ -201,23 +184,6 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                               message: 'Unexpected error occurred.',
                             );
                         }
-
-                        // Proceed only if success
-                        // if (result == AppStatus.kSuccess) {
-                        //   await authProvider.completeBasicDetails();
-                        //   authProvider.clearControllers();
-                        //   if (authProvider.isGoogle) {
-                        //     await authProvider.completeImageSetup();
-                        //     MyNavigation.replace(context, HomeScreenVarient2());
-                        //   } else {
-                        //     MyNavigation.replace(context, ImageSetupScreen());
-                        //   }
-                        // } else {
-                        //   return ToastHelper.showErrorToast(
-                        //     context: context,
-                        //     message: "Cannot save the user",
-                        //   );
-                        // }
                       }
                     },
                   ),

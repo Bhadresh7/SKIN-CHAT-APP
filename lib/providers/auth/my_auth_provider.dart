@@ -28,7 +28,8 @@ class MyAuthProvider extends ChangeNotifier {
   Timer? _timer;
   bool _isLoading = false;
   StreamSubscription? _userStreamSubscription;
-  bool _isStreamSetup = false;
+
+  // bool _isStreamSetup = false;
 
   // Getters
   UsersModel? get currentUser => _currentUser;
@@ -42,6 +43,8 @@ class MyAuthProvider extends ChangeNotifier {
   bool get hasCompletedBasicDetails => HiveService.hasCompletedBasicDetails;
 
   bool get hasCompletedImageSetup => HiveService.hasCompletedImageSetup;
+
+  String get hiveUserId => HiveService.getCurrentUser()?.uid ?? "";
 
   bool get isGoogle => HiveService.isGoogle;
 
@@ -78,10 +81,7 @@ class MyAuthProvider extends ChangeNotifier {
 
   void _setupUserStream() {
     // Prevent multiple stream setups
-    if (_isStreamSetup) {
-      debugPrint("Stream already setup, skipping duplicate setup");
-      return;
-    }
+    print("STREAM ZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
 
     ChatProvider().initMessageStream();
 
@@ -95,26 +95,18 @@ class MyAuthProvider extends ChangeNotifier {
       debugPrint("No user email available for stream setup");
       return;
     }
-
-    _userStreamSubscription = _userService
-        .fetchRoleAndSaveLocally(email: _currentUser?.email ?? "")
-        .listen(
+    _userStreamSubscription = _userService.fetchRoleAndSaveLocally().listen(
       (data) async {
         print("Stream data received: $data");
         await _updateUserFromStream(data);
       },
       onError: (error) {
         debugPrint("User stream error: $error");
-        _isStreamSetup = false; // Reset flag on error
       },
       onDone: () {
         debugPrint("User stream completed");
-        _isStreamSetup = false; // Reset flag when stream completes
       },
     );
-
-    _isStreamSetup = true; // Set flag after successful setup
-    print("Current user: ${_currentUser.toString()}");
   }
 
   /// Update user from stream data with better error handling
@@ -122,25 +114,34 @@ class MyAuthProvider extends ChangeNotifier {
     if (_currentUser == null) return;
 
     try {
-      // Create a copy of current user to avoid direct mutation issues
-      final updatedUser =
-          UsersModel.fromFirestore(_currentUser?.toJson() ?? {});
+      // print("Before update - Current user: ${_currentUser.toString()}");
+      print("Stream data: $data");
 
-      updatedUser.canPost = data["canPost"] ?? false;
-      updatedUser.role = data["role"] ?? "";
-      updatedUser.isBlocked = data["isBlocked"] ?? false;
+      // Update the current user object directly instead of creating a new one
+      _currentUser!.canPost = data["canPost"] ?? _currentUser!.canPost;
+      _currentUser!.role = data["role"] ?? _currentUser!.role;
+      _currentUser!.isBlocked = data["isBlocked"] ?? _currentUser!.isBlocked;
 
-      print("+++++++++++++++++++++ UPDATE USER STREAM IS CALLED $updatedUser ");
-
-      // Update current user reference
-      _currentUser = updatedUser;
-
-      // Save to Hive with error handling
-      await HiveService.saveUserToHive(user: _currentUser);
+      // Force notify listeners to update UI
       notifyListeners();
 
+      print("IS BLOCK FROM UPDATE @@@@@@@@@@${_currentUser?.isBlocked}");
+
+      print("+++++++++++++++++++++ UPDATE USER STREAM IS CALLED");
+
+      // Save to Hive with error handling
+      print("Inside update stream");
+      await HiveService.saveUserToHive(user: _currentUser);
+
+      print("User updated and listeners notified");
+
+      // Handle blocked user
       if (_currentUser!.isBlocked) {
-        await signOut();
+        print("User is blocked, signing out...");
+        // Use a microtask to avoid calling signOut during build
+        Future.microtask(() async {
+          await signOut();
+        });
       }
     } catch (e) {
       debugPrint("Error updating user from stream: $e");
@@ -249,6 +250,8 @@ class MyAuthProvider extends ChangeNotifier {
       await HiveService.setFormUserName(username);
       await HiveService.setLoggedIn(true);
       await _notificationService.storeDeviceToken(uid: uid);
+
+      print("After registeration");
 
       return AppStatus.kSuccess;
     } on FirebaseAuthException catch (e) {
@@ -479,7 +482,6 @@ class MyAuthProvider extends ChangeNotifier {
   void dispose() {
     _timer?.cancel();
     _userStreamSubscription?.cancel();
-    _isStreamSetup = false;
     usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();

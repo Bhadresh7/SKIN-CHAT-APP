@@ -8,7 +8,7 @@ import 'package:skin_chat_app/models/preview_data_model.dart';
 import 'package:skin_chat_app/services/fetch_metadata.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'clikable_text_widget.dart' show ClickableTextWidget;
+import 'clikable_text_widget.dart';
 import 'image_shimmer.dart';
 
 class CustomMessageWidget extends StatefulWidget {
@@ -27,23 +27,19 @@ class CustomMessageWidget extends StatefulWidget {
 
 class _CustomMessageWidgetState extends State<CustomMessageWidget> {
   static final Map<String, PreviewDataModel> _metadataCache = {};
-  File? localImageFile;
+  final ValueNotifier<File?> _imageNotifier = ValueNotifier(null);
 
   @override
   void initState() {
     super.initState();
-    _initLocalImage();
+    _loadImageFile();
   }
 
-  Future<void> _initLocalImage() async {
+  Future<void> _loadImageFile() async {
     final imageUrl = widget.messageData['img']?.toString();
     if (imageUrl != null && imageUrl.isNotEmpty) {
       final file = await SaveImageHelper.saveImageToGallery(url: imageUrl);
-      if (mounted) {
-        setState(() {
-          localImageFile = file;
-        });
-      }
+      _imageNotifier.value = file;
     }
   }
 
@@ -54,12 +50,18 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
       return _metadataCache[url];
     }
 
-    final service = FetchMeta();
-    final metadata = await service.fetchLinkMetadata(url);
+    final metadata = await FetchMeta().fetchLinkMetadata(url);
     if (metadata != null) {
       _metadataCache[url] = metadata;
     }
+
     return metadata;
+  }
+
+  @override
+  void dispose() {
+    _imageNotifier.dispose();
+    super.dispose();
   }
 
   @override
@@ -100,13 +102,15 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
                 if (metadata.image.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: CachedNetworkImage(
-                      fit: BoxFit.cover,
-                      imageUrl: metadata.image,
-                      placeholder: (_, __) =>
-                          const Center(child: ImageShimmer()),
-                      errorWidget: (_, __, ___) =>
-                          const Icon(Icons.broken_image),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: metadata.image,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const ImageShimmer(),
+                        errorWidget: (_, __, ___) =>
+                            const Icon(Icons.broken_image),
+                      ),
                     ),
                   ),
                 if (metadata.title.isNotEmpty)
@@ -119,25 +123,38 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
                   ),
                 if (metadata.description.isNotEmpty) Text(metadata.description),
               ],
-              if (localImageFile != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: GestureDetector(
-                      onTap: () {
-                        showImageViewer(
-                          context,
-                          FileImage(localImageFile!),
-                          useSafeArea: true,
-                          swipeDismissible: true,
-                          doubleTapZoomable: true,
-                        );
-                      },
-                      child: Image.file(localImageFile!),
+              ValueListenableBuilder<File?>(
+                valueListenable: _imageNotifier,
+                builder: (context, file, _) {
+                  if (file == null) return const SizedBox();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: GestureDetector(
+                        onTap: () {
+                          showImageViewer(
+                            context,
+                            FileImage(file),
+                            useSafeArea: true,
+                            swipeDismissible: true,
+                            doubleTapZoomable: true,
+                          );
+                        },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.file(
+                              file,
+                              fit: BoxFit.cover,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
+              ),
               ClickableTextWidget(
                 url: url,
                 text: text,
@@ -157,6 +174,7 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
             child: content,
           );
         }
+
         return content;
       },
     );

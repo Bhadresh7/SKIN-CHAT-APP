@@ -1,11 +1,9 @@
 class AppAssets {
-  static final String noInternet = "assets/lottie/no_internet.json";
   static final String login = "assets/lottie/login.json";
   static final String googleIcon = "assets/icons/google.png";
   static final String profile = "assets/svgs/profile.svg";
   static final String crown = "assets/svgs/crown.png";
   static final String logo = "assets/logo/skin-logo.png";
   static final String profileIcon = "assets/icons/profile.png";
-  static final String developerLottie = "assets/lottie/developer.json";
-  static final String profileImage= "assets/icons/profileimg.png";
+  static final String profileImage = "assets/icons/profileimg.png";
 }

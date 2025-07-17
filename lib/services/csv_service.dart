@@ -60,7 +60,7 @@ class CsvService {
       if (snapshot.docs.isEmpty) return "No data found";
 
       final csvData = <List<dynamic>>[
-        ["User ID", "Name", "Email", "Created-At", "Aadhar no", "Mobile no"]
+        ["User ID", "Name", "Email", "Created-At", "Mobile no"]
       ];
 
       final total = snapshot.docs.length;
@@ -74,7 +74,6 @@ class CsvService {
           data["username"] ?? "N/A",
           data["email"] ?? "N/A",
           formatDate(data["createdAt"]),
-          data["aadharNo"] != null ? '\t${data["aadharNo"]}' : "N/A",
           data["mobileNumber"] != null ? '\t${data["mobileNumber"]}' : "N/A",
         ]);
 

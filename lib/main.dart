@@ -35,12 +35,14 @@ Future<void> runMainApp({required String env}) async {
   if (Platform.isAndroid) {
     final androidStatus = await Permission.photos.request();
     if (!androidStatus.isGranted) {
-      throw Exception("Photo permission not granted on Android");
+      print("Photo permission not granted on Android");
+      await Permission.photos.request();
     }
   } else if (Platform.isIOS) {
     final iosStatus = await Permission.photosAddOnly.request();
     if (!iosStatus.isGranted) {
-      throw Exception("Photo add-only permission not granted on iOS");
+      print("Photo add-only permission not granted on iOS");
+      await Permission.photosAddOnly.request();
     }
   }
   await SystemChrome.setPreferredOrientations([
@@ -74,7 +76,7 @@ Future<void> runMainApp({required String env}) async {
         ChangeNotifierProvider(create: (_) => ShareIntentProvider()),
         ChangeNotifierProvider(create: (_) => SuperAdminProvider2()),
         ChangeNotifierProvider(create: (_) => AppVersionProvider()),
-        ChangeNotifierProvider(create: (_) => ImagePickerProvider())
+        ChangeNotifierProvider(create: (_) => ImagePickerProvider()),
       ],
       child: const MyApp(),
     ),

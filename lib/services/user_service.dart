@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
@@ -16,17 +17,15 @@ class UserService {
   Future<String> saveUser({required UsersModel user}) async {
     try {
       final results = await Future.wait([
-        _checkDocumentExists(
-            AppDbConstants.kSuperAdminCollection, user.email, user.aadharNo),
-        _checkDocumentExists(
-            AppDbConstants.kUserCollection, user.email, user.aadharNo),
+        _checkDocumentExists(AppDbConstants.kSuperAdminCollection, user.email),
+        _checkDocumentExists(AppDbConstants.kUserCollection, user.email),
       ]);
 
       final existsInSuperAdmins = results[0];
       final existsInUsers = results[1];
 
       if (existsInSuperAdmins || existsInUsers) {
-        return AppStatus.kaadharNoExists;
+        return AppStatus.kEmailAlreadyExists;
       } else {
         await _store
             .collection(AppDbConstants.kUserCollection)
@@ -71,34 +70,169 @@ class UserService {
   }
 
   /// fetch the user role in real-time
-  Stream<Map<String, dynamic>> fetchRoleAndSaveLocally(
-      {required String email}) {
-    return _store
-        .collection(AppDbConstants.kUserCollection)
-        .where("email", isEqualTo: email)
-        .limit(1)
-        .snapshots()
-        .asyncMap((userSnapShots) async {
-      if (userSnapShots.docs.isNotEmpty) {
-        return await _processUserData(userSnapShots.docs.first.data());
-      }
+  // Stream<Map<String, dynamic>> fetchRoleAndSaveLocally(
+  //     {required String email}) {
+  //   return _store
+  //       .collection(AppDbConstants.kUserCollection)
+  //       .where("email", isEqualTo: email)
+  //       .limit(1)
+  //       .snapshots()
+  //       .asyncMap((userSnapShots) async {
+  //     if (userSnapShots.docs.isNotEmpty) {
+  //       return await _processUserData(userSnapShots.docs.first.data());
+  //     }
+  //
+  //     // If not found in super_admins, check in the users collection
+  //     return _store
+  //         .collection(AppDbConstants.kSuperAdminCollection)
+  //         .where("email", isEqualTo: email)
+  //         .limit(1)
+  //         .snapshots()
+  //         .asyncMap(
+  //       (superAdminSnapshots) async {
+  //         if (superAdminSnapshots.docs.isNotEmpty) {
+  //           return await _processUserData(
+  //               superAdminSnapshots.docs.first.data());
+  //         }
+  //         return _defaultUserData();
+  //       },
+  //     ).first; // Using `first` to get the final result synchronously
+  //   });
+  // }
 
-      // If not found in super_admins, check in the users collection
-      return _store
-          .collection(AppDbConstants.kSuperAdminCollection)
-          .where("email", isEqualTo: email)
+  // Stream<Map<String, dynamic>> fetchRoleAndSaveLocally(
+  //     {required String email}) {
+  //   return _store
+  //       .collection(AppDbConstants.kUserCollection)
+  //       .where("email", isEqualTo: email)
+  //       .limit(1)
+  //       .snapshots()
+  //       .asyncMap((userSnapShots) async {
+  //     if (userSnapShots.docs.isNotEmpty) {
+  //       return await _processUserData(userSnapShots.docs.first.data());
+  //     }
+  //
+  //     // If not found in users, check in super_admins
+  //     return await _store
+  //         .collection(AppDbConstants.kSuperAdminCollection)
+  //         .where("email", isEqualTo: email)
+  //         .limit(1)
+  //         .snapshots()
+  //         .asyncMap((superAdminSnapshots) async {
+  //       if (superAdminSnapshots.docs.isNotEmpty) {
+  //         return await _processUserData(superAdminSnapshots.docs.first.data());
+  //       }
+  //       return _defaultUserData();
+  //     }).first;
+  //   }).distinct((prev, next) => prev['canPost'] == next['canPost']);
+  // }
+
+  // Stream<Map<String, dynamic>> fetchRoleAndSaveLocally({required String uid}) {
+  //   return _store
+  //       .collection(AppDbConstants.kUserCollection)
+  //       .where("uid", isEqualTo: uid)
+  //       .limit(1)
+  //       .snapshots()
+  //       .asyncMap((userSnapShots) async {
+  //     if (userSnapShots.docs.isNotEmpty) {
+  //       print(userSnapShots.docs.first);
+  //       return await _processUserData(userSnapShots.docs.first.data());
+  //     }
+  //     return _defaultUserData();
+  //   }).distinct((prev, next) => prev['canPost'] == next['canPost']);
+  // }
+  // Stream<Map<String, dynamic>> fetchRoleAndSaveLocally({required String uid}) {
+  //   final userStream = _store
+  //       .collection(AppDbConstants.kUserCollection)
+  //       .where("uid", isEqualTo: uid)
+  //       .limit(1)
+  //       .snapshots()
+  //       .asyncMap((userSnap) async {
+  //     if (userSnap.docs.isNotEmpty) {
+  //       print(userSnap.docs.first.data());
+  //
+  //       return await _processUserData(userSnap.docs.first.data());
+  //     }
+  //     print(userSnap.docs.first.data());
+  //     return null;
+  //   });
+  //
+  //   final superAdminStream = _store
+  //       .collection(AppDbConstants.kSuperAdminCollection)
+  //       .where("uid", isEqualTo: uid)
+  //       .limit(1)
+  //       .snapshots()
+  //       .asyncMap((adminSnap) async {
+  //     if (adminSnap.docs.isNotEmpty) {
+  //       print(adminSnap.docs.first.data());
+  //       return await _processUserData(adminSnap.docs.first.data());
+  //     }
+  //     print(adminSnap.docs.first.data());
+  //
+  //     return null;
+  //   });
+  //
+  //   return Rx.concat([userStream, superAdminStream])
+  //       .where((data) => data != null)
+  //       .cast<Map<String, dynamic>>()
+  //       .distinct((prev, next) =>
+  //           prev["canPost"] == next["canPost"] &&
+  //           prev["isBlocked"] == next["isBlocked"]);
+  // }
+  Stream<Map<String, dynamic>> fetchRoleAndSaveLocally() async* {
+    Map<String, dynamic>? data;
+
+    final user = HiveService.getCurrentUser();
+    final userSnapshot = await _store
+        .collection(AppDbConstants.kUserCollection)
+        .where("uid", isEqualTo: user?.uid)
+        .limit(1)
+        .get();
+
+    if (userSnapshot.docs.isNotEmpty) {
+      data = await _processUserData(userSnapshot.docs.first.data());
+      yield data;
+      yield* _store
+          .collection(AppDbConstants.kUserCollection)
+          .where("uid", isEqualTo: user?.uid)
           .limit(1)
           .snapshots()
-          .asyncMap(
-        (superAdminSnapshots) async {
-          if (superAdminSnapshots.docs.isNotEmpty) {
-            return await _processUserData(
-                superAdminSnapshots.docs.first.data());
-          }
-          return _defaultUserData();
-        },
-      ).first; // Using `first` to get the final result synchronously
-    });
+          .asyncMap((snap) async => snap.docs.isNotEmpty
+              ? await _processUserData(snap.docs.first.data())
+              : null)
+          .whereType<Map<String, dynamic>>()
+          .distinct((prev, next) =>
+              prev["canPost"] == next["canPost"] &&
+              prev["isBlocked"] == next["isBlocked"]);
+      return;
+    }
+
+    final adminSnapshot = await _store
+        .collection(AppDbConstants.kSuperAdminCollection)
+        .where("uid", isEqualTo: user?.uid)
+        .limit(1)
+        .get();
+
+    if (adminSnapshot.docs.isNotEmpty) {
+      data = await _processUserData(adminSnapshot.docs.first.data());
+      yield data;
+      yield* _store
+          .collection(AppDbConstants.kSuperAdminCollection)
+          .where("uid", isEqualTo: user?.uid)
+          .limit(1)
+          .snapshots()
+          .asyncMap((snap) async => snap.docs.isNotEmpty
+              ? await _processUserData(snap.docs.first.data())
+              : null)
+          .whereType<Map<String, dynamic>>()
+          .distinct((prev, next) =>
+              prev["canPost"] == next["canPost"] &&
+              prev["isBlocked"] == next["isBlocked"]);
+      return;
+    }
+
+    // Only emit fallback *after both fail*
+    yield _defaultUserData();
   }
 
   // Function to process user data and save it locally
@@ -120,6 +254,7 @@ class UserService {
     return {
       "role": "no-role-found",
       "canPost": false,
+      "isBlocked": false,
     };
   }
 
@@ -168,10 +303,6 @@ class UserService {
       print("🚫 Is Blocked: $isBlocked");
 
       UsersModel.fromFirestore(data);
-
-      // await LocalStorage.setString("email", mail);
-      // await LocalStorage.setString("role", role);
-      // await LocalStorage.setBool("canPost", canPost);
 
       return {
         'isBlocked': isBlocked,
@@ -223,7 +354,6 @@ class UserService {
   Future<UsersModel?> updateUserProfile({
     String? imgUrl,
     String? name,
-    required String aadharNumber,
     String? mobile,
     String? dob,
   }) async {
@@ -247,11 +377,6 @@ class UserService {
             .where("uid", isEqualTo: user?.uid)
             .limit(1)
             .get();
-
-        if (snapshot.docs.isEmpty) {
-          print("User with Aadhaar number $aadharNumber not found.");
-          return null;
-        }
       }
 
       final docRef = snapshot.docs.first.reference;
@@ -331,16 +456,10 @@ class UserService {
     }
   }
 
-  Future<bool> _checkDocumentExists(
-      String collection, String email, String aadharNo) async {
+  Future<bool> _checkDocumentExists(String collection, String email) async {
     final query = await _store
         .collection(collection)
-        .where(
-          Filter.or(
-            Filter('email', isEqualTo: email),
-            Filter('aadharNo', isEqualTo: aadharNo),
-          ),
-        )
+        .where('email', isEqualTo: email)
         .limit(1)
         .get();
 
@@ -364,5 +483,21 @@ class UserService {
     } catch (e) {
       print("🔥 Error deleting token: $e");
     }
+  }
+
+  Future<void> deleteUsersCollection() async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    await _auth.currentUser?.delete();
+
+    final CollectionReference usersCollection = firestore.collection('users');
+
+    final QuerySnapshot snapshot = await usersCollection.get();
+
+    for (final DocumentSnapshot doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    print("All users deleted successfully.");
   }
 }

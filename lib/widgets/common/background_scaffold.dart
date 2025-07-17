@@ -55,25 +55,45 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                     UserAccountsDrawerHeader(
                       currentAccountPicture: CircleAvatar(
                         radius: 30,
-                        child: authProvider.currentUser?.imageUrl != null
-                            ? ClipOval(
+                        child: Builder(
+                          builder: (context) {
+                            final localImageUrl =
+                                HiveService.getCurrentUser()?.imageUrl;
+                            final remoteImageUrl =
+                                authProvider.currentUser?.imageUrl;
+
+                            final displayImageUrl = (localImageUrl != null &&
+                                    localImageUrl.isNotEmpty)
+                                ? localImageUrl
+                                : (remoteImageUrl != null &&
+                                        remoteImageUrl.isNotEmpty)
+                                    ? remoteImageUrl
+                                    : null;
+
+                            if (displayImageUrl != null) {
+                              return ClipOval(
                                 child: CachedNetworkImage(
-                                  imageUrl:
-                                      authProvider.currentUser?.imageUrl ?? "",
+                                  imageUrl: displayImageUrl,
                                   fit: BoxFit.cover,
                                   width: 90,
                                   height: 90,
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.person),
+                                      const Icon(Icons.person, size: 40),
                                 ),
-                              )
-                            : const Icon(Icons.person, size: 40),
+                              );
+                            } else {
+                              return const Icon(Icons.person, size: 40);
+                            }
+                          },
+                        ),
                       ),
                       accountEmail: Text(authProvider.email),
-                      accountName: Text(authProvider.currentUser?.username ??
-                          HiveService.formUserName ??
-                          authProvider.userName ??
-                          "User"),
+                      accountName: Text(
+                        authProvider.currentUser?.username ??
+                            HiveService.formUserName ??
+                            authProvider.userName ??
+                            "User",
+                      ),
                     ),
                     ListTile(
                       trailing: Icon(Icons.arrow_forward_ios),
@@ -124,8 +144,14 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
-                              title: Text("Confirm Logout"),
-                              content: Text("Are you sure to Logout ?"),
+                              title: Text(
+                                "Confirm Logout",
+                                style: TextStyle(fontSize: AppStyles.heading),
+                              ),
+                              content: Text(
+                                "Are you sure to Logout ?",
+                                style: TextStyle(fontSize: AppStyles.bodyText),
+                              ),
                               actions: [
                                 TextButton(
                                   onPressed: () {
