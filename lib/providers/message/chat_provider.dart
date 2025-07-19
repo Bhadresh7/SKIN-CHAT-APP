@@ -27,6 +27,7 @@ class ChatProvider extends ChangeNotifier {
 
   void initMessageStream() async {
     if (internetProvider.connectionStatus == AppStatus.kDisconnected) {
+      print("Initial messages called ");
       HiveService.getAllMessages();
     } else {
       _chatService.dispose();

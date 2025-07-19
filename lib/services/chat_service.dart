@@ -24,6 +24,8 @@ class ChatService {
       _messageController.stream;
 
   void initMessageListener() {
+    print(
+        "---------------------------Initial messages called--------------------------- ");
     _messageSubscription =
         _databaseRef.orderByChild("ts").onValue.listen((event) {
       if (event.snapshot.value == null) {

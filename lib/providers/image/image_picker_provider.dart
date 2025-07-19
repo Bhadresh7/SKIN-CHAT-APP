@@ -137,6 +137,8 @@ class ImagePickerProvider extends ChangeNotifier {
       TaskSnapshot snapshot = await uploadTask;
       String downloadUrl = await snapshot.ref.getDownloadURL();
 
+      print("ID OF THE USER TO UPDATE )))))))))))))))$userId");
+
       // Step 3: Check both collections in parallel
       final usersRef = FirebaseFirestore.instance
           .collection(AppDbConstants.kUserCollection)

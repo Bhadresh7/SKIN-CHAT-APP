@@ -70,12 +70,18 @@ class BasicUserDetailsProvider extends ChangeNotifier {
         imgUrl: imgUrl,
         mobile: mobile,
       );
+      print("---------------------------------------");
+      print("UPDATED VALUE");
+      print(result?.toJson());
+      print("---------------------------------------");
+
+      if (result != null) {
+        return AppStatus.kSuccess;
+      }
 
       notifyListeners();
-      if (result == null) {
-        return AppStatus.kFailed;
-      }
-      return AppStatus.kSuccess;
+
+      return AppStatus.kFailed;
     } catch (e) {
       _isLoading = false;
       notifyListeners();

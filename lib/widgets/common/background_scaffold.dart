@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
@@ -52,47 +53,50 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
             ? Drawer(
                 child: ListView(
                   children: [
-                    UserAccountsDrawerHeader(
-                      currentAccountPicture: CircleAvatar(
-                        radius: 30,
-                        child: Builder(
-                          builder: (context) {
-                            final localImageUrl =
-                                HiveService.getCurrentUser()?.imageUrl;
-                            final remoteImageUrl =
-                                authProvider.currentUser?.imageUrl;
+                    SizedBox(
+                      height: 0.23.sh,
+                      child: UserAccountsDrawerHeader(
+                        currentAccountPictureSize: Size(100, 100),
+                        currentAccountPicture: CircleAvatar(
+                          child: Builder(
+                            builder: (context) {
+                              final localImageUrl =
+                                  HiveService.getCurrentUser()?.imageUrl;
+                              final remoteImageUrl =
+                                  authProvider.currentUser?.imageUrl;
 
-                            final displayImageUrl = (localImageUrl != null &&
-                                    localImageUrl.isNotEmpty)
-                                ? localImageUrl
-                                : (remoteImageUrl != null &&
-                                        remoteImageUrl.isNotEmpty)
-                                    ? remoteImageUrl
-                                    : null;
+                              final displayImageUrl = (localImageUrl != null &&
+                                      localImageUrl.isNotEmpty)
+                                  ? localImageUrl
+                                  : (remoteImageUrl != null &&
+                                          remoteImageUrl.isNotEmpty)
+                                      ? remoteImageUrl
+                                      : null;
 
-                            if (displayImageUrl != null) {
-                              return ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: displayImageUrl,
-                                  fit: BoxFit.cover,
-                                  width: 90,
-                                  height: 90,
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.person, size: 40),
-                                ),
-                              );
-                            } else {
-                              return const Icon(Icons.person, size: 40);
-                            }
-                          },
+                              if (displayImageUrl != null) {
+                                return ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: displayImageUrl,
+                                    fit: BoxFit.cover,
+                                    width: 120,
+                                    height: 120,
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.person, size: 40),
+                                  ),
+                                );
+                              } else {
+                                return const Icon(Icons.person, size: 40);
+                              }
+                            },
+                          ),
                         ),
-                      ),
-                      accountEmail: Text(authProvider.email),
-                      accountName: Text(
-                        authProvider.currentUser?.username ??
-                            HiveService.formUserName ??
-                            authProvider.userName ??
-                            "User",
+                        accountEmail: Text(authProvider.email),
+                        accountName: Text(
+                          authProvider.currentUser?.username ??
+                              HiveService.formUserName ??
+                              authProvider.userName ??
+                              "User",
+                        ),
                       ),
                     ),
                     ListTile(
@@ -128,7 +132,7 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                     ),
                     ListTile(
                       title: Text(
-                          ' App version Beta ${context.read<AppVersionProvider>().appVersion}'),
+                          ' App version  ${context.read<AppVersionProvider>().appVersion}'),
                     ),
                     ListTile(
                       leading: Icon(

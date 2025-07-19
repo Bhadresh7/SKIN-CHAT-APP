@@ -358,11 +358,13 @@ class UserService {
     String? dob,
   }) async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
+      User? firebaseUser = FirebaseAuth.instance.currentUser;
+
+      final user = HiveService.getCurrentUser();
 
       if (user != null && name != null) {
-        await user.updateDisplayName(name);
-        await user.reload();
+        await firebaseUser?.updateDisplayName(name);
+        await firebaseUser?.reload();
       }
 
       QuerySnapshot snapshot = await _store
@@ -393,6 +395,7 @@ class UserService {
 
       // OPTIONAL: if you really need the updated document, this is read #2
       final data = (await docRef.get()).data() as Map<String, dynamic>;
+
       return UsersModel.fromFirestore(data);
     } catch (e) {
       print("Error updating user profile: $e");

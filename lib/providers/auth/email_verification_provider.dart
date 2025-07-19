@@ -65,6 +65,8 @@ class EmailVerificationProvider extends ChangeNotifier {
   /// Check if email has been verified
   Future<void> _checkEmailVerified() async {
     try {
+      _startVerificationTimer();
+      notifyListeners();
       final User? currentUser = _auth.currentUser;
       if (currentUser == null) {
         _stopVerificationTimer();

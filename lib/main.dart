@@ -12,7 +12,6 @@ import 'package:skin_chat_app/helpers/notification_helpers.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/screens/auth/auth_screen.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
-import 'package:toastification/toastification.dart';
 
 import 'constants/app_styles.dart';
 import 'providers/message/share_content_provider.dart';
@@ -93,17 +92,15 @@ class MyApp extends StatelessWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        return ToastificationWrapper(
-          child: MaterialApp(
-            themeMode: ThemeMode.system,
-            theme: ThemeData(
-              brightness: Brightness.light,
-              fontFamily: AppStyles.primaryFont,
-              scaffoldBackgroundColor: Colors.white,
-            ),
-            debugShowCheckedModeBanner: false,
-            home: const AuthScreen(),
+        return MaterialApp(
+          themeMode: ThemeMode.system,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            fontFamily: AppStyles.primaryFont,
+            scaffoldBackgroundColor: Colors.white,
           ),
+          debugShowCheckedModeBanner: false,
+          home: const AuthScreen(),
         );
       },
     );

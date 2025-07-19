@@ -6,12 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/helpers/date_formater_helper.dart';
 import 'package:skin_chat_app/helpers/toast_helper.dart';
-import 'package:skin_chat_app/providers/auth/basic_user_details_provider.dart';
-import 'package:skin_chat_app/providers/auth/my_auth_provider.dart';
+import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 
 import '../../constants/app_status.dart';
-import '../../providers/image/image_picker_provider.dart';
 import '../../widgets/common_exports.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -37,7 +35,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     dateController = TextEditingController();
     _loadUserDataFuture = _loadUserData();
     final url = HiveService.getCurrentUser()?.imageUrl;
-    print(url);
+    print("Initial Hive image URL: $url");
   }
 
   Future<void> _loadUserData() async {
@@ -60,6 +58,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final basicUserDetailsProvider = context.watch<BasicUserDetailsProvider>();
     final imagePickerProvider = context.watch<ImagePickerProvider>();
     final provider = Provider.of<MyAuthProvider>(context);
+    final internetProvider = context.watch<InternetProvider>();
+
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
@@ -170,10 +170,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           String? imageUrl =
                               provider.currentUser?.imageUrl ?? "";
                           if (imagePickerProvider.selectedImage != null) {
-                            print(
-                                "IMAGE URL -------------------------$imageUrl");
-                            imageUrl = await imagePickerProvider
-                                .uploadImageToFirebase(provider.uid);
+                            print("Uploading new image...");
+                            imageUrl =
+                                await imagePickerProvider.uploadImageToFirebase(
+                              HiveService.getCurrentUser()?.uid ?? "",
+                            );
                           }
 
                           final result =
@@ -184,10 +185,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             imgUrl: imageUrl,
                           );
 
+                          if (internetProvider.connectionStatus ==
+                              AppStatus.kDisconnected) {
+                            return ToastHelper.showErrorToast(
+                                context: context,
+                                message:
+                                    "Please check your internet connection");
+                          }
+
                           if (result == AppStatus.kFailed) {
                             return ToastHelper.showErrorToast(
                               context: context,
-                              message: "Email not found",
+                              message: "User not found",
                             );
                           }
 
@@ -196,10 +205,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               context: context,
                               message: "Updated Successfully",
                             );
+
                             await provider.getUserDetails(
                                 email: provider.email);
+
+                            // 👇 Save updated user to Hive
+                            HiveService.saveUserToHive(
+                                user: provider.currentUser);
+
+                            // 👇 Load updated user data into controllers
                             await _loadUserData();
+
+                            // 👇 Clear selected image
                             imagePickerProvider.clear();
+
+                            // 👇 Force rebuild
+                            setState(() {});
                           }
                         }
                       },
