@@ -140,15 +140,15 @@ class _AuthScreenState extends State<AuthScreen> {
     bool isBlocked = (authProvider.currentUser?.isBlocked ?? false) ||
         (HiveService.getCurrentUser()?.isBlocked ?? false);
 
-    print("=== AuthScreen Build ===");
-    print("isLoggedIn: ${authProvider.isLoggedIn}");
-    print(
-        "authProvider.currentUser?.isBlocked: ${authProvider.currentUser?.isBlocked}");
-    print(
-        "HiveService.getCurrentUser()?.isBlocked: ${HiveService.getCurrentUser()?.isBlocked}");
-    print("Resolved isBlocked: $isBlocked");
-    print("_hasHandledBlock: $_hasHandledBlock");
-    print("_isShowingBlockDialog: $_isShowingBlockDialog");
+    // print("=== AuthScreen Build ===");
+    // print("isLoggedIn: ${authProvider.isLoggedIn}");
+    // print(
+    //     "authProvider.currentUser?.isBlocked: ${authProvider.currentUser?.isBlocked}");
+    // print(
+    //     "HiveService.getCurrentUser()?.isBlocked: ${HiveService.getCurrentUser()?.isBlocked}");
+    // print("Resolved isBlocked: $isBlocked");
+    // print("_hasHandledBlock: $_hasHandledBlock");
+    // print("_isShowingBlockDialog: $_isShowingBlockDialog");
 
     // Handle blocked user case
     if (isBlocked &&
@@ -218,12 +218,12 @@ Widget _getScreenBasedOnAuth(MyAuthProvider authProvider) {
   bool? basicDetailsFormStatus = authProvider.hasCompletedBasicDetails;
   bool? imageSetupStatus = authProvider.hasCompletedImageSetup;
 
-  print("isLoggedIn: $isLoggedIn");
-  print(
-      "authProvider.currentUser?.isBlocked: ${authProvider.currentUser?.isBlocked}");
-  print(
-      "HiveService.getCurrentUser()?.isBlocked: ${HiveService.getCurrentUser()?.isBlocked}");
-  print("Resolved isBlocked: $isBlocked");
+  // print("isLoggedIn: $isLoggedIn");
+  // print(
+  //     "authProvider.currentUser?.isBlocked: ${authProvider.currentUser?.isBlocked}");
+  // print(
+  //     "HiveService.getCurrentUser()?.isBlocked: ${HiveService.getCurrentUser()?.isBlocked}");
+  // print("Resolved isBlocked: $isBlocked");
 
   // If user is blocked, always show login screen
   if (isBlocked) {

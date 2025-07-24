@@ -16,63 +16,63 @@ class ChatService {
 
   UploadTask? get currentUploadTask => _currentUploadTask;
 
-  final _messageController =
-      StreamController<List<types.CustomMessage>>.broadcast();
-  StreamSubscription<DatabaseEvent>? _messageSubscription;
+  // final _messageController =
+  //     StreamController<List<types.CustomMessage>>.broadcast();
+  // StreamSubscription<DatabaseEvent>? _messageSubscription;
 
-  Stream<List<types.CustomMessage>> get messagesStream =>
-      _messageController.stream;
+  // Stream<List<types.CustomMessage>> get messagesStream =>
+  //     _messageController.stream;
 
-  void initMessageListener() {
-    print(
-        "---------------------------Initial messages called--------------------------- ");
-    _messageSubscription =
-        _databaseRef.orderByChild("ts").onValue.listen((event) {
-      if (event.snapshot.value == null) {
-        _messageController.add([]);
-        return;
-      }
-
-      final rawData = event.snapshot.value;
-      if (rawData is! Map) {
-        _messageController.add([]);
-        return;
-      }
-
-      final messages = rawData.entries
-          .map((entry) {
-            final messageData = entry.value;
-            if (messageData is! Map) return null;
-
-            final author = types.User(
-              id: messageData["id"].toString(),
-              firstName: messageData["name"]?.toString() ?? "Unknown",
-            );
-
-            final timestamp =
-                messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
-            final msg = messageData["metadata"];
-            if (msg is! Map) return null;
-
-            return types.CustomMessage(
-              id: entry.key,
-              author: author,
-              createdAt: timestamp,
-              metadata: {
-                "text": msg["text"],
-                "url": msg["url"],
-                "img": msg["img"],
-              },
-            );
-          })
-          .whereType<types.CustomMessage>()
-          .toList();
-
-      messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-
-      _messageController.add(messages);
-    });
-  }
+  // void initMessageListener() {
+  //   print(
+  //       "---------------------------Initial messages called--------------------------- ");
+  //   _messageSubscription =
+  //       _databaseRef.orderByChild("ts").onChildAdded.listen((event) {
+  //     if (event.snapshot.value == null) {
+  //       _messageController.add([]);
+  //       return;
+  //     }
+  //
+  //     final rawData = event.snapshot.value;
+  //     if (rawData is! Map) {
+  //       _messageController.add([]);
+  //       return;
+  //     }
+  //
+  //     final messages = rawData.entries
+  //         .map((entry) {
+  //           final messageData = entry.value;
+  //           if (messageData is! Map) return null;
+  //
+  //           final author = types.User(
+  //             id: messageData["id"].toString(),
+  //             firstName: messageData["name"]?.toString() ?? "Unknown",
+  //           );
+  //
+  //           final timestamp =
+  //               messageData["ts"] ?? DateTime.now().millisecondsSinceEpoch;
+  //           final msg = messageData["metadata"];
+  //           if (msg is! Map) return null;
+  //
+  //           return types.CustomMessage(
+  //             id: entry.key,
+  //             author: author,
+  //             createdAt: timestamp,
+  //             metadata: {
+  //               "text": msg["text"],
+  //               "url": msg["url"],
+  //               "img": msg["img"],
+  //             },
+  //           );
+  //         })
+  //         .whereType<types.CustomMessage>()
+  //         .toList();
+  //
+  //     messages.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+  //
+  //     _messageController.add(messages);
+  //   });
+  // }
 
   Future<void> getNewMessages() async {
     final timestamp = await HiveService.getLastSavedTimestamp();
@@ -119,9 +119,9 @@ class ChatService {
     }
   }
 
-  void dispose() {
-    _messageSubscription?.cancel();
-  }
+  // void dispose() {
+  //   _messageSubscription?.cancel();
+  // }
 
   ///delete messages from database
   Future<void> deleteMessage({required String messageId}) async {
@@ -180,7 +180,8 @@ class ChatService {
 
       final customMessage = MetaModel(img: imageUrl);
       final chatMessage = ChatMessageModel(
-        author: types.User(id: userId),
+        author: types.User(
+            id: userId, firstName: HiveService.getCurrentUser()?.username),
         metaModel: customMessage,
         id: messageId,
         createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -228,7 +229,8 @@ class ChatService {
       if (caption.trim().isNotEmpty) {
         final customMessage = MetaModel(img: imageUrl, text: caption);
         final chatMessage = ChatMessageModel(
-          author: types.User(id: userId),
+          author: types.User(
+              id: userId, firstName: HiveService.getCurrentUser()?.username),
           metaModel: customMessage,
           id: Uuid().v4(),
           createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -240,7 +242,8 @@ class ChatService {
           img: imageUrl,
         );
         final chatMessage = ChatMessageModel(
-          author: types.User(id: userId),
+          author: types.User(
+              id: userId, firstName: HiveService.getCurrentUser()?.username),
           metaModel: customMessage,
           id: Uuid().v4(),
           createdAt: DateTime.now().millisecondsSinceEpoch,

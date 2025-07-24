@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/models/users_model.dart';
-import 'package:skin_chat_app/providers/message/chat_provider.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/services/user_service.dart';
@@ -83,8 +82,6 @@ class MyAuthProvider extends ChangeNotifier {
     // Prevent multiple stream setups
     print("STREAM ZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
 
-    ChatProvider().initMessageStream();
-
     print("User stream triggered !!!!!!!!!!!");
 
     // Cancel existing subscription first
@@ -132,8 +129,6 @@ class MyAuthProvider extends ChangeNotifier {
       // Save to Hive with error handling
       print("Inside update stream");
       await HiveService.saveUserToHive(user: _currentUser);
-
-      print("User updated and listeners notified");
 
       // Handle blocked user
       if (_currentUser!.isBlocked) {

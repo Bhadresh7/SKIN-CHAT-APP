@@ -24,10 +24,20 @@ class SuperAdminProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // In your SuperAdminProvider
+  bool _isBlockLoading = false;
+  bool _isAdminLoading = false;
+
+  bool get isBlockLoading => _isBlockLoading;
+
+  bool get isAdminLoading => _isAdminLoading;
+
+// Then use these in your respective methods
+
   Future<void> checkSuperAdminStatus(String email) async {
     try {
       setLoadingState(true);
-      _isSuperAdmin = await _service.findSuperAdminByEmail(email: email);
+      _isSuperAdmin = await _service.findAdminByEmail(email: email);
     } catch (e) {
       print(e.toString());
     } finally {
@@ -38,32 +48,35 @@ class SuperAdminProvider with ChangeNotifier {
 
   Future<String> makeAsAdmin({required String email}) async {
     try {
-      setLoadingState(true);
+      _isAdminLoading = true;
+      notifyListeners();
       await _service.togglePosting(email: email);
+      await getAllUsers(email: email);
       return AppStatus.kSuccess;
     } catch (e) {
       print(e.toString());
       return AppStatus.kFailed;
     } finally {
-      setLoadingState(false);
+      _isAdminLoading = false;
       notifyListeners();
     }
   }
 
   Future<String> blockUsers({required String uid}) async {
     try {
-      setLoadingState(true);
+      _isBlockLoading = true;
       notifyListeners();
 
-      final blockedUsers = await _service.blockUsers(uid: uid);
+      final status = await _service.blockUsers(uid: uid);
+      print("🔄 Block toggle result: $status");
+      await getAllUsers(email: viewUsers?.email ?? '');
 
-      print("=========$blockedUsers========");
-      return blockedUsers;
+      return status;
     } catch (e) {
-      print(e.toString());
-      return e.toString();
+      print("❌ Error in provider blockUsers: $e");
+      return AppStatus.kFailed;
     } finally {
-      setLoadingState(false);
+      _isBlockLoading = false;
       notifyListeners();
     }
   }

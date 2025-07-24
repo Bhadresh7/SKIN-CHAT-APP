@@ -13,6 +13,7 @@ import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/models/users_model.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/screens/screen_exports.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/widgets/buttons/custom_button.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
 import 'package:skin_chat_app/widgets/inputs/custom_input_field.dart';
@@ -37,13 +38,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     userNameController = TextEditingController();
     mobileNumberController = TextEditingController();
     dateController = TextEditingController();
+    userNameController.text = HiveService.formUserName ?? "User";
     super.initState();
-    final authProvider = context.read<MyAuthProvider>();
-    final chatProvider = context.read<ChatProvider>();
-    chatProvider.initMessageStream();
-
-    userNameController.text =
-        authProvider.userName ?? authProvider.usernameController.text;
     print("BASIC USER DETAILS ${userNameController.text}");
   }
 

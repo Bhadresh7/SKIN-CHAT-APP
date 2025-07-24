@@ -54,9 +54,9 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                 child: ListView(
                   children: [
                     SizedBox(
-                      height: 0.23.sh,
+                      height: 0.25.sh,
                       child: UserAccountsDrawerHeader(
-                        currentAccountPictureSize: Size(100, 100),
+                        currentAccountPictureSize: Size(0.25.sw, 0.25.sw),
                         currentAccountPicture: CircleAvatar(
                           child: Builder(
                             builder: (context) {
@@ -78,8 +78,8 @@ class _BackgroundScaffoldState extends State<BackgroundScaffold> {
                                   child: CachedNetworkImage(
                                     imageUrl: displayImageUrl,
                                     fit: BoxFit.cover,
-                                    width: 120,
-                                    height: 120,
+                                    width: 0.25.sw,
+                                    height: 0.25.sw,
                                     errorWidget: (context, url, error) =>
                                         const Icon(Icons.person, size: 40),
                                   ),

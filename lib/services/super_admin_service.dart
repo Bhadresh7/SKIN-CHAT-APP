@@ -7,7 +7,7 @@ class SuperAdminService {
   final FirebaseFirestore _store = FirebaseFirestore.instance;
 
   /// Check if the given email belongs to a super admin
-  Future<bool> findSuperAdminByEmail({required String email}) async {
+  Future<bool> findAdminByEmail({required String email}) async {
     try {
       var querySnapshot = await _store
           .collection(AppDbConstants.kSuperAdminCollection)

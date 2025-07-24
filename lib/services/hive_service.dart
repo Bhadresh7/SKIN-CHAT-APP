@@ -281,6 +281,16 @@ class HiveService {
     return time;
   }
 
+  static Future<void> saveLastTimestamp(int timestamp) async {
+    final timestampBoxKey =
+        await _getOrCreateEncryptionKey('timestamp_box_key');
+    final tsBox = await Hive.openBox<int>(
+      AppHiveConstants.kTimestampBox,
+      encryptionCipher: HiveAesCipher(timestampBoxKey),
+    );
+    await tsBox.put('lastTs', timestamp);
+  }
+
   // ===================
   // AUTH STATE OPERATIONS
   // ===================
@@ -443,8 +453,6 @@ class HiveService {
     try {
       // Save message to encrypted Hive
       await _messageBox.put(message.id, message);
-      // print(
-      //     "AFTER SAVING THE MESSAGE TO ENCRYPTED LOCAL ----------- ${message.metaModel.toJson()}");
 
       // ✅ Save/update the latest timestamp with encryption
       final timestampBoxKey =
@@ -535,7 +543,7 @@ class HiveService {
         clearUserData(),
         clearAuthData(),
         clearPostingAccessData(),
-        // clearMessageData(),
+        clearMessageData(),
       ]);
       debugPrint("All encrypted Hive data cleared successfully");
     } catch (e) {

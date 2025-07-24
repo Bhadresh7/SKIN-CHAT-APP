@@ -52,6 +52,9 @@ dependencies:
   saver_gallery: ^4.0.1
   crypto: ^3.0.6
   flutter_secure_storage: ^9.2.4
+  scroll_to_index: ^3.0.1
+#  flutter_chat_ui: ^2.8.1
+#  flutter_chat_core: ^2.0.0
 
 
   #  state management

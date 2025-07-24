@@ -5,6 +5,7 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
+import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../constants/app_status.dart';
@@ -100,12 +101,12 @@ class _SkinTextFieldState extends State<SkinTextField> {
     try {
       await chatProvider.sendMessage(newMessage);
       await service.sendNotificationToUsers(
-        title: authProvider.currentUser?.username ?? "",
+        title: HiveService.getCurrentUser()?.username ?? "",
         content: newMessage.metaModel.text ??
             newMessage.metaModel.img ??
             newMessage.metaModel.url ??
             "",
-        userId: authProvider.currentUser?.uid ?? "",
+        userId: HiveService.getCurrentUser()?.uid ?? "",
       );
 
       shareIntentProvider.clear();
@@ -156,9 +157,9 @@ class _SkinTextFieldState extends State<SkinTextField> {
                       );
 
                       await service.sendNotificationToUsers(
-                        title: authProvider.currentUser?.username ?? "",
+                        title: HiveService.getCurrentUser()?.username ?? "",
                         content: "sent an image $caption",
-                        userId: authProvider.currentUser?.uid ?? "",
+                        userId: HiveService.getCurrentUser()?.uid ?? "",
                       );
                     }
                     imagePickerProvider.clear();
@@ -192,15 +193,6 @@ class _SkinTextFieldState extends State<SkinTextField> {
     final shareIntentProvider = context.read<ShareIntentProvider>();
     final shareContentProvider = context.read<SharedContentProvider>();
     final imagePickerProvider = context.read<ImagePickerProvider>();
-
-    if (internetProvider.connectionStatus == AppStatus.kDisconnected ||
-        internetProvider.connectionStatus == AppStatus.kSlow) {
-      ToastHelper.showErrorToast(
-        context: context,
-        message: "Please check your internet connection",
-      );
-      return;
-    }
 
     await _handleSendMessage(
       messageText,

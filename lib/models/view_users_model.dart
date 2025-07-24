@@ -6,6 +6,8 @@ class ViewUsersModel {
     required this.email,
     required this.mobileNumber,
     required this.dob,
+    required this.isBlocked,
+    required this.canPost,
     this.img,
   });
 
@@ -16,6 +18,8 @@ class ViewUsersModel {
   final String mobileNumber;
   final String dob;
   final String? img;
+  final bool canPost;
+  final bool isBlocked;
 
   factory ViewUsersModel.fromJson(Map<String, dynamic> data) {
     return ViewUsersModel(
@@ -26,6 +30,8 @@ class ViewUsersModel {
       mobileNumber: data['mobileNumber'] ?? '',
       dob: data['dob'] ?? '',
       img: data['imageUrl'] ?? '',
+      isBlocked: data['isBlocked'] ?? false,
+      canPost: data['canPost'] ?? false,
     );
   }
 }

@@ -49,9 +49,6 @@ Future<void> runMainApp({required String env}) async {
     DeviceOrientation.portraitUp,
   ]);
 
-  // get initial messages
-  ChatProvider().initMessageStream();
-
   // Init notification service
   final NotificationService service = NotificationService();
   await service.initializeNotifications();

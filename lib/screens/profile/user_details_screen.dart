@@ -109,8 +109,32 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                     ),
                   ),
                 ),
-                if (user?.role == AppStatus.kAdmin)
+                if (user?.canPost == true)
                   CustomButton(
+                    isLoading: adminProvider.isAdminLoading,
+                    text: "Revoke Permission",
+                    onPressed: () async {
+                      final status =
+                          await adminProvider.makeAsAdmin(email: widget.email);
+                      switch (status) {
+                        case AppStatus.kSuccess:
+                          return ToastHelper.showSuccessToast(
+                              context: context, message: "Permission revoked");
+                        case AppStatus.kFailed:
+                          return ToastHelper.showErrorToast(
+                              context: context, message: "Failed to revoke");
+                        default:
+                          return ToastHelper.showErrorToast(
+                              context: context, message: status);
+                      }
+                    },
+                    color: Colors.orange,
+                    prefixWidget: Icon(Icons.remove_circle_outline),
+                  )
+                else if (user?.role == AppStatus.kAdmin &&
+                    !(user?.canPost ?? true))
+                  CustomButton(
+                    isLoading: adminProvider.isAdminLoading,
                     text: "Make as Admin",
                     onPressed: () async {
                       final status =
@@ -132,27 +156,40 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                     prefixWidget: Icon(Icons.person),
                   ),
                 CustomButton(
-                  text: "Block User",
+                  isLoading: adminProvider.isBlockLoading,
+                  text: user?.isBlocked == true ? "Unblock User" : "Block User",
                   onPressed: () async {
-                    print(user?.uid);
                     final result =
                         await adminProvider.blockUsers(uid: user!.uid);
 
                     switch (result) {
                       case AppStatus.kSuccess:
                         return ToastHelper.showSuccessToast(
-                            context: context, message: "User is Blocked");
+                          context: context,
+                          message: user.isBlocked
+                              ? "User is Unblocked"
+                              : "User is Blocked",
+                        );
                       case AppStatus.kFailed:
                         return ToastHelper.showErrorToast(
-                            context: context,
-                            message: "Failed to block the user");
+                          context: context,
+                          message: "Failed to update block status",
+                        );
                       default:
                         return ToastHelper.showErrorToast(
-                            context: context, message: result);
+                          context: context,
+                          message: result,
+                        );
                     }
                   },
-                  color: AppStyles.danger,
-                  prefixWidget: Icon(Icons.block_flipped),
+                  color: user?.isBlocked == true
+                      ? Colors.green[900]
+                      : AppStyles.danger,
+                  prefixWidget: Icon(
+                    user?.isBlocked == true
+                        ? Icons.lock_open
+                        : Icons.block_flipped,
+                  ),
                 ),
               ],
             ),

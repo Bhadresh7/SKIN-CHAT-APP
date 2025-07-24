@@ -283,15 +283,19 @@ class _UserListViewState extends State<UserListView> {
         }
 
         // Build the list of users with pagination
-        return ListView.builder(
-          controller: _scrollController,
-          itemCount: provider.users.length + (provider.hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == provider.users.length) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return _buildUserTile(provider.users[index]);
-          },
+        return RefreshIndicator(
+          onRefresh: provider.refreshUsers,
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: provider.users.length + (provider.hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == provider.users.length) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              print("LIST VIEW ------------------");
+              return _buildUserTile(provider.users[index]);
+            },
+          ),
         );
       },
     );

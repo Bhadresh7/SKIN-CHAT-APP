@@ -17,8 +17,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Title: ${message.notification?.title}");
   print("Body: ${message.notification?.body}");
   print(message.data);
-  // You can show a heads-up notification here
-  NotificationService().showHeadsUpNotification(message);
 }
 
 class NotificationService {

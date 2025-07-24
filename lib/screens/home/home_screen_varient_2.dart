@@ -9,11 +9,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_sharing_intent/model/sharing_file.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
-import 'package:skin_chat_app/constants/app_status.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
 import 'package:skin_chat_app/helpers/my_navigation.dart';
-import 'package:skin_chat_app/helpers/toast_helper.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
@@ -41,44 +40,66 @@ class HomeScreenVarient2 extends StatefulWidget {
 class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   late NotificationService service;
   late TextEditingController messageController;
-
-  // late Stream<Map<String, dynamic>> canPostAccessStream;
+  late AutoScrollController _scrollController;
 
   int? maxLines;
   bool _hasHandledSharedFile = false;
   bool _hasFetchedLinkMetadata = false;
-  bool _hasControllerInited = false;
   bool _hasHandledBlock = false;
 
-// Fixed _updateMaxLines method
-//   void _updateMaxLines() {
-//     if (mounted) {
-//       setState(() {
-//         maxLines = messageController.text.trim().isEmpty ? null : 2;
-//       });
-//     }
-//   }
-
-// Fixed initState method
+  // Fixed initState method
   @override
   void initState() {
+    super.initState();
+
+    // ✅ Initialize ScrollController first
+    _scrollController = AutoScrollController();
+
     final FlutterLocalNotificationsPlugin plugin =
         FlutterLocalNotificationsPlugin();
     plugin.cancelAll();
-    super.initState();
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    chatProvider.initMessageStream();
     print("Hey there init Called");
-    // canPostAccessStream = context.read<MyAuthProvider>().canPostAccessStream;
     messageController = TextEditingController();
-    // messageController.addListener(_updateMaxLines);
-    // service = NotificationService();
+    service = NotificationService();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-        final initialMessages = chatProvider.getAllMessagesFromLocalStorage();
-        chatProvider.messageNotifier.value = initialMessages;
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) {
+        if (mounted) {
+          final initialMessages = chatProvider.getAllMessagesFromLocalStorage();
+          chatProvider.messageNotifier.value = initialMessages;
+        }
+      },
+    );
+
+    _scrollController.addListener(_onScroll);
+  }
+
+  //  scroll listener method
+  void _onScroll() {
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    // Check if we have messages and can load more
+    if (!chatProvider.hasMoreMessages || chatProvider.isLoadingOlderMessages) {
+      return;
+    }
+
+    // Get current messages from the notifier
+    final messages = chatProvider.messageNotifier.value;
+    if (messages.isEmpty) return;
+
+    // Use AutoScrollController to check if the oldest message is visible
+    // The key here is to check if we're near the end of the list (oldest messages)
+    final scrollPosition = _scrollController.position;
+
+    // Check if we're at the maximum scroll extent (most reliable)
+    if (scrollPosition.pixels >= scrollPosition.maxScrollExtent - 50) {
+      print(
+          "🔝 User reached the first/oldest message, fetching older messages...");
+      chatProvider.fetchOlderMessages();
+      return;
+    }
   }
 
   @override
@@ -93,20 +114,10 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
         Provider.of<SharedContentProvider>(context, listen: false);
     final sharedFiles = shareIntentProvider.sharedFiles;
 
-    if ((authProvider.currentUser?.canPost ?? false) && !_hasControllerInited) {
-      messageController = TextEditingController();
-      _hasControllerInited = true;
-      print("✅ Controller initialized");
-    }
-
-    messageController.clear();
-    if (!(authProvider.currentUser?.canPost ?? false) && _hasControllerInited) {
-      messageController.dispose();
-      _hasControllerInited = false;
-      print("❌ Controller disposed");
-    }
     print("==============================");
     print("SHARED FILES ==>$sharedFiles");
+    print("_hasHandledSharedFile: $_hasHandledSharedFile");
+    print("_hasFetchedLinkMetadata: $_hasFetchedLinkMetadata");
     print("==============================");
 
     // Only process shared content if we haven't handled it yet and there's actual content
@@ -117,12 +128,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
         final sendingContent = sharedFiles[0];
         final isUrl = sendingContent.type == SharedMediaType.URL;
 
-        // Mark as handled to prevent multiple dialogs/actions
-        _hasHandledSharedFile = true;
-
         print("url$isUrl--$sendingContent");
 
         if (!isUrl) {
+          // Mark as handled to prevent multiple dialogs/actions
+          _hasHandledSharedFile = true;
+
           // Handle image sharing with ImagePreviewScreen
           WidgetsBinding.instance.addPostFrameCallback(
             (_) {
@@ -159,32 +170,64 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                           imgFile,
                         );
                       }
-
                       // Clean up
                       shareIntentProvider.clear();
-                      _hasHandledSharedFile = false;
+
+                      // Reset flag after successful send with delay
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          _hasHandledSharedFile = false;
+                          print("🔄 Image shared file flag reset after send");
+                        }
+                      });
                     },
                   ),
                 ),
               ).then((_) {
                 // Handle case where user cancels without sending
-                if (_hasHandledSharedFile) {
-                  shareIntentProvider.clear();
-                  _hasHandledSharedFile = false;
-                }
+                shareIntentProvider.clear();
+
+                // Reset flag after navigation closes with delay
+                Future.delayed(Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    _hasHandledSharedFile = false;
+                    print("🔄 Image shared file flag reset after cancel");
+                  }
+                });
               });
             },
           );
         } else {
-          // Handle URL sharing (keep existing logic)
+          // Handle URL sharing - FIXED VERSION
           if (!_hasFetchedLinkMetadata) {
             final url = sendingContent.value!;
+
+            // Only mark URL metadata as handled, not the shared file
             _hasFetchedLinkMetadata = true;
+
             print("controller int - $messageController");
             print("url555555555555555555555555${url}");
-            messageController.text = url;
-            _hasHandledSharedFile = false;
-            _hasFetchedLinkMetadata = false;
+
+            // Use postFrameCallback to ensure controller is ready
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && messageController.text != url) {
+                messageController.text = url;
+                print("✅ URL set in controller: ${messageController.text}");
+              }
+            });
+
+            // Clear the share intent after processing URL
+            shareIntentProvider.clear();
+            print("✅ Share intent cleared after URL processing");
+
+            // Reset the URL metadata flag immediately since we only needed it
+            // to prevent duplicate URL processing, not to prevent new URL shares
+            Future.delayed(Duration(milliseconds: 100), () {
+              if (mounted) {
+                _hasFetchedLinkMetadata = false;
+                print("🔄 URL metadata flag reset");
+              }
+            });
           }
         }
       }
@@ -195,19 +238,19 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     }
   }
 
-// Fixed dispose method
-  @override
-  void dispose() {
-    // messageController.removeListener(_updateMaxLines);
-    messageController.dispose();
-    super.dispose();
+  // Add this method to reset URL flags after message is sent
+  void _resetUrlFlags() {
+    _hasHandledSharedFile = false;
+    _hasFetchedLinkMetadata = false;
+    print("🔄 URL flags reset after message sent");
   }
 
-// Fixed _clearController method
-  void _clearController() {
-    if (mounted && _hasControllerInited) {
-      messageController.clear();
-    }
+  // Fixed dispose method
+  @override
+  void dispose() {
+    _scrollController.dispose(); // ✅ Dispose ScrollController
+    messageController.dispose();
+    super.dispose();
   }
 
   String? extractFirstUrl(String text) {
@@ -242,7 +285,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
       id: const Uuid().v4(),
       author: types.User(
         id: authProvider.uid,
-        firstName: authProvider.currentUser?.username,
+        firstName: HiveService.getCurrentUser()?.username,
       ),
       metaModel: metaModel,
       createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -254,35 +297,41 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
       newMessage,
     );
 
-    _clearController();
-    // _updateMaxLines();
+    // Clear controller first
+    if (mounted) {
+      messageController.clear();
+      print("✅ Controller cleared in handleSendMessage");
+    }
+
     chatProvider.addMessageToNotifier(chatMessage);
 
-    await chatProvider.sendMessage(newMessage);
-    await service.sendNotificationToUsers(
-      title: authProvider.currentUser?.username ?? "",
-      content: newMessage.metaModel.text ??
-          newMessage.metaModel.img ??
-          newMessage.metaModel.url ??
-          "",
-      userId: authProvider.currentUser?.uid ?? "",
-    );
+    try {
+      await chatProvider.sendMessage(newMessage);
 
-    shareIntentProvider.clear();
-    shareContentProvider.clear();
-    imagePickerProvider.clear();
+      // Clear all providers
+      shareIntentProvider.clear();
+      shareContentProvider.clear();
+      imagePickerProvider.clear();
+
+      // Reset URL flags after successful send
+      _resetUrlFlags();
+
+      print("✅ Message sent and all providers cleared");
+    } catch (e) {
+      print("❌ Error sending message: $e");
+      // Don't reset flags on error so user can retry
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     /// Providers
     final chatProvider = Provider.of<ChatProvider>(context);
-    final internetProvider = Provider.of<InternetProvider>(context);
     final authProvider = Provider.of<MyAuthProvider>(context);
     final imagePickerProvider = Provider.of<ImagePickerProvider>(context);
     final shareIntentProvider = Provider.of<ShareIntentProvider>(context);
     final shareContentProvider = Provider.of<SharedContentProvider>(context);
-    final _service = UserService();
+    final userService = UserService();
 
     return PopScope(
       canPop: false,
@@ -330,133 +379,154 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
         ),
         body: Stack(
           children: [
-            // Use ValueListenableBuilder to listen to messageNotifier changes
-            ValueListenableBuilder<List<types.Message>>(
-              valueListenable: chatProvider.messageNotifier,
-              builder: (context, messages, child) {
-                return Chat(
-                  emptyState: messages.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Welcome to Skin Chats",
-                                style: TextStyle(
-                                  fontSize: AppStyles.heading,
-                                  color: AppStyles.tertiary,
+            Column(
+              children: [
+                // ✅ Loading indicator for older messages
+                Consumer<ChatProvider>(
+                  builder: (context, chatProvider, child) {
+                    if (chatProvider.isLoadingOlderMessages) {
+                      return Container(
+                        color: AppStyles.smoke,
+                        padding: EdgeInsets.all(AppStyles.padding),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 24.sp, // Increased from 16.sp
+                              height: 24.sp, // Increased from 16.sp
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: AppStyles.padding),
+                            Text(
+                              "Loading older messages...",
+                              style: TextStyle(fontSize: AppStyles.subTitle),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+
+                // ✅ Chat widget with custom scroll controller
+                Expanded(
+                  child: ValueListenableBuilder<List<types.CustomMessage>>(
+                    valueListenable: chatProvider.messageNotifier,
+                    builder: (context, messages, child) {
+                      print(
+                          "🔄 UI rebuilding with ${messages.length} messages");
+
+                      return Chat(
+                        scrollController: _scrollController,
+                        emptyState: messages.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Welcome to Skin Chats",
+                                      style: TextStyle(
+                                        fontSize: AppStyles.heading,
+                                        color: AppStyles.tertiary,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Start your journey",
+                                      style:
+                                          TextStyle(color: AppStyles.tertiary),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                "Start your journey",
-                                style: TextStyle(color: AppStyles.tertiary),
-                              ),
-                            ],
-                          ),
-                        )
-                      : null,
-                  theme: DefaultChatTheme(
-                    dateDividerMargin: EdgeInsets.all(0.03.sh),
-                    dateDividerTextStyle: const TextStyle(fontSize: 15),
-                    inputBackgroundColor: AppStyles.primary,
-                    inputTextCursorColor: AppStyles.smoke,
-                    inputBorderRadius:
-                        const BorderRadius.all(Radius.circular(0)),
-                  ),
-                  timeFormat: DateFormat("d/MM/yyyy - hh:mm a "),
-                  inputOptions: InputOptions(
-                    textEditingController: messageController,
-                    sendButtonVisibilityMode: SendButtonVisibilityMode.always,
-                  ),
-                  onMessageLongPress: (context, message) async {
-                    if (internetProvider.connectionStatus ==
-                            AppStatus.kDisconnected ||
-                        internetProvider.connectionStatus == AppStatus.kSlow) {
-                      return ToastHelper.showErrorToast(
-                        context: context,
-                        message: "Please check your internet connection",
-                      );
-                    }
+                              )
+                            : null,
+                        theme: DefaultChatTheme(
+                          dateDividerMargin: EdgeInsets.all(0.03.sh),
+                          dateDividerTextStyle: const TextStyle(fontSize: 15),
+                          inputBackgroundColor: AppStyles.primary,
+                          inputTextCursorColor: AppStyles.smoke,
+                          inputBorderRadius:
+                              const BorderRadius.all(Radius.circular(0)),
+                        ),
+                        timeFormat: DateFormat("d/MM/yyyy - hh:mm a "),
+                        inputOptions: InputOptions(
+                          textEditingController: messageController,
+                          sendButtonVisibilityMode:
+                              SendButtonVisibilityMode.always,
+                        ),
+                        onMessageLongPress: (context, message) async {
+                          ShowDeleteDialog.showDeleteDialog(
+                            context,
+                            message,
+                            chatProvider,
+                            authProvider,
+                          );
+                        },
+                        customMessageBuilder: (message,
+                            {required messageWidth}) {
+                          return CustomMessageWidget(
+                            key: ValueKey(message.id),
+                            messageData: message.metadata ?? {},
+                            messageWidth: 1.sw,
+                          );
+                        },
+                        // ✅ Fixed: Cast to types.Message for Chat widget compatibility
+                        messages: messages.cast<types.Message>(),
+                        onSendPressed: (message) async {
+                          await _handleSendMessage(
+                            message.text,
+                            authProvider,
+                            chatProvider,
+                            service,
+                            shareIntentProvider,
+                            shareContentProvider,
+                            imagePickerProvider,
+                          );
+                        },
+                        user: types.User(
+                          firstName: HiveService.getCurrentUser()?.username,
+                          id: authProvider.uid,
+                        ),
+                        showUserNames: true,
+                        showUserAvatars: true,
+                        customBottomWidget: StreamBuilder<Map<String, dynamic>>(
+                          stream: userService.fetchRoleAndSaveLocally(),
+                          builder: (context, snapshot) {
+                            final canPost = snapshot.data?['canPost'] ??
+                                authProvider.currentUser?.canPost ??
+                                HiveService.getCurrentUser()?.canPost ??
+                                false;
 
-                    ShowDeleteDialog.showDeleteDialog(
-                      context,
-                      message,
-                      chatProvider,
-                      authProvider,
-                    );
-                  },
-                  customMessageBuilder: (message, {required messageWidth}) {
-                    return CustomMessageWidget(
-                      key: ValueKey(message.id),
-                      messageData: message.metadata ?? {},
-                      messageWidth: 1.sw,
-                    );
-                  },
-                  messages: messages,
-                  onSendPressed: (message) async {
-                    if (internetProvider.connectionStatus ==
-                            AppStatus.kDisconnected ||
-                        internetProvider.connectionStatus == AppStatus.kSlow) {
-                      ToastHelper.showErrorToast(
-                        context: context,
-                        message: "Please check your internet connection",
-                      );
-                      return;
-                    }
+                            final isBlocked =
+                                snapshot.data?['isBlocked'] ?? false;
 
-                    await _handleSendMessage(
-                      message.text,
-                      authProvider,
-                      chatProvider,
-                      service,
-                      shareIntentProvider,
-                      shareContentProvider,
-                      imagePickerProvider,
-                    );
-                  },
-                  user: types.User(
-                    firstName: HiveService.getCurrentUser()?.username,
-                    id: authProvider.uid,
-                  ),
-                  showUserNames: true,
-                  showUserAvatars: true,
-                  customBottomWidget: StreamBuilder<Map<String, dynamic>>(
-                    stream: _service.fetchRoleAndSaveLocally(),
-                    builder: (context, snapshot) {
-                      print("I'M EMITTED UI !!!!!!!!");
-                      print("SNAPSHOT DATA ${snapshot.data}");
-
-                      final canPost = snapshot.data?['canPost'] ??
-                          authProvider.currentUser?.canPost ??
-                          HiveService.getCurrentUser()?.canPost ??
-                          false;
-
-                      final isBlocked = snapshot.data?['isBlocked'] ?? false;
-
-                      if (isBlocked && !_hasHandledBlock) {
-                        _hasHandledBlock = true;
-                        WidgetsBinding.instance.addPostFrameCallback(
-                          (_) async {
-                            await authProvider.signOut();
-                            if (context.mounted) {
-                              MyNavigation.replace(
-                                  context, const LoginScreen());
+                            if (isBlocked && !_hasHandledBlock) {
+                              _hasHandledBlock = true;
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                (_) async {
+                                  await authProvider.signOut();
+                                  if (context.mounted) {
+                                    MyNavigation.replace(
+                                        context, const LoginScreen());
+                                  }
+                                },
+                              );
                             }
+
+                            if (!canPost) return const SizedBox.shrink();
+
+                            return SkinTextField(
+                                messageController: messageController);
                           },
-                        );
-                      }
-
-                      if (!canPost) return const SizedBox.shrink();
-
-                      return SkinTextField(
-                          messageController: messageController);
+                        ),
+                      );
                     },
                   ),
-                );
-              },
+                ),
+              ],
             ),
 
-            /// Upload Progress Overlay
+            /// Upload Progress Overlay (remains the same)
             ValueListenableBuilder<double?>(
               valueListenable: chatProvider.uploadProgressNotifier,
               builder: (context, progress, child) {
