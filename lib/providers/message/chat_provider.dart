@@ -25,32 +25,21 @@ class ChatProvider extends ChangeNotifier {
   ValueNotifier<List<types.CustomMessage>> messageNotifier = ValueNotifier([]);
   StreamSubscription<List<types.CustomMessage>>? _subscription;
   StreamSubscription? _messageSubscription;
+  StreamSubscription? _messageDeleteSubscription;
+  final localData = HiveService.getAllMessages();
 
   // 📄 Pagination state
   bool _isLoadingOlderMessages = false;
   bool _hasMoreMessages = true;
   final int _messagesPerPage = 30;
 
+  // 🆕 Session tracking for real-time listening
+  int? _realtimeSessionStartTs;
+
   // Getters for pagination state
   bool get isLoadingOlderMessages => _isLoadingOlderMessages;
+
   bool get hasMoreMessages => _hasMoreMessages;
-
-  // Initialize and load messages from local storage first
-  void initMessageStream() async {
-    print("🚀 initMessageStream triggered");
-    // This loads the local message initially
-    await _loadLocalMessages();
-
-    // Always start real-time listener, regardless of box state
-    if (messageNotifier.value.isEmpty) {
-      // Fetch initial messages if box is empty
-      await _fetchInitialMessagesIfEmpty();
-    }
-
-    // ✅ Always start real-time listener after loading/fetching messages
-    print("🌐 Starting real-time sync...");
-    await _startRealtimeListener();
-  }
 
   // Load messages from local storage
   Future<void> _loadLocalMessages() async {
@@ -61,27 +50,51 @@ class ChatProvider extends ChangeNotifier {
   }
 
   // Start real-time listener for new messages
-  Future<void> _startRealtimeListener() async {
+  bool _isListening = false;
+
+  Future<void> startRealtimeListener() async {
+    if (_isListening) return; // Prevent multiple listeners
+    _isListening = true;
+
     await _messageSubscription?.cancel();
 
-    final lastTs = await HiveService.getLastSavedTimestamp();
-    print("⏳ Listening for new messages since $lastTs");
+    //  Set session start timestamp to NOW when starting listener
+    _realtimeSessionStartTs = await HiveService.getLastSavedTimestamp();
 
-    // ✅ Fixed: Use onChildAdded for real-time streaming
-    _messageSubscription =
-        _databaseRef.orderByChild("ts").startAt(lastTs + 1).onChildAdded.listen(
-      (event) {
-        _handleSingleNewMessage(event.snapshot);
-      },
+    /// This handles when the user initially login
+    /// The user will not be having the last timestamp
+    if (_realtimeSessionStartTs == 0) {
+      return;
+    }
+    print(
+        "🕐 Real-time session started at timestamp: $_realtimeSessionStartTs");
+
+    _messageSubscription = _databaseRef
+        .orderByChild("ts")
+        .startAfter(_realtimeSessionStartTs!)
+        .onChildAdded
+        .listen(
+      (event) => _handleSingleNewMessage(event.snapshot),
       onError: (error) {
         print("❌ Real-time listener error: $error");
-        // Optionally retry connection after a delay
         Future.delayed(Duration(seconds: 5), () {
-          _startRealtimeListener();
+          _isListening = false;
+          startRealtimeListener();
         });
       },
       cancelOnError: false,
     );
+
+    _databaseRef.onChildRemoved.listen((event) {
+      final deletedId = event.snapshot.key;
+      if (deletedId != null) {
+        print("Message deleted $deletedId");
+        removeMessageFromNotifier(deletedId);
+        notifyListeners();
+      }
+    }, onError: (error) {
+      print(error.toString());
+    });
   }
 
   // Handle single message from real-time stream
@@ -96,12 +109,21 @@ class ChatProvider extends ChangeNotifier {
     final messageId = snapshot.key;
     if (messageId == null) return;
 
+    final messageTimestamp =
+        data["ts"] ?? DateTime.now().millisecondsSinceEpoch;
+
+    // 🔧 KEY FIX: Only process messages that are truly newer than session start
+    if (_realtimeSessionStartTs != null &&
+        messageTimestamp <= _realtimeSessionStartTs!) {
+      print("⏰ Skipping message from before session start: $messageId");
+      return;
+    }
+
     final author = types.User(
       id: data["id"]?.toString() ?? '',
       firstName: data["name"]?.toString() ?? "k",
     );
 
-    final timestamp = data["ts"] ?? DateTime.now().millisecondsSinceEpoch;
     final metadata = data["metadata"];
 
     if (metadata is! Map) return;
@@ -109,7 +131,7 @@ class ChatProvider extends ChangeNotifier {
     final newMessage = types.CustomMessage(
       id: messageId,
       author: author,
-      createdAt: timestamp,
+      createdAt: messageTimestamp,
       metadata: {
         "text": metadata["text"],
         "url": metadata["url"],
@@ -296,10 +318,8 @@ class ChatProvider extends ChangeNotifier {
       // Query messages older than the oldest current message
       final snapshot = await _databaseRef
           .orderByChild("ts")
-          .endAt(oldestTimestamp -
-              1) // Get messages before the oldest current message
-          .limitToLast(
-              _messagesPerPage) // Get the last N messages before this timestamp
+          .endAt(oldestTimestamp - 1)
+          .limitToLast(_messagesPerPage)
           .once();
 
       final data = snapshot.snapshot.value;
@@ -398,6 +418,7 @@ class ChatProvider extends ChangeNotifier {
     super.dispose();
     _messageSubscription?.cancel();
     _subscription?.cancel();
+    _realtimeSessionStartTs = null; // Clean up session timestamp
   }
 
   void addMessageToNotifier(types.CustomMessage message) {
@@ -527,5 +548,45 @@ class ChatProvider extends ChangeNotifier {
     _chatService.cancelUpload();
     uploadProgressNotifier.value = null;
     notifyListeners();
+  }
+
+  // Initialize and load messages from local storage first
+  void initMessageStream() async {
+    print("🚀 initMessageStream triggered");
+
+    // Debug: Check what's in Hive before loading
+    final hiveMessages = HiveService.getAllMessages();
+    print(
+        "🔍 DEBUG: Hive contains ${hiveMessages.length} messages before loading");
+
+    // Step 1: Always load local messages first
+    await _loadLocalMessages();
+
+    // Debug: Check messageNotifier after loading
+    print(
+        "🔍 DEBUG: MessageNotifier has ${messageNotifier.value.length} messages after loading");
+
+    // Step 2: Only fetch from Firebase if local storage is empty
+    if (messageNotifier.value.isEmpty) {
+      print(
+          "📭 Local storage is empty. Fetching initial messages from Firebase...");
+      await _fetchInitialMessagesIfEmpty();
+    } else {
+      print(
+          "📦 Found ${messageNotifier.value.length} messages in local storage. Skipping Firebase fetch.");
+    }
+
+    // 🔧 KEY FIX: Start real-time listener AFTER loading existing messages
+    print("🎧 Starting real-time listener for new messages...");
+    await startRealtimeListener();
+  }
+
+  // 🆕 Method to stop real-time listening (useful for cleanup)
+  void stopRealtimeListener() {
+    _messageSubscription?.cancel();
+    _messageSubscription = null;
+    _isListening = false;
+    _realtimeSessionStartTs = null;
+    print("🛑 Real-time listener stopped");
   }
 }

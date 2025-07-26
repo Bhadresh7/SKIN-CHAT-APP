@@ -131,13 +131,6 @@ class MyAuthProvider extends ChangeNotifier {
       await HiveService.saveUserToHive(user: _currentUser);
 
       // Handle blocked user
-      if (_currentUser!.isBlocked) {
-        print("User is blocked, signing out...");
-        // Use a microtask to avoid calling signOut during build
-        Future.microtask(() async {
-          await signOut();
-        });
-      }
     } catch (e) {
       debugPrint("Error updating user from stream: $e");
     }

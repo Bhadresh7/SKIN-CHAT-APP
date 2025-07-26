@@ -44,6 +44,9 @@ Future<void> runMainApp({required String env}) async {
       await Permission.photosAddOnly.request();
     }
   }
+
+  final timestamp = await HiveService.getLastSavedTimestamp();
+  print("^^^^^^^^^^^^^^^^^^^$timestamp");
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitDown,
     DeviceOrientation.portraitUp,

@@ -12,16 +12,16 @@ import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:skin_chat_app/constants/app_assets.dart';
 import 'package:skin_chat_app/constants/app_styles.dart';
-import 'package:skin_chat_app/helpers/my_navigation.dart';
 import 'package:skin_chat_app/models/meta_model.dart';
 import 'package:skin_chat_app/providers/exports.dart';
 import 'package:skin_chat_app/providers/message/share_content_provider.dart';
-import 'package:skin_chat_app/screens/auth/login_screen.dart';
 import 'package:skin_chat_app/services/hive_service.dart';
 import 'package:skin_chat_app/services/notification_service.dart';
 import 'package:skin_chat_app/services/user_service.dart';
 import 'package:skin_chat_app/utils/custom_mapper.dart';
 import 'package:skin_chat_app/widgets/common/background_scaffold.dart';
+import 'package:skin_chat_app/widgets/common/block_dialog_box.dart';
+import 'package:skin_chat_app/widgets/common/chat_placeholder.dart';
 import 'package:skin_chat_app/widgets/common/custom_message_widget.dart';
 import 'package:skin_chat_app/widgets/common/showDeleteDialog.dart';
 import 'package:skin_chat_app/widgets/common/skin_text_field.dart';
@@ -41,11 +41,12 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
   late NotificationService service;
   late TextEditingController messageController;
   late AutoScrollController _scrollController;
+  late bool isBlockedStatus;
 
   int? maxLines;
   bool _hasHandledSharedFile = false;
   bool _hasFetchedLinkMetadata = false;
-  bool _hasHandledBlock = false;
+  bool _hasShownBlockDialog = false;
 
   // Fixed initState method
   @override
@@ -59,10 +60,13 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
         FlutterLocalNotificationsPlugin();
     plugin.cancelAll();
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    chatProvider.startRealtimeListener();
     chatProvider.initMessageStream();
     print("Hey there init Called");
     messageController = TextEditingController();
     service = NotificationService();
+
+    isBlockedStatus = HiveService.getCurrentUser()?.isBlocked ?? false;
 
     WidgetsBinding.instance.addPostFrameCallback(
       (_) {
@@ -159,12 +163,14 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                     onSend: (caption) async {
                       // Handle the image with or without caption
                       if (caption.isNotEmpty) {
+                        // await chatProvider.startRealtimeListener();
                         chatProvider.handleImageWithTextMessage(
                           authProvider,
                           imgFile,
                           caption,
                         );
                       } else {
+                        // await chatProvider.startRealtimeListener();
                         chatProvider.handleImageMessage(
                           authProvider,
                           imgFile,
@@ -306,6 +312,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
     chatProvider.addMessageToNotifier(chatMessage);
 
     try {
+      // await chatProvider.startRealtimeListener();
       await chatProvider.sendMessage(newMessage);
 
       // Clear all providers
@@ -419,27 +426,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
 
                       return Chat(
                         scrollController: _scrollController,
-                        emptyState: messages.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Welcome to Skin Chats",
-                                      style: TextStyle(
-                                        fontSize: AppStyles.heading,
-                                        color: AppStyles.tertiary,
-                                      ),
-                                    ),
-                                    Text(
-                                      "Start your journey",
-                                      style:
-                                          TextStyle(color: AppStyles.tertiary),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : null,
+                        emptyState: messages.isEmpty ? ChatPlaceholder() : null,
                         theme: DefaultChatTheme(
                           dateDividerMargin: EdgeInsets.all(0.03.sh),
                           dateDividerTextStyle: const TextStyle(fontSize: 15),
@@ -470,7 +457,7 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                             messageWidth: 1.sw,
                           );
                         },
-                        // ✅ Fixed: Cast to types.Message for Chat widget compatibility
+                        // ✅ Cast to types.Message for Chat widget compatibility
                         messages: messages.cast<types.Message>(),
                         onSendPressed: (message) async {
                           await _handleSendMessage(
@@ -498,22 +485,32 @@ class _HomeScreenVarient2State extends State<HomeScreenVarient2> {
                                 false;
 
                             final isBlocked =
-                                snapshot.data?['isBlocked'] ?? false;
+                                snapshot.data?['isBlocked'] ?? isBlockedStatus;
 
-                            if (isBlocked && !_hasHandledBlock) {
-                              _hasHandledBlock = true;
+                            if (isBlocked && !_hasShownBlockDialog) {
+                              _hasShownBlockDialog = true;
+
                               WidgetsBinding.instance.addPostFrameCallback(
-                                (_) async {
-                                  await authProvider.signOut();
-                                  if (context.mounted) {
-                                    MyNavigation.replace(
-                                        context, const LoginScreen());
-                                  }
+                                (_) {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => BlockDialogBox(
+                                        authProvider: authProvider),
+                                  ).then(
+                                    (_) {
+                                      _hasShownBlockDialog = false;
+                                    },
+                                  );
                                 },
                               );
+
+                              return const SizedBox.shrink();
                             }
 
-                            if (!canPost) return const SizedBox.shrink();
+                            if (!canPost || isBlocked) {
+                              return const SizedBox.shrink();
+                            }
 
                             return SkinTextField(
                                 messageController: messageController);

@@ -51,6 +51,8 @@ class _CustomMessageWidgetState extends State<CustomMessageWidget> {
     }
 
     final metadata = await FetchMeta().fetchLinkMetadata(url);
+    print("METADATA =====================");
+    print(metadata?.toJson());
     if (metadata != null) {
       _metadataCache[url] = metadata;
     }
